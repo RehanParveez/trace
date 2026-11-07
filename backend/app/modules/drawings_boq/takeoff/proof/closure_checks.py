@@ -1,6 +1,6 @@
 from __future__ import annotations
 import re
-from app.modules.drawings_boq.takeoff.proof import known_facts as KF
+from app.modules.drawings_boq.takeoff.run import known_facts as KF
 from app.modules.drawings_boq.takeoff.prep import closure_facts as CF
 from app.engine.measure import readings as RD
 

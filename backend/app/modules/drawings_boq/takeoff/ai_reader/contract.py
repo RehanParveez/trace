@@ -1,9 +1,11 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import sheet_identity as SI
 from app.modules.drawings_boq.takeoff.extract import identity_words as IW
+from app.modules.drawings_boq.takeoff.ai_reader import prompts as P
 
 PURPOSE = "SHEET_CLASSIFICATION"
-PROMPT_VERSION = "1"
+PROMPT_NAME = "sheet.v1"
+PROMPT_VERSION = P.load(PROMPT_NAME)["version"]
 SCHEMA_VERSION = "1"
 
 DISCIPLINES = tuple(dict.fromkeys(code for code, _rx, _s in IW.DISCIPLINE_WORDS))
@@ -17,17 +19,7 @@ MAX_TEXT = 80
 
 def prompt() -> str:
   lists = "\n".join(f'- "{key}": one of {", ".join(options)}, or null' for key, options in CODE_KEYS)
-  return (
-    "You are shown the title-block areas of one construction drawing sheet: the bottom strip and the right-hand strip, "
-    "placed side by side in one picture. Read only what is printed there. Do not guess, and do not use anything you cannot "
-    "see in the picture. If a field is not printed, answer null for it.\n\n"
-    "Answer with strict JSON only, no markdown, in this exact shape:\n"
-    '{"discipline": ..., "sheet_type": ..., "floor": ..., "title": ..., "sheet_no": ..., "confidence": "high" | "medium" | "low"}\n\n'
-    f"{lists}\n"
-    '- "title": the drawing title as printed, or null\n'
-    '- "sheet_no": the sheet or drawing number as printed, or null\n'
-    "A plan of points (electrical, plumbing) is POINTS_PLAN; any other plan is PLAN. Use floor only when the title names a storey or level."
-  )
+  return P.render(PROMPT_NAME, lists=lists)
 
 def validate(parsed) -> tuple[dict | None, list[str]]:
   if not isinstance(parsed, dict):

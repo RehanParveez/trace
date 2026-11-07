@@ -11,7 +11,7 @@ from app.modules.drawings_boq import company_conventions as CCV
 from app.modules.drawings_boq.takeoff.first_run import job as JB
 from app.modules.drawings_boq.takeoff.first_run import report as RP
 from app.modules.drawings_boq.takeoff.first_run import stages as ST
-from app.modules.drawings_boq.takeoff.proof import first_run_run as FR
+from app.modules.drawings_boq.takeoff.run import first_run_bindings as FR
 from app.modules.drawings_boq.takeoff.questions import answers as AN
 from app.modules.drawings_boq.takeoff.service import TakeoffService
 from app.shared.storage import download_to_path
@@ -24,9 +24,8 @@ def snapshot_of(state: dict, now: datetime | None = None) -> dict:
     "at": (now or datetime.now(timezone.utc)).isoformat()}
 
 def read_plains(files: list) -> tuple:
-  """Each PDF read on its own: one that cannot be read is listed and left out, the others still count. Blocking, so the caller runs it off the event loop."""
-  from app.modules.drawings_boq.takeoff.proof import completeness_run as CR
-  from app.modules.drawings_boq.takeoff.proof.reading import adapter as AD
+  from app.modules.drawings_boq.takeoff.run import completeness as CR
+  from app.modules.drawings_boq.takeoff.run import reading_adapter as AD
   from app.modules.drawings_boq.takeoff.profile import run as PRUN
   plains, unread, facts = [], [], []
   with tempfile.TemporaryDirectory() as tmp:

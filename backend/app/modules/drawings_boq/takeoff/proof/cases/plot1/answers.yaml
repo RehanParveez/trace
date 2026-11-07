@@ -1,0 +1,213 @@
+answers:
+  set: plot1
+  source: QS_BOQ
+  workbook: BOQ_Worksheet_Map.xlsx
+  workbook_sha256: d645bc943c2afdd57383e3717398b0d6318f8d5dea1e737c69fff13f15ba54ca
+  qs: plot1
+  counts:
+    sheets: 32
+    rows: 1356
+    measured: 1022
+    subtotal: 114
+    group: 216
+    no_quantity: 4
+    with_quantity: 1081
+    lost: 0
+    items: 126
+    unmapped_lines: 14
+  totals_check:
+  - sheet: Form Work
+    rows: 55-55
+    total_row: 56
+    summed: 1554.547
+    workbook: 1760.7925
+    difference: -206.2455
+  - sheet: Concrete Work
+    rows: 59-59
+    total_row: 60
+    summed: 777.274
+    workbook: 841.772219
+    difference: -64.498219
+  summary_check:
+  - element: DW-02
+    unit: sft
+    detail: 493.5
+    summary: 668.5
+    difference: -175.0
+  - element: EW-16
+    unit: cft
+    detail: 5423.4308
+    summary: 526.8824
+    difference: 4896.5483
+  - element: PL-01
+    unit: sft
+    detail: 15416.1377
+    summary: 14784.1633
+    difference: 631.9744
+  - element: PL-03
+    unit: sft
+    detail: 4285.1628
+    summary: 4917.1371
+    difference: -631.9744
+  - element: RC-01
+    unit: cft
+    detail: 5311.137
+    summary: 159.375
+    difference: 5151.762
+  - element: RC-06
+    unit: cft
+    detail: 141.93
+    summary: 752.37
+    difference: -610.44
+  - element: RF-02
+    unit: kg
+    detail: 2960.184
+    summary: 16280.2923
+    difference: -13320.1083
+  - element: RF-06
+    unit: sft
+    detail: 4331.3257
+    summary: 13735.0353
+    difference: -9403.7095
+  items:
+  - {element: DP-04, floor: FOUNDATION, quantity: 1719.23675, unit: sft, qs_line: Termite | Building inner Portion, sheet: Termite, rows: '21-31,34-41', mapped_by: CATALOGUE, confirmed: false}
+  - {element: DP-04, floor: FOUNDATION, quantity: 494.865, unit: sft, qs_line: Termite | Building outer Portion, sheet: Termite, rows: 10-19, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DP-09, floor: BASEMENT, quantity: 90.0, unit: sft, qs_line: ROOF TREATMENT, sheet: ROOF TREATMENT, rows: '9', mapped_by: CATALOGUE, confirmed: false}
+  - {element: DP-09, floor: FIRST, quantity: 282.16, unit: sft, qs_line: ROOF TREATMENT, sheet: ROOF TREATMENT, rows: 14-15, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DP-09, floor: FIRST, quantity: 1345.37, unit: sft, qs_line: ROOF TREATMENT | Mumty/Roof Top Floor, sheet: ROOF TREATMENT, rows: 17-18, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DP-09, floor: GROUND, quantity: 265.224, unit: sft, qs_line: ROOF TREATMENT, sheet: ROOF TREATMENT, rows: 11-12, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-01, floor: BASEMENT, quantity: 90.375, unit: sft, qs_line: Door Frames, sheet: Door Frames, rows: 9-11, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-01, floor: FIRST, quantity: 123.188, unit: sft, qs_line: Door Frames | Doors, sheet: Door Frames, rows: 24-26, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-01, floor: GROUND, quantity: 91.125, unit: sft, qs_line: Door Frames | Doors, sheet: Door Frames, rows: 16-19, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-01, floor: ROOF, quantity: 31.688, unit: sft, qs_line: Door Frames | Doors, sheet: Door Frames, rows: 31-32, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-02, floor: FIRST, quantity: 245.0, unit: sft, qs_line: Schedule of Doors | Doors, sheet: Doors, rows: 23-25, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-02, floor: GROUND, quantity: 182.0, unit: sft, qs_line: Schedule of Doors | Doors, sheet: Doors, rows: 16-19, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-02, floor: ROOF, quantity: 66.5, unit: sft, qs_line: Schedule of Doors | Doors, sheet: Doors, rows: 30-31, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-05, floor: BASEMENT, quantity: 69.0, unit: sft, qs_line: Aluminium Windows & Ventilators, sheet: WIndows & Vent., rows: 9-12, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-05, floor: FIRST, quantity: 261.625, unit: sft, qs_line: Aluminium Windows & Ventilators, sheet: WIndows & Vent., rows: 24-29, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-05, floor: GROUND, quantity: 197.0, unit: sft, qs_line: Aluminium Windows & Ventilators, sheet: WIndows & Vent., rows: 16-20, mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-05, floor: ROOF, quantity: 134.0, unit: sft, qs_line: Aluminium Windows & Ventilators, sheet: WIndows & Vent., rows: 33-36, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-02, floor: BASEMENT, quantity: 12960.0, unit: cft, qs_line: Excavation, sheet: Excavation, rows: '9', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-02, floor: BASEMENT, quantity: 1826.7105, unit: cft, qs_line: Excavation | Building inner Portion, sheet: Excavation, rows: 22-32, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-02, floor: BASEMENT, quantity: 1979.46, unit: cft, qs_line: Excavation | Building outer Portion, sheet: Excavation, rows: 11-20, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-13, floor: null, quantity: 141.597625, unit: cft, qs_line: 'PCC 1:4:8 | Building inner Portion', sheet: PCC 1;4;8, rows: 20-30, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-13, floor: null, quantity: 144.335625, unit: cft, qs_line: 'PCC 1:4:8 | Building outer Portion', sheet: PCC 1;4;8, rows: 9-18, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-13, floor: null, quantity: 40.0, unit: cft, qs_line: 'PCC 1:4:8 | Column Foundations', sheet: PCC 1;4;8, rows: 32-33, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-15, floor: BASEMENT, quantity: 1215.92625, unit: sft, qs_line: PCC/KACHA ON FLOOR, sheet: Kacha on Floor, rows: 9-16, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-15, floor: FIRST, quantity: 1215.92625, unit: sft, qs_line: PCC/KACHA ON FLOOR, sheet: Kacha on Floor, rows: 29-36, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-15, floor: FIRST, quantity: 412.4744, unit: sft, qs_line: PCC/KACHA ON FLOOR | Mumty/Roof Top Floor, sheet: Kacha on Floor, rows: 39-41, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-15, floor: GROUND, quantity: 1215.92625, unit: sft, qs_line: PCC/KACHA ON FLOOR, sheet: Kacha on Floor, rows: 19-26, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: FIRST, quantity: 1018.033031, unit: cft, qs_line: Brick Work | Building inner Portion, sheet: Brick Work, rows: 150-160, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: FIRST, quantity: 1144.375313, unit: cft, qs_line: Brick Work | Building outer Portion, sheet: Brick Work, rows: 139-148, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: FIRST, quantity: -409.127, unit: cft, qs_line: Brick Work | Doors, sheet: Brick Work, rows: 163-172, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: GROUND, quantity: 1018.033031, unit: cft, qs_line: Brick Work | Building inner Portion, sheet: Brick Work, rows: 112-122, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: GROUND, quantity: 1163.265938, unit: cft, qs_line: Brick Work | Building outer Portion, sheet: Brick Work, rows: 99-110, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: GROUND, quantity: -362.345, unit: cft, qs_line: Brick Work | Doors, sheet: Brick Work, rows: 125-135, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: null, quantity: 1514.352437, unit: cft, qs_line: Brick Work | Building inner Portion, sheet: Brick Work, rows: '10-20,23-33,36-46,49-55,60-70,84-95', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: null, quantity: -218.438, unit: cft, qs_line: Brick Work | Deduction, sheet: Brick Work, rows: 72-79, mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: ROOF, quantity: 84.375, unit: cft, qs_line: Brick Work | Building inner Portion, sheet: Brick Work, rows: '178', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: ROOF, quantity: 634.5, unit: cft, qs_line: Brick Work | Building outer Portion, sheet: Brick Work, rows: '176', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-16, floor: ROOF, quantity: -163.594, unit: cft, qs_line: Brick Work | Doors, sheet: Brick Work, rows: 181-187, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: FIRST, quantity: 1673.27, unit: sft, qs_line: PLASTER | Building inner Portion, sheet: Plaster, rows: 122-132, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: FIRST, quantity: 1732.0275, unit: sft, qs_line: PLASTER | Building outer Portion, sheet: Plaster, rows: 111-120, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: FIRST, quantity: -1013.25, unit: sft, qs_line: PLASTER | Deduction, sheet: Plaster, rows: 135-143, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: FIRST, quantity: 631.9744, unit: sft, qs_line: PLASTER | Mumty/Roof Top Floor, sheet: Plaster, rows: 195-198, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: GROUND, quantity: 3346.54, unit: sft, qs_line: PLASTER | Building inner Portion, sheet: Plaster, rows: 84-94, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: GROUND, quantity: 4063.51, unit: sft, qs_line: PLASTER | Building outer Portion, sheet: Plaster, rows: 71-82, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: GROUND, quantity: -915.25, unit: sft, qs_line: PLASTER | Deduction, sheet: Plaster, rows: 97-106, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: null, quantity: 3095.5495, unit: sft, qs_line: PLASTER | Building inner Portion, sheet: Plaster, rows: '21-31,56-66', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: null, quantity: 1809.26625, unit: sft, qs_line: PLASTER | Building outer Portion, sheet: Plaster, rows: '10-19,45-54', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: null, quantity: -617.5, unit: sft, qs_line: PLASTER | Deduction, sheet: Plaster, rows: 33-40, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: ROOF, quantity: 2011.0, unit: sft, qs_line: PLASTER | Building outer Portion, sheet: Plaster, rows: '148,150', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-01, floor: ROOF, quantity: -401.0, unit: sft, qs_line: PLASTER | Deduction, sheet: Plaster, rows: 153-158, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-03, floor: BASEMENT, quantity: 1305.92625, unit: sft, qs_line: PLASTER | Ceiling/Roof Plaster, sheet: Plaster, rows: 163-171, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-03, floor: FIRST, quantity: 1498.08625, unit: sft, qs_line: PLASTER | Ceiling/Roof Plaster, sheet: Plaster, rows: 184-193, mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-03, floor: GROUND, quantity: 1481.15025, unit: sft, qs_line: PLASTER | Ceiling/Roof Plaster, sheet: Plaster, rows: 173-182, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: BASEMENT, quantity: 159.375, unit: cft, qs_line: RCC | FOOTING, sheet: Concrete Work, rows: 10-12, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: BASEMENT, quantity: 1512.0, unit: cft, qs_line: RCC | RCC WALLS, sheet: Concrete Work, rows: '30,33', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: BASEMENT, quantity: 82.543219, unit: cft, qs_line: RCC | ROOF BEAMS, sheet: Concrete Work, rows: 46-56, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: BASEMENT, quantity: 777.274, unit: cft, qs_line: RCC | SLAB, sheet: Concrete Work, rows: '59', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: BASEMENT, quantity: 112.782, unit: cft, qs_line: RCC | SUPER STRUCTRE COLUMNS, sheet: Concrete Work, rows: '20-22,25-26', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: FIRST, quantity: 82.543219, unit: cft, qs_line: RCC | Building inner Portion, sheet: Concrete Work, rows: 149-159, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: FIRST, quantity: 80.271563, unit: cft, qs_line: RCC | Building outer Portion, sheet: Concrete Work, rows: 139-147, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: FIRST, quantity: 86.625, unit: cft, qs_line: RCC | COLUMNS, sheet: Concrete Work, rows: 122-123, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: FIRST, quantity: 48.845, unit: cft, qs_line: RCC | Doors, sheet: Concrete Work, rows: 127-135, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: FIRST, quantity: 808.846, unit: cft, qs_line: RCC | SLAB, sheet: Concrete Work, rows: '163', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: GROUND, quantity: 82.543219, unit: cft, qs_line: RCC | Building inner Portion, sheet: Concrete Work, rows: 98-108, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: GROUND, quantity: 80.271563, unit: cft, qs_line: RCC | Building outer Portion, sheet: Concrete Work, rows: 88-96, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: GROUND, quantity: 110.25, unit: cft, qs_line: RCC | COLUMNS, sheet: Concrete Work, rows: 69-71, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: GROUND, quantity: 43.501, unit: cft, qs_line: RCC | Doors, sheet: Concrete Work, rows: 75-84, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: GROUND, quantity: 808.327, unit: cft, qs_line: RCC | SLAB, sheet: Concrete Work, rows: '111', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: ROOF, quantity: 6.702187, unit: cft, qs_line: RCC | Building inner Portion, sheet: Concrete Work, rows: '190', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: ROOF, quantity: 52.875, unit: cft, qs_line: RCC | Building outer Portion, sheet: Concrete Work, rows: '188', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: ROOF, quantity: 16.031, unit: cft, qs_line: RCC | COLUMNS, sheet: Concrete Work, rows: '174', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: ROOF, quantity: 19.781, unit: cft, qs_line: RCC | Doors, sheet: Concrete Work, rows: 179-184, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-01, floor: ROOF, quantity: 339.75, unit: cft, qs_line: RCC | SLAB, sheet: Concrete Work, rows: '193', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-06, floor: null, quantity: 141.93, unit: cft, qs_line: PLINTH BEAM | Building inner Portion, sheet: Plinth Beam, rows: 9-19, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-08, floor: BASEMENT, quantity: 194.25, unit: sft, qs_line: FORM WORK | NECK COLUMNS, sheet: Form Work, rows: 15-17, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-08, floor: BASEMENT, quantity: 39.376, unit: cft, qs_line: RCC | NECK COLUMNS, sheet: Concrete Work, rows: 15-17, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-13, floor: BASEMENT, quantity: 81.5, unit: sft, qs_line: FORM WORK | LINTELS, sheet: Form Work, rows: 32-39, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-13, floor: BASEMENT, quantity: 30.563, unit: cft, qs_line: RCC | LINTELS, sheet: Concrete Work, rows: 36-43, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-17, floor: BASEMENT, quantity: 40.546, unit: cft, qs_line: RCC | STAIRCASE, sheet: Concrete Work, rows: 62-65, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-17, floor: FIRST, quantity: 40.546, unit: cft, qs_line: RCC | STAIRCASE, sheet: Concrete Work, rows: 166-169, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-17, floor: GROUND, quantity: 40.546, unit: cft, qs_line: RCC | STAIRCASE, sheet: Concrete Work, rows: 114-117, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-18, floor: ROOF, quantity: 302.0, unit: sft, qs_line: FORM WORK | OHWT, sheet: Form Work, rows: 200-203, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-18, floor: ROOF, quantity: 302.0, unit: sft, qs_line: FORM WORK | UGWT, sheet: Form Work, rows: 194-197, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-18, floor: ROOF, quantity: 93.5, unit: cft, qs_line: RCC | OHWT, sheet: Concrete Work, rows: 204-207, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-18, floor: ROOF, quantity: 93.5, unit: cft, qs_line: RCC | UGWT, sheet: Concrete Work, rows: 198-201, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RC-19, floor: ROOF, quantity: 78.375, unit: cft, qs_line: RCC | SEPTIC TANK, sheet: Concrete Work, rows: 210-211, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 224.0975, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | C-1 (Lintel Level), sheet: Footing & Column_B.F, rows: '50,54', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 118.4, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | C-1 (Upto B.S), sheet: Footing & Column_B.F, rows: '70,74', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 130.835, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | C-1 (upto DPC), sheet: Footing & Column_B.F, rows: '30,34', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 109.274, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | C-2 (Lintel Level), sheet: Footing & Column_B.F, rows: '60,64', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 56.88, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | C-2 (Upto B.S), sheet: Footing & Column_B.F, rows: '80,84', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 63.044, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | C-2 (upto DPC), sheet: Footing & Column_B.F, rows: '40,44', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 116.27, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | F-1, sheet: Footing & Column_B.F, rows: '9,12', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 82.597, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | F-2, sheet: Footing & Column_B.F, rows: '16,19', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 61.94775, unit: kg, qs_line: FOOTING & COLUMNS (BASEMENT) | F-3, sheet: Footing & Column_B.F, rows: '23,26', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 38.90425, unit: kg, qs_line: LINTELS (BASEMENT) | B.F (upto 12'), sheet: Lintels_B.F, rows: '45,48,51', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 33.915, unit: kg, qs_line: LINTELS (BASEMENT) | B.F (upto 4'), sheet: Lintels_B.F, rows: '9,12,15', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 48.483857, unit: kg, qs_line: LINTELS (BASEMENT) | B.F (upto 6'), sheet: Lintels_B.F, rows: '21,24,27', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: BASEMENT, quantity: 43.076, unit: kg, qs_line: LINTELS (BASEMENT) | B.F (upto 8'), sheet: Lintels_B.F, rows: '33,36,39', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: FIRST, quantity: 304.925, unit: kg, qs_line: COLUMNS (F.F) | C-1 (Upto FS), sheet: Columns_F.F, rows: '9,13', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: FIRST, quantity: 149.34, unit: kg, qs_line: COLUMNS (F.F) | C-2 (Upto F.S), sheet: Columns_F.F, rows: '19,23', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: GROUND, quantity: 304.925, unit: kg, qs_line: COLUMNS (G.F) | C-1 (Upto G.S), sheet: Columns_G.F, rows: '9,13', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: GROUND, quantity: 149.34, unit: kg, qs_line: COLUMNS (G.F) | C-2 (Upto G.S), sheet: Columns_G.F, rows: '19,23', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: GROUND, quantity: 216.2145, unit: kg, qs_line: COLUMNS (G.F) | C-3 (Upto G.S), sheet: Columns_G.F, rows: '29,33', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: null, quantity: 79.0485, unit: kg, qs_line: OHWT | BOTTOM SLAB, sheet: OHWT, rows: '9,12', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: null, quantity: 22.24875, unit: kg, qs_line: OHWT | TOP SLAB, sheet: OHWT, rows: '32,35', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: null, quantity: 445.28292, unit: kg, qs_line: PLINTH BEAMS | Plinth Beam PB, sheet: Plinth Beams, rows: '9,12,15', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: null, quantity: 49.13, unit: kg, qs_line: UGWT | BOTTOM SLAB, sheet: UGWT, rows: '9,12', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-02, floor: ROOF, quantity: 112.005, unit: kg, qs_line: COLUMNS (R.F) | C-1 (Upto R.S), sheet: Columns_R.F, rows: '9,13', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: BASEMENT, quantity: 179.25, unit: sft, qs_line: FORM WORK | FOOTING, sheet: Form Work, rows: 10-12, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: BASEMENT, quantity: 3696.0, unit: cft, qs_line: FORM WORK | RCC WALLS, sheet: Form Work, rows: '28', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: BASEMENT, quantity: 462.0, unit: sft, qs_line: FORM WORK | SUPER STRUCTRE COLUMNS, sheet: Form Work, rows: '20-21,24-25', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: GROUND, quantity: 2778.372, unit: sft, qs_line: FORM WORK | Building inner Portion, sheet: Form Work, rows: '94-131,145-155', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: GROUND, quantity: 439.365, unit: sft, qs_line: FORM WORK | Building outer Portion, sheet: Form Work, rows: '84-92,135-143', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: GROUND, quantity: 119.5, unit: sft, qs_line: FORM WORK | Doors, sheet: Form Work, rows: 71-80, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: ROOF, quantity: 177.58875, unit: sft, qs_line: FORM WORK | Building outer Portion, sheet: Form Work, rows: 184-186, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: ROOF, quantity: 54.5, unit: sft, qs_line: FORM WORK | Doors, sheet: Form Work, rows: 175-180, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-06, floor: ROOF, quantity: 120.75, unit: sft, qs_line: FORM WORK | SEPTIC TANK, sheet: Form Work, rows: 206-207, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-07, floor: GROUND, quantity: 556.5, unit: sft, qs_line: FORM WORK | COLUMNS, sheet: Form Work, rows: 65-67, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-07, floor: ROOF, quantity: 85.5, unit: sft, qs_line: FORM WORK | COLUMNS, sheet: Form Work, rows: '170', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-08, floor: BASEMENT, quantity: 256.053, unit: sft, qs_line: FORM WORK | ROOF BEAMS, sheet: Form Work, rows: 42-52, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-09, floor: BASEMENT, quantity: 1554.547, unit: sft, qs_line: FORM WORK | SLAB, sheet: Form Work, rows: '55', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-09, floor: GROUND, quantity: 1617.692, unit: sft, qs_line: FORM WORK | SLAB, sheet: Form Work, rows: '159', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-09, floor: ROOF, quantity: 679.5, unit: sft, qs_line: FORM WORK | SLAB, sheet: Form Work, rows: '189', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-10, floor: BASEMENT, quantity: 52.112, unit: sft, qs_line: FORM WORK | STAIRCASE, sheet: Form Work, rows: 58-61, mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-10, floor: GROUND, quantity: 26.0555, unit: sft, qs_line: FORM WORK | STAIRCASE, sheet: Form Work, rows: 162-165, mapped_by: CATALOGUE, confirmed: false}
+  unmapped_lines:
+  - {qs_line: ROOF BEAMS (BASEMENT) | Roof Beam 9" at Mid, quantity: 644.70854, unit: kg, sheet: Beams_B.F, rows: '9,12,15', reason: no catalogue item has the words of this line}
+  - {qs_line: ROOF BEAMS (FIRST FLOOR) | Roof Beam 9" at External, quantity: 1171.89752, unit: kg, sheet: Beams_F.F, rows: '9,12,15,21,24,27', reason: no catalogue item has the words of this line}
+  - {qs_line: ROOF BEAMS (GROUND FLOOR) | Roof Beam 9" at External, quantity: 1171.89752, unit: kg, sheet: Beams_G.F, rows: '9,12,15,21,24,27', reason: no catalogue item has the words of this line}
+  - {qs_line: ROOF BEAMS (FIRST FLOOR) | Roof Beam 9" at External, quantity: 457.60734, unit: kg, sheet: Beams_R.F, rows: '9,12,15,21,24,27', reason: no catalogue item has the words of this line}
+  - {qs_line: Schedule of Doors, quantity: 175.0, unit: sft, sheet: Doors, rows: 9-11, reason: no catalogue item has the words of this line}
+  - {qs_line: LINTELS (FIRST FLOOR) | B.F (upto 4'), quantity: 208.36475, unit: kg, sheet: Lintels_F.F, rows: '9,12,15,21,24,27,33,36,39,45,48,51', reason: no catalogue item has the words of this line}
+  - {qs_line: LINTELS (GROUND FLOOR) | B.F (upto 4'), quantity: 228.50225, unit: kg, sheet: Lintels_G.F, rows: '9,12,15,21,24,27,33,36,39,45,48,51', reason: no catalogue item has the words of this line}
+  - {qs_line: LINTELS (FIRST FLOOR) | B.F (upto 4'), quantity: 107.753786, unit: kg, sheet: Lintels_R.F, rows: '9,12,15,21,24,27,33,36,39', reason: no catalogue item has the words of this line}
+  - {qs_line: ONE LAYER OF 3MM THICK TORCH APPLIED + BITUMINOUS MEMBRANE APPLIED AS PER MANUFACTURER'S SPECIFICATIONS(TYP.) | Building outer Portion, quantity: 2254.505, unit: sft, sheet: Membrane, rows: '9-18,20-29', reason: no catalogue item has the words of this line}
+  - {qs_line: OHWT | WALLS, quantity: 310.6606, unit: kg, sheet: OHWT, rows: '16,19,22,25,28', reason: no catalogue item has the words of this line}
+  - {qs_line: Building inner Portion, quantity: null, unit: sft, sheet: Plaster, rows: '149', reason: the workbook gives no quantity for this line}
+  - {qs_line: Doors, quantity: null, unit: sft, sheet: Plaster, rows: '96,134,152', reason: the workbook gives no quantity for this line}
+  - {qs_line: RCC WALL | RETAINING WALL, quantity: 10419.759452, unit: kg, sheet: RCC WALL, rows: '9,12,15,19,27-28', reason: no catalogue item has the words of this line}
+  - {qs_line: UGWT | WALLS, quantity: 227.233333, unit: kg, sheet: UGWT, rows: '16,19,22,25', reason: no catalogue item has the words of this line}

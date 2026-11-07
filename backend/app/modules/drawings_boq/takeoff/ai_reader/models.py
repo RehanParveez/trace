@@ -15,6 +15,7 @@ class AiShadowRead(Base, TimestampMixin):
     ForeignKeyConstraint(["drawing_id", "organization_id"], ["drawings.id", "drawings.organization_id"], ondelete="CASCADE", name="fk_ai_shadow_reads_drawing_tenant"),
     Index("ix_ai_shadow_reads_drawing_sheet", "drawing_id", "sheet_id", "created_at"),
     Index("ix_ai_shadow_reads_org_project", "organization_id", "project_id"),
+    Index("ix_ai_shadow_reads_cache_key", "drawing_id", "cache_key"),
     CheckConstraint("status IN ('OK','INVALID','FAILED')", name="ck_ai_shadow_reads_status"),
     CheckConstraint("mode IN ('WEAK','ALL')", name="ck_ai_shadow_reads_mode"),
   )
@@ -27,6 +28,10 @@ class AiShadowRead(Base, TimestampMixin):
   sheet_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
   page_no: Mapped[int] = mapped_column(Integer, nullable=False)
   purpose: Mapped[str] = mapped_column(String(40), nullable=False)
+  task: Mapped[str] = mapped_column(String(24), nullable=False, default="SHEET", server_default="SHEET")
+  cache_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+  model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  validators: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
   mode: Mapped[str] = mapped_column(String(8), nullable=False)
   status: Mapped[str] = mapped_column(String(8), nullable=False)
   prompt_version: Mapped[str] = mapped_column(String(12), nullable=False)

@@ -1,0 +1,7 @@
+by_reason:
+  ANSWER_UNMAPPED: BX-1
+alias:
+  RATE: PX-2
+follow_source:
+  - DERIVED
+default: UNASSIGNED

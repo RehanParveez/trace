@@ -1,0 +1,111 @@
+from __future__ import annotations
+from app.modules.drawings_boq.takeoff.extract import scalegate as SG
+from app.modules.drawings_boq.takeoff.extract import config as C
+
+TUNED, STANDARD, DEFAULT = "TUNED", "STANDARD", "DEFAULT"
+
+RULES = (
+  ("SCALE_GATE", "Whether the printed scale, or the printed dimensions, set the scale of the sheet", TUNED, ("SCALE_UNVERIFIED", "VIEW_SCALE_DIFFERS", "SCALE_CONFLICT", "SCALE_SETTLED_BY_SCHEDULE", "OPENING_SCALE_FROM_SCHEDULE_DISAGREES"), ("SG.MIN_DECLARED_TRUST", "SG.STRONG_CONFLICT_SUPPORT")),
+  ("WALL_PEN", "Which line weights are walls and which are dimensions, furniture or boundary lines", TUNED, ("WALL_PEN_SELECTED", "LIGHT_PEN_WALLS_KEPT", "LIGHT_PEN_WALL"), ("WALL_T_MIN_MM", "WALL_T_MAX_MM", "WALL_MIN_FACE_MM", "WALL_MIN_OVERLAP_MM", "WALL_MIN_RUN_MM")),
+  ("WALL_GAP_BRIDGE", "Walls carried across a gap where nothing is drawn (a door or window gap)", TUNED, ("WALL_BRIDGED", "WALL_WIDE_OPENING"), ("WALL_BRIDGE_MAX_MM", "WALL_GAP_MAX_MM", "WALL_GAP_CLEAR_MAX_MM", "WALL_STUB_MAX_MM")),
+  ("OUTER_WALL_FILTER", "Lines outside the outer walls (dimension lines, projection outlines, plot lines) left out of the walls", TUNED, ("RUNS_OUTSIDE_PLAN_WALLS", "RUNS_OUTSIDE_CONCRETE_WALLS"), ("OUTER_CORE_MIN_MM", "OUTER_TOL_MM", "OUTER_WALL_TOL_FACTOR")),
+  ("STAIR_TREADS", "Rows of short parallel lines taken as the treads of a stair, not as walls", TUNED, ("STAIR_TREADS_NOT_WALLS", "STAIR_LOCATED_BY_TREADS", "STAIR_SHORT_FLIGHT", "STAIR_FOUND_NO_DETAILS", "STAIR_RISE_DIFFERS_FROM_STOREY"), ("LADDER_MIN_RUNGS", "LADDER_MAX_STEP_MM", "LADDER_LENGTH_TOL", "LADDER_STEP_TOL", "STAIR_MIN_TREADS", "STAIR_TREAD_TOL", "STAIR_SHORT_MIN_TREADS", "STAIR_SHORT_LABEL_REACH_MM")),
+  ("VIEW_SPLIT", "A sheet that holds several drawings cut into plans and read plan by plan, with the floor each one is", TUNED, ("PLAN_REGIONS_READ", "SHEET_SITE_ITEMS_ONLY", "SHEET_VIEWS_LISTED", "FLOOR_READ_ON_OTHER_SHEET", "DRAIN_ITEM_ON_OTHER_SHEET", "DRAIN_REPEAT_SET_ASIDE", "STRUCTURAL_SHEET", "SHEET_NOT_A_PLAN", "STAGE_FAILED"), ()),
+  ("COLUMN_SHAPES", "Black squares and rectangles on a plan taken as columns, joined when close, sized into classes", TUNED, ("COLUMN_SHAPES_WITHOUT_MARK", "UNMARKED_COLUMNS", "COLUMN_FROM_FLOOR_ABOVE", "COLUMN_NOT_PLACED", "UNTAGGED_SAME_SIZE", "COUNT_DIFFERS_FROM_DRAWN",
+    "COLUMN_MARKS_EXCEED_SHAPES", "COUNT_MATCHES_OTHER_FLOOR", "COLUMN_MARK_NO_DETAIL", "COLUMN_STEEL_FROM_PROPOSED_DETAIL", "COLUMN_MARK_BY_SIZE", "COLUMN_DETAIL_NO_PLAN_MARK"), ("COLUMN_PIECE_MIN_MM", "COLUMN_PIECE_MAX_MM", "COLUMN_FILL_MIN", "COLUMN_JOIN_GAP_MM", "COLUMN_JOIN_ALIGN", "COLUMN_CLASS_TOL", "COLUMN_GRID_BIN_MM", "COLUMN_GRID_MIN_VOTES", "COLUMN_GRID_MIN_SHARE")),
+  ("MEMBER_MATCH", "A mark on the plan matched to the shape drawn beside it", TUNED, ("MEMBER_MATCH_AMBIGUOUS", "SIZE_VARIES", "SIZE_NOT_FOUND", "COLUMN_SIZE_FROM_PLAN", "SIZE_FROM_OTHER_VIEW"), ("MEMBER_SEARCH_MM", "SIZE_TOL", "MEMBER_MIN_MM", "MEMBER_MAX_MM")),
+  ("FOOTING_PAIRING", "Footing sizes printed on the details paired with footing marks (in order, when the details do not say)", TUNED, ("FOOTING_SIZE_ORDER_ASSUMED", "FOOTING_SIZE_PAIRED", "FOOTING_SIZE_BY_ELIMINATION", "FOOTING_SIZES_LISTED", "SIZE_FROM_DETAIL", "MARK_WITHOUT_DETAIL"), ()),
+  ("ROOM_OUTLINE", "A room taken from the walls round its label, or from the size printed in the label", TUNED, ("ROOM_FROM_OUTLINE", "ROOM_FROM_LABEL", "ROOM_OUTLINE_REPLACED", "ROOM_INSIDE_ROOM", "ROOM_NO_LABEL", "ROOM_MULTIPLE_LABELS", "ROOM_SIZE_MISMATCH", "ROOM_AREA_OUTLINE_DIFFERS"), ("ROOM_SIZE_TOL", "ROOM_AREA_AGREE", "ROOM_RECT_FILL")),
+  ("BEAM_STRIPS", "Hatched strips on a framing plan taken as beams, with their length along the centre line", TUNED, ("BEAM_LENGTH_FROM_STRIPS", "BEAM_STRIP_MARK_FROM_NEIGHBOUR", "BEAM_STRIP_NO_MARK", "BEAM_MARK_WITHOUT_STRIP", "BEAM_STRIPS_OVERLAP_WALL_BEAMS", "BEAM_NET_OF_COLUMNS", "BEAM_MARK_NO_SECTION"), ("STRIP_MAX_SEGMENTS", "BEAM_WIDTH_SNAP_TOL")),
+  ("TANK_CAPTIONS", "A tank caption (O.H.W.TANK, U.G.W.TANK, SEPTIC TANK, with or without DETAIL) read for its size; the size is the inside size unless the section says outside", TUNED, ("TANK_SIZE_BASIS_ASSUMED",), ()),
+  ("MARK_BY_SIZE", "Squares and doors drawn with no mark take the mark of the one detail or door of the same size", TUNED, ("COLUMN_MARK_FROM_SIZE", "DOOR_MARK_FROM_WIDTH"), ("MARK_BY_SIZE_TOL_MM",)),
+  ("DOOR_FRAME_WIDTH", "A door frame is as wide as the wall it stands in; a mark in walls of two thicknesses takes their average by door", TUNED, ("DOOR_FRAME_WIDTH_FROM_WALL", "DOOR_FRAME_WIDTH_MIXED_HOSTS", "DOOR_FRAME_WIDTH_BY_WALL"), ("FRAME_WALL_MIN_MM", "FRAME_WALL_MAX_MM")),
+  ("ROOF_ITEMS", "The roof of each floor is its slab less the footprint of the floor above: the main roof less the head room, the head room's own roof, terraces, and the projections with their soffit", TUNED, ("ROOF_MAIN_UNDER_UPPER_ROOF", "ROOF_TERRACE_BELOW_UPPER", "ROOF_PROJECTION_OPTIONAL", "CEILING_PROJECTION_SOFFIT"), ("TERRACE_MIN_M2", "TERRACE_MIN_SHARE")),
+  ("ROOF_PLAN_FLOORS", "A roof plan gives floor items only for rooms that carry a printed name", TUNED, ("ROOF_PLAN_ROOMS_UNNAMED",), ()),
+  ("FILL_DEPTH", "The depth of the earth filling from the floor level, the natural ground and the floor build-up printed in the specification; none under a basement", TUNED, ("FILL_DEPTH_FROM_LEVELS",), ("NGL_REACH", "FILL_MIN_MM", "FILL_MAX_MM")),
+  ("BEAM_DEPTH_BASIS", "Whether the printed depth of a beam is overall (the part inside the slab is the slab's) or counted in full", STANDARD, ("BEAM_DEPTH_WEB_BELOW_SLAB", "BEAM_DEPTH_FULL"), ()),
+  ("BEAM_STRIP_JOIN", "Strips of one beam cut in two by a crossing beam joined into one run", TUNED, ("BEAM_STRIPS_JOINED",), ("BEAM_JOIN_PAD_MM",)),
+  ("BEAM_ONE_SOURCE", "A floor whose framing plan draws its roof beams takes them from it; the beams worked out from the walls are kept as sightings", TUNED, ("BEAM_FROM_FRAMING_PLAN",), ("BEAM_FRAMING_MIN_SHARE",)),
+  ("SLAB_THICKNESS", "Which slab thickness is taken when the plan note and the section labels differ", TUNED, ("SLAB_THICKNESS_DISAGREES", "SLAB_THICKNESS_SECTIONS", "SLAB_THICKNESS_FROM_OTHER_SHEET", "SLAB_THICKNESSES_LISTED"), ("SLAB_LABEL_MIN_COUNT", "SLAB_LABEL_SECTIONS_TOL_MM", "SLAB_SECTION_MIN_MM", "SLAB_SECTION_MAX_MM")),
+  ("SLAB_PROJECTIONS", "Roof projections printed on the plans added to the covered area of the slab", TUNED, ("SLAB_STEEL_FROM_PANELS", "SLAB_PANEL_STEEL_PARTIAL", "SLAB_PROJECTIONS_ADDED", "SLAB_PROJECTION_NOT_BOUND", "SLAB_PROJECTION_LENGTH_ASSUMED", "SLAB_PROJECTION_NOT_VERIFIED", "SLAB_PROJECTION_IS_CHAJJA", "SLAB_PROJECTION_UNPLACED", "SLAB_PROJECTION_CONFLICT", "SLAB_PROJECTION_AXIS_UNKNOWN"), ()),
+  ("OPENING_MARKS", "Door and window marks matched to the gaps in the walls they stand beside", TUNED, ("OPENINGS_ASSIGNED", "OPENING_GAP_IS_ANOTHER_MARK", "LINTEL_OVER_UNMARKED_OPENING"), ()),
+  ("LINTELS", "Lintel sections, heads and the tie band that may replace them", TUNED, ("BRICK_NET_OF_LINTELS", "LINTEL_SECTION_FROM_TABLE", "LINTEL_HEAD_AT_DOOR", "LINTEL_HEAD_AT_COMMON_DOOR_HEAD", "LINTEL_COVERED_BY_TIE_BAND", "TIE_BAND_FROM_NOTE", "TIE_BAND_COUNTED_ONCE", "TIE_BAND_COUNTED_SEPARATELY", "ROOF_BAND_DETAIL", "LINTEL_SPAN_ABOVE_TABLE", "LINTEL_IN_THIN_WALL", "LINTEL_RCC_LEFT_OUT", "LINTEL_WIDTH_FROM_WALL"), ()),
+  ("RCC_WALLS", "Solid black strips taken as concrete walls, and the closing of a ring drawn on three sides", TUNED, ("RCC_WALL_FROM_FILL", "RCC_WALL_COMPLETES_ENCLOSURE"), ()),
+  ("SITE_ITEMS", "Tanks, boundary wall, gate and ramp read from labels, sections and elevations", TUNED, ("TANK_WALL", "TANK_SECTIONS_LISTED", "SITE_TANK_SIZES_TYPED", "SITE_TANK_SIZES_LISTED", "TANK_SIZES_DERIVED", "SITE_PIECES_DO_NOT_ADD_UP", "SITE_GATE_NOT_LOCATED", "SITE_GATE_TAKEN_OUT", "SITE_HEIGHT_NEAREST_DIMENSION", "BOUNDARY_RETURNS_TYPED", "BOUNDARY_RETURNS_ASSUMED", "BOUNDARY_FACES_ASSUMED"), ("TANK_REACH_MM", "TANK_MAX_MM")),
+  ("ROOF_EDGE", "Parapet, coping, chajja, balcony and sunken-slab labels read from the roof plans", TUNED, ("ROOF_PARAPET_LENGTH_FROM_OUTLINE", "ROOF_BALCONY_MAY_BE_IN_SLAB", "ROOF_SUNK_FILL_NOTE", "ROOF_COPING_AS_LONG_AS_PARAPET"), ()),
+  ("STAIR_TWINS", "A stair seen from two floors is measured once: the UP flight below, the DN flight above kept as a sighting; a stair outside the building is paired across sheets and measured once, at the larger scale", TUNED, ("STAIR_TWIN_ABOVE", "STAIR_FLIGHT_NO_PARTNER", "STAIR_DIRECTION_UNKNOWN", "STAIR_EXTERNAL", "STAIR_EXTERNAL_TWIN", "STAIR_EXTERNAL_UNPAIRED", "STAIR_EXTERNAL_EXCLUDED"), ("STAIR_TWIN_REACH_MM", "STAIR_TWIN_WIDTH_TOL", "STAIR_TWIN_SAME_SCALE_TOL", "STAIR_EXTERNAL_MIN_WALLS", "STAIR_EXTERNAL_TREADS_APART")),
+  ("SLAB_OPENINGS", "Stair wells, ducts and shafts taken out of the slab they are in", TUNED, ("SLAB_OPENINGS_DEDUCTED", "SLAB_OPENING_SIZE_NOT_PRINTED", "STAIR_LANDINGS_ADDED"), ("VOID_LABEL_REACH_MM", "VOID_MIN_SIDE_MM", "LANDING_MIN_SIDE_MM", "STAIR_LANDING_REACH_MM")),
+  ("SERVICES_BACKDROP", "A plan of the electrical, plumbing, air-conditioning or fire work read without the walls and rooms of the architect's plan drawn behind its symbols", TUNED, ("SERVICES_SHEET_BACKDROP_LEFT_OUT",), ("GATE_TITLE", "GATE_TEXT")),
+  ("WALL_THICKNESS", "A drawn wall thickness snapped to a standard size", STANDARD, ("THICKNESS_OFF_STANDARD", "SHEET_UNITS_DIFFER"), ("STANDARD_TOL", "IMPERIAL_TOL")),
+  ("LEVEL_HEIGHTS", "Every height a row uses is read from the table of floor heights (the printed levels of the sections, the level marks of the plans, the room notes), a note of the plan, or the rule book, and the row says which; a note that differs from the printed clear height raises STOREY_HEIGHT (by 50 mm)", TUNED, ("STOREY_HEIGHT",), ()),
+  ("OUTER_FACES", "A wall face is outer when the point just off the wall on that side lies outside the outline of the floor (the walls with their openings closed, filled); courts inside the outline are outside when the rule says so", TUNED, ("WALL_FACES_FROM_OUTLINE", "ROOF_FROM_OUTLINE"), ("WALL_GAP_CLEAR_MAX_MM", "OUTLINE_CLOSE_MM")),
+  ("PAGE_ROLE_VOTE", "A page's role from the weighted vote of its title block, the titles under its views, the list of drawings and its content; a page two strong signals disagree on is held with its votes", TUNED, ("PAGE_ROLE_VOTED", "PAGE_ROLE_UNSURE"), ()),
+  ("BRICK_THICKNESS", "A drawn wall is a brick size when it is within a few millimetres of it, or of it plus the plaster on both faces; a sheet drawn mostly at the plaster faces takes the brick size for its walls", STANDARD, ("WALL_PLASTER_DRAWN", "WALL_THICKNESS_BASIS"), ("BRICK_TOL_MM",)),
+  ("SIZE_FROM_PRINT", "A size, a layer or a grade taken from a schedule, a detail or a note printed on the drawing", STANDARD, ("SIZE_FROM_SCHEDULE", "SIZE_DIFFERS_FROM_SCHEDULE", "COLUMN_PLAN_VS_DETAIL", "SIZE_FROM_COLUMN_DETAIL", "COLUMN_DETAILS_DISAGREE", "FLOOR_LAYER_FROM_SPEC", "FLOOR_LAYERS_LEFT_OUT", "FLOOR_LAYERS_AMBIGUOUS", "SPEC_VALUE_PRINTED_TWO_WAYS", "SPEC_GRADE_PRINTED", "SPEC_GRADE_CONFLICT", "MEMBRANE_LAYER_FROM_SPEC", "FLOOR_LAYER_UNDER_HEADING", "MEMBRANE_LAYER_UNDER_HEADING", "ROOF_LAYERS_FROM_SPEC", "ROOF_LAYER_UNDER_HEADING", "ROOF_LAYERS_NOT_TIED", "ROOF_LAYERS_NOT_USED", "OPENING_SIZE_FROM_PLAN_LABEL", "OPENING_HEIGHT_FROM_NOTE", "OPENING_HEIGHT_FROM_SET", "OPENING_FROM_LABEL", "OPENING_LABEL_NO_GAP", "OPENING_LABEL_DIFFERS_FROM_SCHEDULE", "OPENING_LABELS_UNPAIRED"), ()),
+  ("PICTURE_READING", "Text read from the picture of a sheet (a scan, a beam section or a tank drawing)", TUNED, ("SCAN_TEXT_READ", "OUTLINED_TEXT_READ", "OUTLINED_TEXT_NOT_READ", "NO_LETTERING_PAGE", "SCAN_FIGURES_ASKED", "SCAN_FIGURES_REPAIRED", "BEAM_UPSTAND", "BEAM_SECTION_FROM_DETAIL", "BEAM_SECTION_FROM_MARK", "BEAM_SECTION_PRINCIPAL", "COLUMN_DETAIL_BARS_LISTED", "FOOTING_SECTION_CAPTION_WALL"), ()),
+  ("ASSUMED_VALUES", "A value used because the drawing prints none (stair waist, lintel bearing, trench working space, brick steps)", DEFAULT, ("WINDOW_SILL_ASSUMED", "WET_TURNUP_DEFAULT", "STAIR_WAIST_ASSUMED", "LINTEL_BEARING_ASSUMED", "ARCH_CENTRING_FROM_SCHEDULE", "TRENCH_WORKING_SPACE_ASSUMED", "TRENCH_WORKING_SPACE_QS_ALTERNATIVE", "TRENCH_DEPTH_ASSUMED", "EXCAVATION_DEPTH_ASSUMED", "FILL_DEPTH_ASSUMED", "BRICK_STEPS_ASSUMED", "TERMITE_BOTTOM_ONLY", "NECK_HEIGHT_ASSUMED", "PCC_PAD_DEPTH_FROM_STRIP_SECTION", "DOOR_FRAME_WIDTH_FROM_WALL", "SCAFFOLD_ABOVE_THRESHOLD", "PROPS_ABOVE_THRESHOLD", "SCAFFOLD_NEEDS_LEVELS", "RAIN_PIPE_COUNT_ASSUMED", "RAIN_PIPE_DROP_ASSUMED", "RAIN_PIPE_LENGTH_TYPED", "SEWER_LENGTH_TYPED", "DRAIN_CHAMBERS_COUNT_ONLY", "PILE_FROM_NOTE_OR_SCHEDULE", "PILE_CAPS_NOT_TAKEN", "PILE_UNIT_ASSUMED", "PILES_NOT_READ", "RAFT_FOOTPRINT_FROM_AREA_TABLE", "RAFT_FOOTPRINT_UNKNOWN", "RAFT_STEEL_NOT_TAKEN", "RAFT_PCC_ASSUMED", "RAFT_EDGE_FORM_ASSUMED", "RAFT_UNIT_ASSUMED", "RAFT_NOT_READ", "ELECTRICAL_COUNT_ONLY", "ELECTRICAL_PICTURE_MATCH", "ELECTRICAL_SHAPE_MATCH", "ELECTRICAL_OTHER_SIZE_SET_ASIDE", "ELECTRICAL_SYMBOLS_NOT_READ", "ELECTRICAL_READ_FAILED"), ("STAIR_WAIST_DEFAULT_MM", "LINTEL_BEARING_MM", "TRENCH_SIDE_ALLOWANCE_MM")),
+  ("MEMBER_MATCH", "A mark on the plan matched to the shape drawn beside it", TUNED, ("MEMBER_MATCH_AMBIGUOUS", "SIZE_VARIES", "SIZE_NOT_FOUND", "COLUMN_SIZE_FROM_PLAN", "SIZE_FROM_OTHER_VIEW"), ("MEMBER_SEARCH_MM", "SIZE_TOL", "MEMBER_MIN_MM", "MEMBER_MAX_MM")),
+  ("ROOM_OUTLINE", "A room taken from the walls round its label, or from the size printed in the label", TUNED, ("ROOM_FROM_OUTLINE", "ROOM_FROM_LABEL", "ROOM_OUTLINE_REPLACED", "ROOM_INSIDE_ROOM", "ROOM_NO_LABEL", "ROOM_MULTIPLE_LABELS", "ROOM_SIZE_MISMATCH", "ROOM_GEOMETRY_REPAIRED", "ROOM_FACE_SKIPPED", "ROOM_CLOSED_ACROSS_OPENINGS", "ROOM_CLOSURE_SKIPPED", "ROOM_AREA_OUTLINE_DIFFERS"), ("ROOM_SIZE_TOL", "ROOM_AREA_AGREE", "ROOM_RECT_FILL")),
+)
+
+def _value(name: str):
+  mod, _, attr = name.rpartition(".")
+  v = getattr(SG if mod == "SG" else C, attr)
+  return round(v, 3) if isinstance(v, float) else v
+
+def thresholds(names: tuple) -> dict:
+  return {n.split(".")[-1]: _value(n) for n in names}
+
+def known_codes() -> set:
+  return {code for r in RULES for code in r[3]}
+
+def scale_record(analysis: dict | None) -> dict:
+  a = analysis or {}
+  
+  rec = a.get("recommended") or {}
+  ok, code, _ = SG.auto_scale_gate(analysis)
+  agreement = a.get("agreement")
+  how = ("OVERRIDE" if agreement == "CONFLICT" and ok else "PRINTED_SCALE" if agreement == "DECLARED_ONLY" and ok else "ROOM_LABELS" if agreement == "ROOMS_ONLY" else "SCALE_BAR" if agreement == "BAR_ONLY" or rec.get("basis") in ("DECLARED_AND_BAR", "MEASURED_FROM_SCALE_BAR") else "DIMENSIONS" if ok else "PERSON")
+  return {"agreement": agreement, "support": int(rec.get("support") or 0), "trust": rec.get("trust"), "gate": "OPEN" if ok else code, "decided_by": how}
+
+def sheet_trace(page_no: int, notes: list, candidates: list, analysis: dict | None = None, stats: dict | None = None) -> dict:
+  by_code: dict = {}
+  
+  for n in notes or []:
+    by_code.setdefault(n.get("code"), {"notes": 0, "items": set(), "tags": []})["notes"] += 1
+  for c in candidates:
+    for n in c.notes or []:
+      slot = by_code.setdefault(n.get("code"), {"notes": 0, "items": set(), "tags": []})
+      slot["items"].add(str(c.id))
+      if (c.tag or c.category) not in slot["tags"] and len(slot["tags"]) < 5:
+        slot["tags"].append(c.tag or c.category)
+        
+  scale = scale_record(analysis)
+  fired, silent = [], []
+  for rid, label, basis, codes, consts in RULES:
+    items = set().union(*[by_code[c]["items"] for c in codes if c in by_code]) if any(c in by_code for c in codes) else set()
+    notes_n = sum(by_code[c]["notes"] for c in codes if c in by_code)
+    tags: list = []
+    
+    for c in codes:
+      for t in by_code.get(c, {}).get("tags", []):
+        if t not in tags and len(tags) < 5:
+          tags.append(t)
+          
+    count = len(items) + notes_n
+    if rid == "SCALE_GATE" and scale["decided_by"] in ("OVERRIDE", "PRINTED_SCALE"):
+      count += 1
+    if rid == "VIEW_SPLIT":
+      count += int(((stats or {}).get("plan_regions") or {}).get("count") or 0)
+    if count:
+      fired.append({"id": rid, "label": label, "basis": basis, "items": len(items), "notes": notes_n, "codes": sorted(c for c in codes if c in by_code), "examples": tags, "thresholds": thresholds(consts)})
+    else:
+      silent.append(rid)
+  fired.sort(key=lambda r: (-(r["items"] + r["notes"]), r["id"]))
+  return {"page_no": page_no, "scale": scale, "rules": fired, "silent": silent}
+
+def drawing_summary(sheets: list) -> dict:
+  tuned = {r["id"] for s in sheets for r in s["rules"] if r["basis"] == TUNED}
+  default = {r["id"] for s in sheets for r in s["rules"] if r["basis"] == DEFAULT}
+  return {"sheets": len(sheets), "tuned_rules_fired": sorted(tuned), "default_rules_fired": sorted(default),
+    "tuned_items": sum(r["items"] for s in sheets for r in s["rules"] if r["basis"] == TUNED)}

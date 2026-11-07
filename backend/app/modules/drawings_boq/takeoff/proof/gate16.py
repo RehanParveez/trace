@@ -9,6 +9,7 @@ from app.modules.drawings_boq.takeoff.completeness import facts as F
 from app.modules.drawings_boq.takeoff.completeness import ledger as LG
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.proof import completeness_run as CR
+from app.modules.drawings_boq.takeoff.run import completeness as RC
 from app.modules.drawings_boq.takeoff.questions import answers as AN
 from app.modules.drawings_boq.takeoff.questions import engine as QE
 from app.modules.drawings_boq.takeoff.questions import keys as QK
@@ -19,10 +20,9 @@ class Collector:
     self.sets: dict = {}
 
   def __call__(self, ref, read) -> None:
-    self.sets[ref.pdf_key] = (ref.case, CR.plain_read(read))
+    self.sets[ref.pdf_key] = (ref.case, RC.plain_read(read))
 
 def silent_gaps(plain: dict) -> list:
-  """Pages whose sheet kind expects reader classes but whose coverage leaves one out: a class neither read nor reported as not read."""
   out = []
   for key, p in sorted(plain["pages"].items(), key=lambda kv: int(kv[0])):
     reg = p.get("register") or {}
@@ -103,6 +103,7 @@ def question_problems(case: str, plain: dict, res: dict, lines: list, on: list, 
         bad.append(f"{e['element']}/{e['floor']}: a question with no key or kind: {q['ask'][:60]}")
       elif q["key"] not in keys:
         bad.append(f"{e['element']}/{e['floor']}: question {q['key']} is not in the project's list")
+        
   for q in qs:
     if q["state"] == QE.OPEN and not q["blocks"] and q["kind"] != QK.METHOD:
       bad.append(f"question {q['key']} blocks no item")
@@ -110,9 +111,10 @@ def question_problems(case: str, plain: dict, res: dict, lines: list, on: list, 
   if len(inputs) != len(set(inputs)):
     bad.append("an input is asked more than once")
   given = {q["key"]: a for q in qs if q["state"] == QE.OPEN for a in [default_answer(q)] if a}
-  after = CR.run_set(plain, CR.storeys_of(case), lines, conventions=on, answers={**answers, **given})
+  after = RC.run_set(plain, CR.storeys_of(case), lines, conventions=on, answers={**answers, **given})
   more = QE.build(res["ledger"], {**answers, **given}, on)
   still = [q["key"] for q in more if q["key"] in given and q["state"] == QE.OPEN]
+  
   if still:
     bad.append(f"answered and still open: {', '.join(still)}")
   was, now = res["summary"]["by_state"], after["summary"]["by_state"]
@@ -128,7 +130,7 @@ def projects(collector: Collector) -> dict:
   out: dict = {}
   for _key, (case, plain) in collector.sets.items():
     out.setdefault(case, []).append(plain)
-  return {case: CR.merge(plains) for case, plains in out.items()}
+  return {case: RC.merge(plains) for case, plains in out.items()}
 
 def gate(collector: Collector, score_dir: str | None = None) -> tuple:
   if not collector.sets:
@@ -138,8 +140,8 @@ def gate(collector: Collector, score_dir: str | None = None) -> tuple:
   merged = projects(collector)
   for case, plain in sorted(merged.items()):
     lines = CR.lines_of(score_dir, case)
-    res = CR.run_set(plain, CR.storeys_of(case), lines)
-    on_res = CR.run_set(plain, CR.storeys_of(case), lines, conventions=CV.ids())
+    res = RC.run_set(plain, CR.storeys_of(case), lines)
+    on_res = RC.run_set(plain, CR.storeys_of(case), lines, conventions=CV.ids())
     problems += [f"{case}: {p}" for p in invariants(res, plain)]
     problems += [f"{case}: {p}" for p in assumption_problems(res, False)]
     problems += [f"{case} (conventions on): {p}" for p in invariants(on_res, plain) + assumption_problems(on_res, True)]
@@ -148,6 +150,7 @@ def gate(collector: Collector, score_dir: str | None = None) -> tuple:
     for tag, run, on in (("", res, []), (" (conventions on)", on_res, CV.ids())):
       bad, n_open, n_after = question_problems(case, plain, run, lines, on, answers)
       problems += [f"{case}{tag}: {p}" for p in bad]
+      
       if not on:
         open_total += n_open
         after_total += n_after

@@ -27,8 +27,8 @@ from app.modules.drawings_boq.takeoff.approve_schemas import ApproveReadyRequest
 from app.modules.drawings_boq.takeoff.approve_service import ApproveService
 from app.modules.drawings_boq.takeoff.extract.crosschecks_schemas import CrossChecksResponse, ReadyToAcceptResponse
 from app.modules.drawings_boq.takeoff.extract.crosschecks_service import CrossCheckService
-from app.modules.drawings_boq.takeoff.proof.schemas import FactsCheckRequest, FactsCheckResponse, TraceResponse
-from app.modules.drawings_boq.takeoff.proof.service import ProofService
+from app.modules.drawings_boq.takeoff.run.facts_schemas import FactsCheckRequest, FactsCheckResponse, TraceResponse
+from app.modules.drawings_boq.takeoff.run.facts_service import ProofService
 from app.modules.drawings_boq.takeoff.extract.typed_memory_schemas import TypedMemoryResponse
 from app.modules.drawings_boq.takeoff.extract.typed_memory_service import TypedMemoryService
 from app.modules.drawings_boq.takeoff.extract.drawing_passes_schemas import DrawingPassesResponse, TankSizeRequest

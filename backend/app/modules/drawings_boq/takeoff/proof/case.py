@@ -2,7 +2,7 @@ from __future__ import annotations
 import hashlib
 import os
 import json
-from app.modules.drawings_boq.takeoff.proof import known_facts as KF
+from app.modules.drawings_boq.takeoff.run import known_facts as KF
 
 def sha256_of(path: str) -> str:
   h = hashlib.sha256()

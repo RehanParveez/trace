@@ -5,13 +5,14 @@ import time
 from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.extract import foundation_runs as FR
 from app.modules.drawings_boq.takeoff.extract import walls as W
+from app.modules.drawings_boq.takeoff.prep import page_unit as PU
 
 RULE = "FOOTING_RUNS_FROM_GRID"
 META_KEY = "footing_strip_runs"
 CLASSES_IN = (4.5, 9.0, 13.5)
 CLASS_TOL_IN = 1.0
 MIN_BUBBLES = 4
-ROW_TOL_PT = 3.0
+ROW_TOL = 3.0
 MIN_RUN_MM = 600.0
 LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 
@@ -28,10 +29,11 @@ def _tokens(words: list) -> list:
       out.append(("N", t, float(w.cx), float(w.cy)))
   return out
 
-def _best_line(items: list, across: int) -> tuple | None:
+def _best_line(items: list, across: int, unit: float = 1.0) -> tuple | None:
+  tol = ROW_TOL * unit
   rows: dict = collections.defaultdict(list)
   for kind, text, x, y in items:
-    rows[round((y if across == 1 else x) / ROW_TOL_PT)].append((text, x if across == 1 else y))
+    rows[round((y if across == 1 else x) / tol)].append((text, x if across == 1 else y))
   best = None
   
   for members in rows.values():
@@ -44,24 +46,24 @@ def _best_line(items: list, across: int) -> tuple | None:
       best = cand
   return best
 
-def grid_extents(words: list) -> tuple | None:
+def grid_extents(words: list, unit: float = 1.0) -> tuple | None:
   toks = _tokens(words)
-  row = _best_line([t for t in toks if t[0] == "L"], 1)
-  col = _best_line([t for t in toks if t[0] == "N"], 0)
+  row = _best_line([t for t in toks if t[0] == "L"], 1, unit)
+  col = _best_line([t for t in toks if t[0] == "N"], 0, unit)
   if row is None or col is None:
     return None
   return col[0], row[0]
 
-def scale_from_grid(words: list) -> dict | None:
-  ext = grid_extents(words)
+def scale_from_grid(words: list, unit: float = 1.0) -> dict | None:
+  ext = grid_extents(words, unit)
   if ext is None:
     return None
   return FR.scale_from_dims(ext, FR.printed_dims_mm(words))
 
-def is_strip_plan(words: list) -> bool:
+def is_strip_plan(words: list, unit: float = 1.0) -> bool:
   texts = " ".join((w.text or "").upper() for w in words or [])
   tagged = sum(1 for w in words or [] if (w.text or "").strip().upper().startswith("F") and (w.text or "").strip()[1:].isdigit())
-  return ("FOOTING" in texts or "FOUNDATION" in texts) and tagged >= 1 and grid_extents(words) is not None
+  return ("FOOTING" in texts or "FOUNDATION" in texts) and tagged >= 1 and grid_extents(words, unit) is not None
 
 def class_of(t_mm: float) -> float | None:
   inch = t_mm / FR.MM_INCH
@@ -87,11 +89,14 @@ def summarize(runs: list, mm_per_pt: float) -> dict:
   return {"lengths_ft": {str(k): round(v, 2) for k, v in sorted(by.items())}, "other_ft": round(other, 2), "runs": kept}
 
 def read(index, words: list, deadline: float | None = None) -> dict | None:
-  if not enabled() or FR.is_foundation_plan(words) or not is_strip_plan(words):
+  if not enabled():
     return None
-  scale = scale_from_grid(words)
+  unit = PU.of_box(index.bbox)
+  if FR.is_foundation_plan(words) or not is_strip_plan(words, unit):
+    return None
+  scale = scale_from_grid(words, unit)
   if scale is None:
-    return {"read": "NO_SCALE", "printed_dims_mm": FR.printed_dims_mm(words)[:8], "grid_pt": list(grid_extents(words) or [])}
+    return {"read": "NO_SCALE", "printed_dims_mm": FR.printed_dims_mm(words)[:8], "grid_pt": list(grid_extents(words, unit) or [])}
   f = scale["mm_per_pt"]
   stop = deadline or time.monotonic() + 120.0
   frames, found, _stats = W.detect_walls(index, f, stop, True, None)

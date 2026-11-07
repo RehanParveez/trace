@@ -14,6 +14,11 @@ class ShadowComparison(BaseModel):
   ai_value: str | None = None
   agreement: str
 
+class ShadowValidator(BaseModel):
+  name: str
+  passed: bool
+  detail: str
+
 class ShadowReadItem(BaseModel):
   id: UUID
   sheet_id: UUID
@@ -25,6 +30,8 @@ class ShadowReadItem(BaseModel):
   comparison: list[ShadowComparison]
   totals: dict[str, int]
   problems: list[str]
+  validators: list[ShadowValidator] = []
+  model: str | None = None
   error: str | None = None
   created_at: datetime
 
@@ -36,6 +43,16 @@ class ShadowRunResponse(BaseModel):
   remaining: int
   items: list[ShadowReadItem]
 
+class ShadowCost(BaseModel):
+  requests: int = 0
+  with_tokens: int = 0
+  input_tokens: int = 0
+  output_tokens: int = 0
+  seconds: float = 0.0
+  usd: float = 0.0
+  pkr: float = 0.0
+  unpriced_models: list[str] = []
+
 class ShadowSummaryResponse(BaseModel):
   drawing_id: UUID
   enabled: bool
@@ -45,3 +62,5 @@ class ShadowSummaryResponse(BaseModel):
   by_fact: dict[str, dict[str, int]]
   items: list[ShadowReadItem]
   note: str
+  consent: str = "OFF"
+  cost: ShadowCost = ShadowCost()

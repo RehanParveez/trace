@@ -1,0 +1,14 @@
+task: VOCAB
+version: "1"
+schema: vocab.v1
+text: |-
+  You help match one line of a quantity surveyor's bill of quantities to one item of a catalogue of building work. Choose only from the items listed below. Do not invent an item and do not use an id that is not listed.
+
+  The bill line: {line}
+  Its unit: {unit}
+
+  The catalogue items you may choose from (id, name, unit):
+  {choices}
+
+  Answer with strict JSON only, no markdown, in this exact shape:
+  {"element": "<one id from the list, or null when none of them is the same work>", "reason": "<one short sentence saying why>"}

@@ -13,7 +13,7 @@ def main(argv: list | None = None) -> int:
   from app.modules.drawings_boq.takeoff.proof import case_io as CIO
   from app.engine.measure import rulebook as RB
   from app.modules.drawings_boq.takeoff.proof import offline_accept as OA
-  from app.modules.drawings_boq.takeoff.proof import benchmark as BM
+  from app.modules.drawings_boq.takeoff.run import reader as RDR
   
   profile, _rule_set = OR.seed_profile()
   bad = 0
@@ -25,7 +25,7 @@ def main(argv: list | None = None) -> int:
       continue
   
     rows, _p, _f = CIO.load_company_rules(case)
-    whole = {n: (r, p) for n, r, p in BM.read_set([(n, open(files[n], "rb").read()) for n in case["pdfs"]])}
+    whole = {n: (r, p) for n, r, p in RDR.read_set([(n, open(files[n], "rb").read()) for n in case["pdfs"]])}
     with RB.using_case(rows):
       acc = OA.accept_case(name, [(n, whole[n][0]) for n in case["pdfs"]], profile, ready_only=False)
       

@@ -44,7 +44,7 @@ def tally(rows: list) -> dict:
   return dict(sorted(t.items()))
 
 def census(cases_dir: str | None, only: list | None = None, partial: str = os.devnull) -> dict:
-  from app.modules.drawings_boq.takeoff.proof import benchmark as BM
+  from app.modules.drawings_boq.takeoff.run import reader as RDR
   out: dict = {}
   
   for case in CIO.list_cases(CIO.HERE):
@@ -60,7 +60,7 @@ def census(cases_dir: str | None, only: list | None = None, partial: str = os.de
     for n in spec["pdfs"]:
       with open(files[n], "rb") as fh:
         blobs.append((n, fh.read()))
-    res = BM.read_set(blobs, storeys=spec.get("storeys"), sections=spec.get("sections"), rules=forced_all())
+    res = RDR.read_set(blobs, storeys=spec.get("storeys"), sections=spec.get("sections"), rules=forced_all())
     out[case] = {"office": SETS.office_of(case), "pdfs": {n: tally(rows) for n, rows, _p in res}, "problems": sum(len(p) for _n, _r, p in res)}
     with open(partial, "w", encoding="utf-8") as fh:
       json.dump(out, fh, indent=1, sort_keys=True)

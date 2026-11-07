@@ -8,7 +8,7 @@ import pypdfium2.raw as raw
 from app.modules.drawings_boq.takeoff.prep import pdf_type as PT
 from app.modules.drawings_boq.takeoff.prep import text_repair as TR
 from app.modules.drawings_boq.takeoff.proof.reading import match as M
-from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
+from app.modules.drawings_boq.takeoff.run import vocab as V
 
 WORDS_PATH = TR.WORDS_PATH
 TOKEN = re.compile(r"[A-Za-z]{3,}")

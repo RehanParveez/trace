@@ -51,8 +51,9 @@ async def get_ai_settings(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  enabled = await service.get_ai_settings(current_user.active_membership.organization_id)
-  return AISettingsResponse(ai_enabled=enabled)
+  org_id = current_user.active_membership.organization_id
+  enabled = await service.get_ai_settings(org_id)
+  return AISettingsResponse(ai_enabled=enabled, ai_consent=await service.get_ai_consent(org_id))
 
 @router.patch("/me/ai-settings", response_model=AISettingsResponse)
 async def update_ai_settings(
@@ -66,7 +67,7 @@ async def update_ai_settings(
   enabled = await service.update_ai_settings(
     current_user.active_membership.organization_id, payload, actor_user_id=current_user.id
   )
-  return AISettingsResponse(ai_enabled=enabled)
+  return AISettingsResponse(ai_enabled=enabled, ai_consent=await service.get_ai_consent(current_user.active_membership.organization_id))
 
 @router.get("/me/members", response_model=list[MemberResponse])
 async def list_members(

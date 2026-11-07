@@ -1,0 +1,264 @@
+answers:
+  set: 191c
+  source: QS_BOQ
+  workbook: Quantities_191-C.xlsx
+  workbook_sha256: e07352a016ffbbd2f22496de1bbe66f45b2d05714d002286e8135a9329403d25
+  qs: 191c
+  counts:
+    sheets: 6
+    rows: 308
+    measured: 242
+    subtotal: 0
+    group: 65
+    no_quantity: 1
+    with_quantity: 242
+    lost: 0
+    items: 44
+    unmapped_lines: 199
+  totals_check: []
+  summary_check: []
+  items:
+  - {element: DP-01, floor: null, quantity: 390.75625, unit: sft, qs_line: 'DPC (1:2:4)', sheet: BOQ Grey Structure work, rows: '17', mapped_by: CATALOGUE, confirmed: false}
+  - {element: DP-02, floor: null, quantity: 164.97, unit: sft, qs_line: 'Vertical DPC (1:2:4)', sheet: BOQ Grey Structure work, rows: '18', mapped_by: CATALOGUE, confirmed: false}
+  - {element: DP-04, floor: null, quantity: 3055.485, unit: sft, qs_line: Termite, sheet: BOQ Grey Structure work, rows: '7', mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-01, floor: null, quantity: 325.25, unit: rft, qs_line: Door Frame, sheet: BOQ Finishing work, rows: '23', mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-05, floor: null, quantity: 633.37, unit: sft, qs_line: Aluminum Glass Windows, sheet: BOQ Finishing work, rows: '26', mapped_by: CATALOGUE, confirmed: false}
+  - {element: DW-16, floor: null, quantity: 308.32515, unit: cft, qs_line: 'OHWT , Septic T, UGWT Concrete', sheet: BOQ Grey Structure work, rows: '14', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EL-04, floor: null, quantity: 11.0, unit: nos, qs_line: Socket 3/4'', sheet: Plumbing Grey Work, rows: '90', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EL-12, floor: GROUND, quantity: 2.0, unit: nos, qs_line: 30 W LED Flood Light, sheet: Electric finishes, rows: '90', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-02, floor: null, quantity: 2928.125, unit: cft, qs_line: Excavation of Main building, sheet: BOQ Grey Structure work, rows: '5', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-06, floor: null, quantity: 7903.161792, unit: cft, qs_line: Back filling, sheet: BOQ Grey Structure work, rows: '6', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-13, floor: null, quantity: 308.4765, unit: cft, qs_line: 'P.C.C Concrete (1:4:8) under Footing', sheet: BOQ Grey Structure work, rows: '8', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-13, floor: null, quantity: 85.3578, unit: cft, qs_line: 'P.C.C Concrete (1:6:12) under Footing', sheet: BOQ Grey Structure work, rows: '9', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-14, floor: null, quantity: 2065.083125, unit: sft, qs_line: 'P.C.C Concrete (1:2:4) under Floor', sheet: BOQ Grey Structure work, rows: '15', mapped_by: CATALOGUE, confirmed: false}
+  - {element: EW-15, floor: null, quantity: 308.32515, unit: cft, qs_line: Brick Ballast under floor, sheet: BOQ Grey Structure work, rows: '20', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-02, floor: FIRST, quantity: 867.6275, unit: sft, qs_line: F.F Floor Tile Work (24"x48"), sheet: BOQ Finishing work, rows: '8', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-02, floor: GROUND, quantity: 1014.0434, unit: sft, qs_line: G.F Floor Tile Work (24"x48"), sheet: BOQ Finishing work, rows: '7', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-02, floor: null, quantity: 251.345, unit: sft, qs_line: Bath Room Floor Tile (12"x24"), sheet: BOQ Finishing work, rows: '11', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-02, floor: ROOF, quantity: 0.0, unit: sft, qs_line: Mumty.F Floor Tile Work (24"x48"), sheet: BOQ Finishing work, rows: '9', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-08, floor: null, quantity: 173.3398, unit: sft, qs_line: Stair Marble, sheet: BOQ Finishing work, rows: '18', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-10, floor: null, quantity: 163.91, unit: sft, qs_line: Windows Sill Marble, sheet: BOQ Finishing work, rows: '21', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-12, floor: null, quantity: 27.73, unit: sft, qs_line: Kitchen Slab Marble, sheet: BOQ Finishing work, rows: '19', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-13, floor: null, quantity: 25.0, unit: sft, qs_line: Btah Vanity Marble, sheet: BOQ Finishing work, rows: '20', mapped_by: CATALOGUE, confirmed: false}
+  - {element: FL-13, floor: null, quantity: 5.0, unit: nos, qs_line: Vanity, sheet: 'Plumbing in Finishing ', rows: '8', mapped_by: CATALOGUE, confirmed: false}
+  - {element: KJ-01, floor: null, quantity: 59.73795, unit: sft, qs_line: Kitchen Cabinet, sheet: BOQ Finishing work, rows: '24', mapped_by: CATALOGUE, confirmed: false}
+  - {element: KJ-02, floor: null, quantity: 304.5, unit: sft, qs_line: Wardrobes, sheet: BOQ Finishing work, rows: '25', mapped_by: CATALOGUE, confirmed: false}
+  - {element: MS-04, floor: null, quantity: 963.94395, unit: cft, qs_line: Brick Work Boundary Wall, sheet: BOQ Grey Structure work, rows: '25', mapped_by: CATALOGUE, confirmed: false}
+  - {element: NR-08, floor: null, quantity: 2526.0, unit: sft, qs_line: Labour Cost (40% for Grey Structure), sheet: Electric Grey, rows: '26', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-03, floor: null, quantity: 1.0, unit: nos, qs_line: Tee 3/4'', sheet: Plumbing Grey Work, rows: '89', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-04, floor: null, quantity: 1.0, unit: nos, qs_line: Float Valve 1'' x 1'' Grey, sheet: Plumbing Grey Work, rows: '49', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-04, floor: null, quantity: 2.0, unit: nos, qs_line: Gate Valve 32mm, sheet: Plumbing Grey Work, rows: '45', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-04, floor: null, quantity: 2.0, unit: nos, qs_line: Gate Valve 50mm, sheet: Plumbing Grey Work, rows: '46', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-08, floor: ROOF, quantity: 1156.92, unit: sft, qs_line: Roof Water Proofing, sheet: BOQ Grey Structure work, rows: '30', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-10, floor: null, quantity: 80.0, unit: rft, qs_line: Pipe uPVC 2", sheet: Plumbing Grey Work, rows: '54', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-10, floor: null, quantity: 117.0, unit: rft, qs_line: Pipe uPVC 3", sheet: Plumbing Grey Work, rows: '53', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-10, floor: null, quantity: 150.0, unit: rft, qs_line: Pipe uPVC 4", sheet: Plumbing Grey Work, rows: '52', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-10, floor: null, quantity: 90.0, unit: rft, qs_line: Pipe uPVC 6", sheet: Plumbing Grey Work, rows: '51', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-13, floor: null, quantity: 13.0, unit: nos, qs_line: Multi Floor Trap 4"x3"x2", sheet: Plumbing Grey Work, rows: '74', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-18, floor: null, quantity: 1.0, unit: nos, qs_line: Basin Half Pedestal, sheet: 'Plumbing in Finishing ', rows: '16', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-19, floor: null, quantity: 1.0, unit: nos, qs_line: Sink Waste Double, sheet: 'Plumbing in Finishing ', rows: '21', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-20, floor: null, quantity: 6.0, unit: nos, qs_line: Muslim Shower, sheet: 'Plumbing in Finishing ', rows: '13', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PB-20, floor: null, quantity: 5.0, unit: nos, qs_line: Shower Set (Complete Accessories), sheet: 'Plumbing in Finishing ', rows: '7', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-14, floor: null, quantity: 146.605, unit: sft, qs_line: Kitchen Wall Tile (12"x24"), sheet: BOQ Finishing work, rows: '13', mapped_by: CATALOGUE, confirmed: false}
+  - {element: PL-15, floor: null, quantity: 3024.90625, unit: sft, qs_line: False Ceiling, sheet: BOQ Finishing work, rows: '5', mapped_by: CATALOGUE, confirmed: false}
+  - {element: RF-01, floor: null, quantity: 5500.0, unit: kg, qs_line: Reinforcement, sheet: BOQ Grey Structure work, rows: '16', mapped_by: CATALOGUE, confirmed: false}
+  unmapped_lines:
+  - {qs_line: Bath Room Wall Tile (12"x24"), quantity: 1168.03, unit: sft, sheet: BOQ Finishing work, rows: '12', reason: no catalogue item has the words of this line}
+  - {qs_line: C.C Tile (12"x12") Front side of main gate, quantity: 105.0, unit: sft, sheet: BOQ Finishing work, rows: '16', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Glass Railing (Stair , Terrace & look below)', quantity: 82.285, unit: rft, sheet: BOQ Finishing work, rows: '27', reason: no catalogue item has the words of this line}
+  - {qs_line: Main Gate, quantity: 137.0, unit: kg, sheet: BOQ Finishing work, rows: '30', reason: no catalogue item has the words of this line}
+  - {qs_line: MS Grating in Gate, quantity: 40.0, unit: kg, sheet: BOQ Finishing work, rows: '32', reason: no catalogue item has the words of this line}
+  - {qs_line: MS Sheet Door, quantity: 51.0, unit: kg, sheet: BOQ Finishing work, rows: '31', reason: no catalogue item has the words of this line}
+  - {qs_line: OHWT Cover, quantity: 14.0, unit: kg, sheet: BOQ Finishing work, rows: '33', reason: no catalogue item has the words of this line}
+  - {qs_line: Paint Work External, quantity: 6076.0136, unit: sft, sheet: BOQ Finishing work, rows: '29', reason: no catalogue item has the words of this line}
+  - {qs_line: Paint Work internal, quantity: 5967.465625, unit: sft, sheet: BOQ Finishing work, rows: '28', reason: no catalogue item has the words of this line}
+  - {qs_line: Pourch Mate Tile (16"x16"), quantity: 440.52, unit: sft, sheet: BOQ Finishing work, rows: '14', reason: no catalogue item has the words of this line}
+  - {qs_line: Septic Tank Cover, quantity: 14.0, unit: kg, sheet: BOQ Finishing work, rows: '34', reason: no catalogue item has the words of this line}
+  - {qs_line: Tile Work of Front side (front elevation), quantity: 827.605, unit: sft, sheet: BOQ Finishing work, rows: '10', reason: no catalogue item has the words of this line}
+  - {qs_line: Tuff Tile (8"x4") Passage Area, quantity: 348.48, unit: sft, sheet: BOQ Finishing work, rows: '15', reason: no catalogue item has the words of this line}
+  - {qs_line: UG Tank Cover, quantity: 17.0, unit: kg, sheet: BOQ Finishing work, rows: '35', reason: no catalogue item has the words of this line}
+  - {qs_line: Wooden Doors, quantity: 471.75, unit: sft, sheet: BOQ Finishing work, rows: '22', reason: no catalogue item has the words of this line}
+  - {qs_line: Brick Work In Sub Structure, quantity: 926.779575, unit: cft, sheet: BOQ Grey Structure work, rows: '21', reason: no catalogue item has the words of this line}
+  - {qs_line: Brick Work In Sup Structure F.F, quantity: 1397.39375, unit: cft, sheet: BOQ Grey Structure work, rows: '23', reason: no catalogue item has the words of this line}
+  - {qs_line: Brick Work In Sup Structure G.F, quantity: 1701.33595, unit: cft, sheet: BOQ Grey Structure work, rows: '22', reason: no catalogue item has the words of this line}
+  - {qs_line: Brick Work In Sup Structure Mumty.F, quantity: 235.8975, unit: cft, sheet: BOQ Grey Structure work, rows: '24', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Column Concrete (1:2:4)', quantity: 110.958333, unit: cft, sheet: BOQ Grey Structure work, rows: '10', reason: no catalogue item has the words of this line}
+  - {qs_line: Doors & Windows Lintel Concrete, quantity: 102.538463, unit: cft, sheet: BOQ Grey Structure work, rows: '13', reason: no catalogue item has the words of this line}
+  - {qs_line: Labour cost, quantity: 500.0, unit: sft, sheet: BOQ Grey Structure work, rows: '32', reason: no catalogue item has the words of this line}
+  - {qs_line: Plaster work External, quantity: 6577.7636, unit: sft, sheet: BOQ Grey Structure work, rows: '29', reason: no catalogue item has the words of this line}
+  - {qs_line: Plaster work internal F.F, quantity: 3016.27875, unit: sft, sheet: BOQ Grey Structure work, rows: '27', reason: no catalogue item has the words of this line}
+  - {qs_line: Plaster work internal G.F, quantity: 3874.30375, unit: sft, sheet: BOQ Grey Structure work, rows: '26', reason: no catalogue item has the words of this line}
+  - {qs_line: Plaster work internal Mumty.F, quantity: 0.0, unit: sft, sheet: BOQ Grey Structure work, rows: '28', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Roof Beams & Slab Concrete (1:2:4)', quantity: 1372.995742, unit: cft, sheet: BOQ Grey Structure work, rows: '11', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Stair Concrete (1:2:4)', quantity: 63.092925, unit: cft, sheet: BOQ Grey Structure work, rows: '12', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Water Proofing OHW Tank, Septic Tank', quantity: 251.755, unit: sft, sheet: BOQ Grey Structure work, rows: '31', reason: no catalogue item has the words of this line}
+  - {qs_line: Water Stoper, quantity: 65.43, unit: rft, sheet: BOQ Grey Structure work, rows: '19', reason: no catalogue item has the words of this line}
+  - {qs_line: Bend 20mm Dia heavy gauge Class "B" screwed complete, quantity: 180.0, unit: nos, sheet: Electric Grey, rows: '7', reason: no catalogue item has the words of this line}
+  - {qs_line: Bend 25mm Dia heavy gauge Class "B" screwed complete, quantity: 125.0, unit: nos, sheet: Electric Grey, rows: '10', reason: no catalogue item has the words of this line}
+  - {qs_line: Celling Junction Box 20mm, quantity: 90.0, unit: nos, sheet: Electric Grey, rows: '13', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Conduit 20 mm din, heavy gauge Class "B" screwed complete with all bends, tecs, boxes, saddles etc, stove enamelled for Concealed wiring, supply and fixing', quantity: 2150.0, unit: rft, sheet: Electric Grey, rows: '6', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Conduit 25 mm din, heavy gauge Class "B" screwed complete with all bends, tco6, boxes, saddles etc, stove enamelled for Concealed wiring, supply and fixing', quantity: 1500.0, unit: rft, sheet: Electric Grey, rows: '9', reason: no catalogue item has the words of this line}
+  - {qs_line: Construction of hand hole size 18" x 18" for laying of Power and LV cables including top plate to be installed as and where shown on drawings. Complete with fixing arrangement as per engineer instruction., quantity: 1.0, unit: nos, sheet: Electric Grey, rows: '25', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Drilling of earth bore 4" dia 40 to 80 ft deep or upto permanent water table, bore shall be made at 10 ft away from foundation, back filling, ramming and supply installation of copper spike 1 ft long, T thick conical shape, upper side threaded for connection of 1" dia G.l pipe 80 ft long only Including cost of 2 Nos. 10 mmsq bare copper conductor connccted with copper spike, and upto copper test link in manhole complete in all respect.', quantity: 1.0, unit: nos, sheet: Electric Grey, rows: '21', reason: no catalogue item has the words of this line}
+  - {qs_line: Fan Box, quantity: 11.0, unit: nos, sheet: Electric Grey, rows: '14', reason: no catalogue item has the words of this line}
+  - {qs_line: PVC Back Box 3"*3", quantity: 94.0, unit: nos, sheet: Electric Grey, rows: '18', reason: no catalogue item has the words of this line}
+  - {qs_line: PVC Back Box 3"*6", quantity: 13.0, unit: nos, sheet: Electric Grey, rows: '19', reason: no catalogue item has the words of this line}
+  - {qs_line: PVC Bend 50mm Dia, quantity: 6.0, unit: nos, sheet: Electric Grey, rows: '17', reason: no catalogue item has the words of this line}
+  - {qs_line: PVC pipe 50mm dia, quantity: 150.0, unit: rft, sheet: Electric Grey, rows: '15', reason: no catalogue item has the words of this line}
+  - {qs_line: PVC Socket 50mm Dia, quantity: 8.0, unit: nos, sheet: Electric Grey, rows: '16', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket 20mm Dia heavy gauge Class "B" screwed complete, quantity: 100.0, unit: nos, sheet: Electric Grey, rows: '8', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket 25mm Dia heavy gauge Class "B" screwed complete, quantity: 130.0, unit: nos, sheet: Electric Grey, rows: '11', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Supply of earth connecting points consisting of copper plute 6" long x 2" wide x 1/2" thick to be installed as and where shown on drawings, complete with fixing arrangement, brass nuts bolls, washers, lugs. 1/2" dia. holes to facilitate connections of Incoming copper strips / copper conductors and outgoing CPC.', quantity: 1.0, unit: nos, sheet: Electric Grey, rows: '23', reason: no catalogue item has the words of this line}
+  - {qs_line: Wall Junction Box 20 mm, quantity: 36.0, unit: nos, sheet: Electric Grey, rows: '12', reason: no catalogue item has the words of this line}
+  - {qs_line: '1 gang switch, 2 way 10A, 250V, including PVC/steel back box with proper screws supply and fixing, supply and fixing.', quantity: 2.0, unit: nos, sheet: Electric finishes, rows: '34', reason: no catalogue item has the words of this line}
+  - {qs_line: 1 x Spare, quantity: 1.0, unit: nos, sheet: Electric finishes, rows: '60', reason: no catalogue item has the words of this line}
+  - {qs_line: 18" Wall Barcket Fan, quantity: 2.0, unit: nos, sheet: Electric finishes, rows: '17', reason: no catalogue item has the words of this line}
+  - {qs_line: 1x provision of spaces for future., quantity: 1.0, unit: nos, sheet: Electric finishes, rows: '74', reason: no catalogue item has the words of this line}
+  - {qs_line: 2 Gang + Dimer Sheet, quantity: 1.0, unit: nos, sheet: Electric finishes, rows: '32', reason: no catalogue item has the words of this line}
+  - {qs_line: 6 Gang Sheet, quantity: 4.0, unit: nos, sheet: Electric finishes, rows: '33', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Add for each additional light point on same switch circuit/additional circuit, for one bell point controlled by more than one push switch, wiring complete with PVC single core cable 1.5 mm,2 in Concealed PVC conduit, stove enamelled, supply and fixing.', quantity: 35.0, unit: nos, sheet: Electric finishes, rows: '7', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Bell, push, Double 10 A, 250 V, gang type, supply and fixing.', quantity: 1.0, unit: nos, sheet: Electric finishes, rows: '35', reason: no catalogue item has the words of this line}
+  - {qs_line: Boundary wall Light Ip65, quantity: 5.0, unit: nos, sheet: Electric finishes, rows: '93', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Cable 4 core PVC insulated cable complete, (excluding of conduit) 16 mm2.', quantity: 4.0, unit: m, sheet: Electric finishes, rows: '22', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Cable unsheathed for earth continuity conductor 1.5 mm2 used for 15 A socket outlet points, , in Concealed or Surface conduit, but without conduit, supply and fixing.', quantity: 205.0, unit: m, sheet: Electric finishes, rows: '12', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Cable unsheathed for earth continuity conductor 2.5 mm2 used for 13-15A socket outlet points, but without conduit, supply and fixing.', quantity: 150.0, unit: m, sheet: Electric finishes, rows: '11', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Ceiling mounted 12 watt LED Light, 4000K', quantity: 8.0, unit: nos, sheet: Electric finishes, rows: '87', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Electric bell, AC/DC, Bakelite case, pressed iron frame, steel contact spring and nickel plated brass contact pillars both having silver contact points round and nickel / CP steel gong, supply and fixing.', quantity: 2.0, unit: nos, sheet: Electric finishes, rows: '15', reason: no catalogue item has the words of this line}
+  - {qs_line: Façade lights recessed/ surface 6 watt 4000k, quantity: 6.0, unit: nos, sheet: Electric finishes, rows: '92', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Fan electric, AC. Exhaust fresh air copper winding circulation (double way), 220/230 V, SP, 50 cycle, having plastic frame, body and blades, complete with cord operated switch shutter and fixing screw 150 cm Pak made, supply and fixing.', quantity: 4.0, unit: nos, sheet: Electric finishes, rows: '24', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Fan electric, AC. Exhaust fresh air copper winding circulation (double way), 220/230 V, SP, 50 cycle, having plastic frame, body and blades, complete with cord operated switch shutter and fixing screw 25 cm Pak made, supply and fixing.', quantity: 8.0, unit: nos, sheet: Electric finishes, rows: '23', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Fan electric with blades, canopy and rod ind connection, provision of cable and ceiling rose, for fan 140 cm sweep, without regulator (Deluxe Model), supply and fixing.', quantity: 9.0, unit: nos, sheet: Electric finishes, rows: '16', reason: no catalogue item has the words of this line}
+  - {qs_line: Gate Light with 24 Watt LED Light, quantity: 2.0, unit: nos, sheet: Electric finishes, rows: '91', reason: no catalogue item has the words of this line}
+  - {qs_line: Labour Cost (60% for Finishes Work), quantity: 2526.0, unit: sft, sheet: Electric finishes, rows: '97', reason: no catalogue item has the words of this line}
+  - {qs_line: Meter Box IP 65 wall/Sufrace Mounted 24"*18" with necessary arrangents for meter hangfing powder coated, quantity: 1.0, unit: nos, sheet: Electric finishes, rows: '39', reason: no catalogue item has the words of this line}
+  - {qs_line: Mirror Light 9 Watt, quantity: 5.0, unit: nos, sheet: Electric finishes, rows: '89', reason: no catalogue item has the words of this line}
+  - {qs_line: 'One fan point; one light point, one bell point, controlled by one switch, wiring complete, with PVC single core cable 1.5mm2, in Concealed PVC conduit, enamelled, supply and fixing.', quantity: 98.0, unit: nos, sheet: Electric finishes, rows: '6', reason: no catalogue item has the words of this line}
+  - {qs_line: 'One gang switch, 10A, 250V,including PVC/steel back box with proper screws supply and fixing, supply and fixing,', quantity: null, unit: nos, sheet: Electric finishes, rows: '26', reason: the workbook gives no quantity for this line}
+  - {qs_line: 'One light point controlled by two way switch. wiring complete with PVC single core cable 1.5mm2 But in Concealed PVC conduits, stove enamelled, supply and fixing.', quantity: 2.0, unit: nos, sheet: Electric finishes, rows: '8', reason: no catalogue item has the words of this line}
+  - {qs_line: 'PVC single core cable 2.5 mm2 in Concealed PVC conduit, supply and fixing. For Power and light cecuits', quantity: 750.0, unit: m, sheet: Electric finishes, rows: '9', reason: no catalogue item has the words of this line}
+  - {qs_line: 'PVC single core cable 4 mm2 in Concealed PVC conduit, supply and fixing. For Power and light cecuits', quantity: 495.0, unit: m, sheet: Electric finishes, rows: '10', reason: no catalogue item has the words of this line}
+  - {qs_line: Recessed Niche Light 3-5 Watt, quantity: 1.0, unit: nos, sheet: Electric finishes, rows: '94', reason: no catalogue item has the words of this line}
+  - {qs_line: S/C 10 mm² Pvc Cable Green, quantity: 4.0, unit: m, sheet: Electric finishes, rows: '20', reason: no catalogue item has the words of this line}
+  - {qs_line: S/C 16 mm² Pvc Cable Green, quantity: 9.0, unit: m, sheet: Electric finishes, rows: '21', reason: no catalogue item has the words of this line}
+  - {qs_line: Same as item 24-661 but 25 mm2 cable., quantity: 10.0, unit: m, sheet: Electric finishes, rows: '19', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Same as item 24-763, but 2 gang, 10A', quantity: 3.0, unit: nos, sheet: Electric finishes, rows: '27', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Same as item 24-763, but 2 gang+Socket, 10A', quantity: 3.0, unit: nos, sheet: Electric finishes, rows: '28', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Same as item 24-763, but 4 gang Small, 10A', quantity: 5.0, unit: nos, sheet: Electric finishes, rows: '29', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Same as item 24-763, but 4 gang+Dimer, 10 A.', quantity: 3.0, unit: nos, sheet: Electric finishes, rows: '30', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Same as item 24-763, but 6 gang+ Dimer, 10 A.', quantity: 6.0, unit: nos, sheet: Electric finishes, rows: '31', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Supply and wiring of CAT 6 UTP Cable in pre installed 1" PVC Pipe (Newage/3M/Schneider) complete in all respect NOTE: CCTV cable will lay individually NVR to camera, and testing cable should be approved by electrical Consultant. (Manufacturer: 3M)', quantity: 80.0, unit: m, sheet: Electric finishes, rows: '84', reason: no catalogue item has the words of this line}
+  - {qs_line: Supply & installation of 20 Amp Double Pole switch for Split AC, quantity: 9.0, unit: nos, sheet: Electric finishes, rows: '95', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Supply, installation, testing and commissioning of Optical Network Terminal (ONT) to be installed in each apartments for upper ground floor. Including cost of all necessary materials. Complete in all respects.', quantity: 1.0, unit: nos, sheet: Electric finishes, rows: '82', reason: no catalogue item has the words of this line}
+  - {qs_line: surface mounted light12 watt, quantity: 74.0, unit: nos, sheet: Electric finishes, rows: '88', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Switch SP socket out let 3 pin, 15A, shuttered pattern, mounted in Bakelite box complete, supply and fixing.', quantity: 9.0, unit: nos, sheet: Electric finishes, rows: '14', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Switch, SP, socket outlet 3 pin, 13A, Bakelite, shuttered pattern, complete, supply and fixing.', quantity: 45.0, unit: nos, sheet: Electric finishes, rows: '13', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Telephone socket shuttered, including PVC/steel back box with proper screws complete, supply and fixing', quantity: 8.0, unit: nos, sheet: Electric finishes, rows: '76', reason: no catalogue item has the words of this line}
+  - {qs_line: 'TV socket shuttered, including PVC/steel back box with proper screws complete, supply and fixing', quantity: 8.0, unit: nos, sheet: Electric finishes, rows: '79', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Wiring of TV Points with RG-7 co-axial cable from ONT to TV outlet in already installed PVC conduit, complete in all respect as per the specification and drawings and approval of the engineer.', quantity: 130.0, unit: m, sheet: Electric finishes, rows: '80', reason: no catalogue item has the words of this line}
+  - {qs_line: 'Wirring of Telephone / Wifi Access Points with UTP CAT. 6 cable in pre installed 20mm dia PVC conduit from ONT to telephone, Data Point with RJ-45 jack complete in all respects as per the specification or as approved by engineer.', quantity: 131.0, unit: m, sheet: Electric finishes, rows: '77', reason: no catalogue item has the words of this line}
+  - {qs_line: Bush Reducer uPVC 2"x1", quantity: 5.0, unit: nos, sheet: Plumbing Grey Work, rows: '80', reason: no catalogue item has the words of this line}
+  - {qs_line: Bush Reducer uPVC 4"x2", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '79', reason: no catalogue item has the words of this line}
+  - {qs_line: Dead plug PPRC 1/2", quantity: 47.0, unit: nos, sheet: Plumbing Grey Work, rows: '39', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow Grey 3/4'', quantity: 26.0, unit: nos, sheet: Plumbing Grey Work, rows: '88', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow PPRC 25 mm, quantity: 60.0, unit: nos, sheet: Plumbing Grey Work, rows: '10', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow PPRC 25 x1/2", quantity: 47.0, unit: nos, sheet: Plumbing Grey Work, rows: '16', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow PPRC 32 mm, quantity: 60.0, unit: nos, sheet: Plumbing Grey Work, rows: '11', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow PPRC 32mmx25mm, quantity: 14.0, unit: nos, sheet: Plumbing Grey Work, rows: '14', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow PPRC 40 mm, quantity: 5.0, unit: nos, sheet: Plumbing Grey Work, rows: '12', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow PPRC 50mm, quantity: 8.0, unit: nos, sheet: Plumbing Grey Work, rows: '13', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow uPVC 2" 45°, quantity: 11.0, unit: nos, sheet: Plumbing Grey Work, rows: '56', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow uPVC 2" 90°, quantity: 18.0, unit: nos, sheet: Plumbing Grey Work, rows: '55', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow uPVC 3" 45°, quantity: 12.0, unit: nos, sheet: Plumbing Grey Work, rows: '58', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow uPVC 3" 90°, quantity: 4.0, unit: nos, sheet: Plumbing Grey Work, rows: '57', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow uPVC 4" 45°, quantity: 9.0, unit: nos, sheet: Plumbing Grey Work, rows: '60', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow uPVC 4" 90°, quantity: 8.0, unit: nos, sheet: Plumbing Grey Work, rows: '59', reason: no catalogue item has the words of this line}
+  - {qs_line: Elbow uPVC 6" 45°, quantity: 0.0, unit: nos, sheet: Plumbing Grey Work, rows: '61', reason: no catalogue item has the words of this line}
+  - {qs_line: End cap PPRC 25mm, quantity: 6.0, unit: nos, sheet: Plumbing Grey Work, rows: '35', reason: no catalogue item has the words of this line}
+  - {qs_line: End cap PPRC 32mm, quantity: 4.0, unit: nos, sheet: Plumbing Grey Work, rows: '36', reason: no catalogue item has the words of this line}
+  - {qs_line: End cap PPRC 40mm, quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '37', reason: no catalogue item has the words of this line}
+  - {qs_line: End cap PPRC 50mm, quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '38', reason: no catalogue item has the words of this line}
+  - {qs_line: End Cap uPVC 2", quantity: 8.0, unit: nos, sheet: Plumbing Grey Work, rows: '75', reason: no catalogue item has the words of this line}
+  - {qs_line: End Cap uPVC 3", quantity: 5.0, unit: nos, sheet: Plumbing Grey Work, rows: '76', reason: no catalogue item has the words of this line}
+  - {qs_line: End Cap uPVC 4", quantity: 22.0, unit: nos, sheet: Plumbing Grey Work, rows: '77', reason: no catalogue item has the words of this line}
+  - {qs_line: Grey Pipe 3/4'', quantity: 234.0, unit: nos, sheet: Plumbing Grey Work, rows: '87', reason: no catalogue item has the words of this line}
+  - {qs_line: Hook M.S, quantity: 100.0, unit: nos, sheet: Plumbing Grey Work, rows: '40', reason: no catalogue item has the words of this line}
+  - {qs_line: Labour Plumbing Works Cover Area 50%, quantity: 2526.0, unit: sft, sheet: Plumbing Grey Work, rows: '91', reason: no catalogue item has the words of this line}
+  - {qs_line: Over Cross PPRC 25mm, quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '34', reason: no catalogue item has the words of this line}
+  - {qs_line: P Trap uPVC 3", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '71', reason: no catalogue item has the words of this line}
+  - {qs_line: P Trap uPVC 4", quantity: 5.0, unit: nos, sheet: Plumbing Grey Work, rows: '72', reason: no catalogue item has the words of this line}
+  - {qs_line: Pipe PPRC 25 mm, quantity: 220.0, unit: rft, sheet: Plumbing Grey Work, rows: '6', reason: no catalogue item has the words of this line}
+  - {qs_line: Pipe PPRC 32 mm, quantity: 495.0, unit: rft, sheet: Plumbing Grey Work, rows: '7', reason: no catalogue item has the words of this line}
+  - {qs_line: Pipe PPRC 40 mm, quantity: 78.0, unit: rft, sheet: Plumbing Grey Work, rows: '8', reason: no catalogue item has the words of this line}
+  - {qs_line: Pipe PPRC 50 mm, quantity: 104.0, unit: rft, sheet: Plumbing Grey Work, rows: '9', reason: no catalogue item has the words of this line}
+  - {qs_line: Plug Elbow uPVC 3", quantity: 4.0, unit: nos, sheet: Plumbing Grey Work, rows: '62', reason: no catalogue item has the words of this line}
+  - {qs_line: Plug Elbow uPVC 4", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '63', reason: no catalogue item has the words of this line}
+  - {qs_line: Plug Tee 3", quantity: 0.0, unit: nos, sheet: Plumbing Grey Work, rows: '69', reason: no catalogue item has the words of this line}
+  - {qs_line: Plug Tee 4", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '70', reason: no catalogue item has the words of this line}
+  - {qs_line: Rawle Plug uPVC 1.1/2", quantity: 100.0, unit: nos, sheet: Plumbing Grey Work, rows: '85', reason: no catalogue item has the words of this line}
+  - {qs_line: Reducer Elbow PPRC 32mmx40mm, quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '15', reason: no catalogue item has the words of this line}
+  - {qs_line: Reducer Socket 32mmx40mm, quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '42', reason: no catalogue item has the words of this line}
+  - {qs_line: Sadle Clump 4'' x 1'', quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '47', reason: no catalogue item has the words of this line}
+  - {qs_line: Screw S/S 1.1/2'', quantity: 100.0, unit: nos, sheet: Plumbing Grey Work, rows: '86', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 25mm, quantity: 7.0, unit: nos, sheet: Plumbing Grey Work, rows: '17', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 25mmx1/2", quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '26', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 32mm, quantity: 20.0, unit: nos, sheet: Plumbing Grey Work, rows: '18', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 32mmx1", quantity: 4.0, unit: nos, sheet: Plumbing Grey Work, rows: '27', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 32mmx3/4", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '41', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 32x25mm, quantity: 5.0, unit: nos, sheet: Plumbing Grey Work, rows: '21', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 40mm, quantity: 5.0, unit: nos, sheet: Plumbing Grey Work, rows: '19', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 40x32mm, quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '22', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 50mm, quantity: 3.0, unit: nos, sheet: Plumbing Grey Work, rows: '20', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 50mm x 1.1/2", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '24', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 50x32mm, quantity: 4.0, unit: nos, sheet: Plumbing Grey Work, rows: '23', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket PPRC 50x40mm, quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '25', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket uPVC 2", quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '64', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket uPVC 3", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '65', reason: no catalogue item has the words of this line}
+  - {qs_line: Socket uPVC 4", quantity: 3.0, unit: nos, sheet: Plumbing Grey Work, rows: '66', reason: no catalogue item has the words of this line}
+  - {qs_line: Solvent Solution 500 ML, quantity: 8.0, unit: ten, sheet: Plumbing Grey Work, rows: '81', reason: no catalogue item has the words of this line}
+  - {qs_line: Steel Clump 2", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '84', reason: no catalogue item has the words of this line}
+  - {qs_line: Steel Clump 3", quantity: 4.0, unit: nos, sheet: Plumbing Grey Work, rows: '83', reason: no catalogue item has the words of this line}
+  - {qs_line: Steel Clump 4", quantity: 4.0, unit: nos, sheet: Plumbing Grey Work, rows: '82', reason: no catalogue item has the words of this line}
+  - {qs_line: Tee PPRC 25mm, quantity: 28.0, unit: nos, sheet: Plumbing Grey Work, rows: '29', reason: no catalogue item has the words of this line}
+  - {qs_line: Tee PPRC 25x1/2", quantity: 0.0, unit: nos, sheet: Plumbing Grey Work, rows: '28', reason: no catalogue item has the words of this line}
+  - {qs_line: Tee PPRC 32mm, quantity: 10.0, unit: nos, sheet: Plumbing Grey Work, rows: '30', reason: no catalogue item has the words of this line}
+  - {qs_line: Tee PPRC 32x25mm, quantity: 16.0, unit: nos, sheet: Plumbing Grey Work, rows: '33', reason: no catalogue item has the words of this line}
+  - {qs_line: Tee PPRC 50mm, quantity: 3.0, unit: nos, sheet: Plumbing Grey Work, rows: '31', reason: no catalogue item has the words of this line}
+  - {qs_line: Tee PPRC 50x32mm, quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '32', reason: no catalogue item has the words of this line}
+  - {qs_line: Tee uPVC 2", quantity: 1.0, unit: nos, sheet: Plumbing Grey Work, rows: '73', reason: no catalogue item has the words of this line}
+  - {qs_line: Union 32mm, quantity: 3.0, unit: nos, sheet: Plumbing Grey Work, rows: '43', reason: no catalogue item has the words of this line}
+  - {qs_line: Union 50mm, quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '44', reason: no catalogue item has the words of this line}
+  - {qs_line: Valve Socket 1'' x 1'' Grey, quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '48', reason: no catalogue item has the words of this line}
+  - {qs_line: Vent Cowel 2", quantity: 2.0, unit: nos, sheet: Plumbing Grey Work, rows: '78', reason: no catalogue item has the words of this line}
+  - {qs_line: Yee Tee 3", quantity: 7.0, unit: nos, sheet: Plumbing Grey Work, rows: '68', reason: no catalogue item has the words of this line}
+  - {qs_line: Yee Tee 4", quantity: 3.0, unit: nos, sheet: Plumbing Grey Work, rows: '67', reason: no catalogue item has the words of this line}
+  - {qs_line: Basen Bolt Kit, quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '35', reason: no catalogue item has the words of this line}
+  - {qs_line: Basin Mixture, quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '17', reason: no catalogue item has the words of this line}
+  - {qs_line: Bath Accessory Set, quantity: 5.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '25', reason: no catalogue item has the words of this line}
+  - {qs_line: Bolt Kit for Commode Hanging, quantity: 5.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '33', reason: no catalogue item has the words of this line}
+  - {qs_line: Bottle Trap, quantity: 5.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '18', reason: no catalogue item has the words of this line}
+  - {qs_line: Commode English, quantity: 5.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '9', reason: no catalogue item has the words of this line}
+  - {qs_line: Concealed Tank, quantity: 5.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '6', reason: no catalogue item has the words of this line}
+  - {qs_line: Connection Pipe 1/2''x1/2''x 6'', quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '38', reason: no catalogue item has the words of this line}
+  - {qs_line: Connection Pipe 24'', quantity: 5.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '37', reason: no catalogue item has the words of this line}
+  - {qs_line: CP Cup, quantity: 0.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '29', reason: no catalogue item has the words of this line}
+  - {qs_line: CP Nozzle 1", quantity: 20.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '22', reason: no catalogue item has the words of this line}
+  - {qs_line: CP Nozzle 1-1/2", quantity: 20.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '23', reason: no catalogue item has the words of this line}
+  - {qs_line: CP Nozzle 2", quantity: 3.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '24', reason: no catalogue item has the words of this line}
+  - {qs_line: Double Bib Cock, quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '12', reason: no catalogue item has the words of this line}
+  - {qs_line: Drain Installation 6"x6", quantity: 15.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '27', reason: no catalogue item has the words of this line}
+  - {qs_line: Flush Tank, quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '28', reason: no catalogue item has the words of this line}
+  - {qs_line: Hockey Pipe, quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '36', reason: no catalogue item has the words of this line}
+  - {qs_line: Labour Plumbing Works Cover Area 50%, quantity: 2526.0, unit: sft, sheet: 'Plumbing in Finishing ', rows: '41', reason: no catalogue item has the words of this line}
+  - {qs_line: Looking Mirror, quantity: 5.0, unit: sft, sheet: 'Plumbing in Finishing ', rows: '26', reason: no catalogue item has the words of this line}
+  - {qs_line: Main hole Cover uPVC 1' x 1', quantity: 2.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '31', reason: no catalogue item has the words of this line}
+  - {qs_line: Main hole Cover uPVC 1'-6'' X 1'-6'', quantity: 5.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '30', reason: no catalogue item has the words of this line}
+  - {qs_line: Seat Cover, quantity: 5.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '32', reason: no catalogue item has the words of this line}
+  - {qs_line: Silicon, quantity: 8.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '39', reason: no catalogue item has the words of this line}
+  - {qs_line: Single Bib Cock, quantity: 3.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '14', reason: no catalogue item has the words of this line}
+  - {qs_line: Sink Bowl, quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '20', reason: no catalogue item has the words of this line}
+  - {qs_line: Sink Mixture, quantity: 2.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '19', reason: no catalogue item has the words of this line}
+  - {qs_line: Submersible Pump 0.75 KV, quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '34', reason: no catalogue item has the words of this line}
+  - {qs_line: Tee Cock, quantity: 9.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '11', reason: no catalogue item has the words of this line}
+  - {qs_line: Teflon, quantity: 25.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '40', reason: no catalogue item has the words of this line}
+  - {qs_line: Waste Pipe With Coupling, quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '15', reason: no catalogue item has the words of this line}
+  - {qs_line: WC (Indian), quantity: 1.0, unit: nos, sheet: 'Plumbing in Finishing ', rows: '10', reason: no catalogue item has the words of this line}

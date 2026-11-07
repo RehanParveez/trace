@@ -1,0 +1,687 @@
+qs: plot1
+workbook: BOQ_Worksheet_Map.xlsx
+how_to: 'For each entry set confirmed: true when the element is right, or write the right element id (and confirmed: true), or write skip: true with a note when the line is not a catalogue item. Then run: python -m app.modules.drawings_boq.takeoff.proof.answers.qs_map fold plot1'
+mappings:
+- key: brick work
+  qs_line: Brick Work | Building inner Portion
+  sheets:
+  - Brick Work
+  rows: 145
+  quantity:
+    cft: 5423.4308
+  mapped_by: CATALOGUE
+  element: EW-16
+  name: Brick masonry in foundation (steps)
+  candidates:
+  - EW-16 Brick masonry in foundation (steps)
+  - MS-01 Brickwork 13½" and 9" walls, superstructure, per floor
+  - MS-03 Brickwork in substructure (plinth walls)
+  - MS-04 Brickwork in boundary wall
+  - MS-05 Brickwork in parapet
+  - MS-06 Brickwork in mumty
+  reason: null
+  confirmed: false
+- key: plaster
+  qs_line: PLASTER | Building outer Portion
+  sheets:
+  - Plaster
+  rows: 125
+  quantity:
+    sft: 15416.1377
+  mapped_by: CATALOGUE
+  element: PL-01
+  name: Cement plaster inside walls (½", 1:4 or 1:6)
+  candidates:
+  - PL-01 Cement plaster inside walls (½", 1:4 or 1:6)
+  - PL-02 Cement plaster outside walls (¾")
+  - PL-03 Ceiling plaster (⅜", 1:4)
+  - 'EX-01 Boundary wall: footing, brick, RCC columns, coping, plaster, paint'
+  - PL-04 Plaster on columns and beams (exposed RCC)
+  - PL-05 Plaster on boundary wall and parapet
+  reason: null
+  confirmed: false
+- key: rcc
+  qs_line: RCC | FOOTING
+  sheets:
+  - Concrete Work
+  rows: 98
+  quantity:
+    cft: 5311.137
+  mapped_by: CATALOGUE
+  element: RC-01
+  name: RCC isolated footings (pads)
+  candidates:
+  - RC-01 RCC isolated footings (pads)
+  - RC-02 RCC strip or wall footings
+  - RC-06 RCC plinth beam (grade beam, DPC beam)
+  - RC-07 RCC columns (by floor)
+  - RC-08 RCC column necks (footing to plinth)
+  - RC-09 RCC beams (by floor)
+  reason: null
+  confirmed: false
+- key: form work
+  qs_line: FORM WORK | FOOTING
+  sheets:
+  - Form Work
+  rows: 96
+  quantity:
+    sft: 4331.3257
+    cft: 3696.0
+  mapped_by: CATALOGUE
+  element: RF-06
+  name: 'Formwork or shuttering: footings'
+  candidates:
+  - 'RF-06 Formwork or shuttering: footings'
+  reason: null
+  confirmed: false
+- key: plaster ceiling/roof plaster
+  qs_line: PLASTER | Ceiling/Roof Plaster
+  sheets:
+  - Plaster
+  rows: 29
+  quantity:
+    sft: 4285.1628
+  mapped_by: CATALOGUE
+  element: PL-03
+  name: Ceiling plaster (⅜", 1:4)
+  candidates:
+  - PL-03 Ceiling plaster (⅜", 1:4)
+  reason: null
+  confirmed: false
+- key: termite
+  qs_line: Termite | Building outer Portion
+  sheets:
+  - Termite
+  rows: 29
+  quantity:
+    sft: 2214.1017
+  mapped_by: CATALOGUE
+  element: DP-04
+  name: Anti-termite treatment
+  candidates:
+  - DP-04 Anti-termite treatment
+  reason: null
+  confirmed: false
+- key: pcc/kacha on floor
+  qs_line: PCC/KACHA ON FLOOR
+  sheets:
+  - Kacha on Floor
+  rows: 27
+  quantity:
+    sft: 4060.2532
+  mapped_by: CATALOGUE
+  element: EW-15
+  name: Kacha (rammed earth, brick ballast) under floors
+  candidates:
+  - EW-15 Kacha (rammed earth, brick ballast) under floors
+  - EW-14 PCC under floors (e.g. 1:2:4 or 1:4:8)
+  reason: null
+  confirmed: false
+- key: pcc 1:4:8
+  qs_line: PCC 1:4:8 | Building outer Portion
+  sheets:
+  - PCC 1;4;8
+  rows: 23
+  quantity:
+    cft: 325.9332
+  mapped_by: CATALOGUE
+  element: EW-13
+  name: PCC under footings (lean, e.g. 1:4:8 or 1:6:12)
+  candidates:
+  - EW-13 PCC under footings (lean, e.g. 1:4:8 or 1:6:12)
+  - EW-14 PCC under floors (e.g. 1:2:4 or 1:4:8)
+  reason: null
+  confirmed: false
+- key: excavation
+  qs_line: Excavation
+  sheets:
+  - Excavation
+  rows: 22
+  quantity:
+    cft: 16766.1705
+  mapped_by: CATALOGUE
+  element: EW-02
+  name: Excavation for foundations (trench and pit)
+  candidates:
+  - EW-02 Excavation for foundations (trench and pit)
+  - EW-03 Bulk excavation for basement
+  - EW-04 Excavation for tanks, septic, soakage
+  - EW-05 Excavation in hard soil or rock
+  reason: null
+  confirmed: false
+- key: lintels first floor
+  qs_line: LINTELS (FIRST FLOOR) | B.F (upto 4')
+  sheets:
+  - Lintels_F.F
+  - Lintels_R.F
+  rows: 21
+  quantity:
+    kg: 316.1185
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: one layer of 3mm thick torch applied + bituminous membrane applied as per manufacturers specifications typ.
+  qs_line: ONE LAYER OF 3MM THICK TORCH APPLIED + BITUMINOUS MEMBRANE APPLIED AS PER MANUFACTURER'S SPECIFICATIONS(TYP.) | Building outer Portion
+  sheets:
+  - Membrane
+  rows: 20
+  quantity:
+    sft: 2254.505
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: aluminium windows ventilators
+  qs_line: Aluminium Windows & Ventilators
+  sheets:
+  - WIndows & Vent.
+  rows: 19
+  quantity:
+    sft: 661.625
+  mapped_by: CATALOGUE
+  element: DW-05
+  name: Aluminium windows (sliding, casement) with glass
+  candidates:
+  - DW-05 Aluminium windows (sliding, casement) with glass
+  reason: null
+  confirmed: false
+- key: footing columns basement
+  qs_line: FOOTING & COLUMNS (BASEMENT) | F-1
+  sheets:
+  - Footing & Column_B.F
+  rows: 18
+  quantity:
+    kg: 963.3452
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: door frames
+  qs_line: Door Frames
+  sheets:
+  - Door Frames
+  rows: 12
+  quantity:
+    sft: 336.376
+  mapped_by: CATALOGUE
+  element: DW-01
+  name: 'Door frames: wood (deodar, partal) or MS pressed steel'
+  candidates:
+  - 'DW-01 Door frames: wood (deodar, partal) or MS pressed steel'
+  reason: null
+  confirmed: false
+- key: lintels basement
+  qs_line: LINTELS (BASEMENT) | B.F (upto 4')
+  sheets:
+  - Lintels_B.F
+  rows: 12
+  quantity:
+    kg: 164.3791
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: lintels ground floor
+  qs_line: LINTELS (GROUND FLOOR) | B.F (upto 4')
+  sheets:
+  - Lintels_G.F
+  rows: 12
+  quantity:
+    kg: 228.5023
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: rcc staircase
+  qs_line: RCC | STAIRCASE
+  sheets:
+  - Concrete Work
+  rows: 12
+  quantity:
+    cft: 121.638
+  mapped_by: CATALOGUE
+  element: RC-17
+  name: RCC stair (waist, steps, landings)
+  candidates:
+  - RC-17 RCC stair (waist, steps, landings)
+  reason: null
+  confirmed: false
+- key: roof beams first floor
+  qs_line: ROOF BEAMS (FIRST FLOOR) | Roof Beam 9" at External
+  sheets:
+  - Beams_F.F
+  - Beams_R.F
+  rows: 12
+  quantity:
+    kg: 1629.5049
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: form work roof beams
+  qs_line: FORM WORK | ROOF BEAMS
+  sheets:
+  - Form Work
+  rows: 11
+  quantity:
+    sft: 256.053
+  mapped_by: CATALOGUE
+  element: RF-08
+  name: 'Formwork: beams'
+  candidates:
+  - 'RF-08 Formwork: beams'
+  reason: null
+  confirmed: false
+- key: plinth beam
+  qs_line: PLINTH BEAM | Building inner Portion
+  sheets:
+  - Plinth Beam
+  rows: 11
+  quantity:
+    cft: 141.93
+  mapped_by: CATALOGUE
+  element: RC-06
+  name: RCC plinth beam (grade beam, DPC beam)
+  candidates:
+  - RC-06 RCC plinth beam (grade beam, DPC beam)
+  reason: null
+  confirmed: false
+- key: schedule of doors doors
+  qs_line: Schedule of Doors | Doors
+  sheets:
+  - Doors
+  rows: 9
+  quantity:
+    sft: 493.5
+  mapped_by: CATALOGUE
+  element: DW-02
+  name: 'Door shutters: solid wood, flush, panel'
+  candidates:
+  - 'DW-02 Door shutters: solid wood, flush, panel'
+  - FL-11 Door thresholds and water stoppers
+  - DW-18 Sheet doors (store, mumty)
+  - PL-17 Enamel paint on doors, windows, grills
+  - DW-24 Steel grated and security doors
+  - DW-25 Frameless and automatic glass doors
+  reason: null
+  confirmed: false
+- key: form work lintels
+  qs_line: FORM WORK | LINTELS
+  sheets:
+  - Form Work
+  rows: 8
+  quantity:
+    sft: 81.5
+  mapped_by: CATALOGUE
+  element: RC-13
+  name: RCC lintels
+  candidates:
+  - RC-13 RCC lintels
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: form work staircase
+  qs_line: FORM WORK | STAIRCASE
+  sheets:
+  - Form Work
+  rows: 8
+  quantity:
+    sft: 78.1675
+  mapped_by: CATALOGUE
+  element: RF-10
+  name: 'Formwork: stair, tanks, walls'
+  candidates:
+  - 'RF-10 Formwork: stair, tanks, walls'
+  reason: null
+  confirmed: false
+- key: rcc lintels
+  qs_line: RCC | LINTELS
+  sheets:
+  - Concrete Work
+  rows: 8
+  quantity:
+    cft: 30.563
+  mapped_by: CATALOGUE
+  element: RC-13
+  name: RCC lintels
+  candidates:
+  - RC-13 RCC lintels
+  reason: null
+  confirmed: false
+- key: roof treatment
+  qs_line: ROOF TREATMENT
+  sheets:
+  - ROOF TREATMENT
+  rows: 7
+  quantity:
+    sft: 1982.754
+  mapped_by: CATALOGUE
+  element: DP-09
+  name: 'Roof treatment: mud and tiles (traditional)'
+  candidates:
+  - 'DP-09 Roof treatment: mud and tiles (traditional)'
+  - 'DP-10 Roof treatment: brick-bat coba, screed to slope'
+  - FL-16 Rooftop tiles (on roof treatment)
+  reason: null
+  confirmed: false
+- key: columns g.f
+  qs_line: COLUMNS (G.F) | C-1 (Upto G.S)
+  sheets:
+  - Columns_G.F
+  rows: 6
+  quantity:
+    kg: 670.4795
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: rcc wall
+  qs_line: RCC WALL | RETAINING WALL
+  sheets:
+  - RCC WALL
+  rows: 6
+  quantity:
+    kg: 10419.7595
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: roof beams ground floor
+  qs_line: ROOF BEAMS (GROUND FLOOR) | Roof Beam 9" at External
+  sheets:
+  - Beams_G.F
+  rows: 6
+  quantity:
+    kg: 1171.8975
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: ohwt
+  qs_line: OHWT | WALLS
+  sheets:
+  - OHWT
+  rows: 5
+  quantity:
+    kg: 310.6606
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: columns f.f
+  qs_line: COLUMNS (F.F) | C-1 (Upto FS)
+  sheets:
+  - Columns_F.F
+  rows: 4
+  quantity:
+    kg: 454.265
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: form work columns
+  qs_line: FORM WORK | COLUMNS
+  sheets:
+  - Form Work
+  rows: 4
+  quantity:
+    sft: 642.0
+  mapped_by: CATALOGUE
+  element: RF-07
+  name: 'Formwork: columns'
+  candidates:
+  - 'RF-07 Formwork: columns'
+  reason: null
+  confirmed: false
+- key: form work ohwt
+  qs_line: FORM WORK | OHWT
+  sheets:
+  - Form Work
+  rows: 4
+  quantity:
+    sft: 302.0
+  mapped_by: CATALOGUE
+  element: RC-18
+  name: 'RCC water tanks: OHWT, UGWT'
+  candidates:
+  - 'RC-18 RCC water tanks: OHWT, UGWT'
+  - 'DW-16 Tank covers: OHWT, UGWT, septic (MS or cast iron)'
+  reason: null
+  confirmed: false
+- key: form work ugwt
+  qs_line: FORM WORK | UGWT
+  sheets:
+  - Form Work
+  rows: 4
+  quantity:
+    sft: 302.0
+  mapped_by: CATALOGUE
+  element: RC-18
+  name: 'RCC water tanks: OHWT, UGWT'
+  candidates:
+  - 'RC-18 RCC water tanks: OHWT, UGWT'
+  - 'DW-16 Tank covers: OHWT, UGWT, septic (MS or cast iron)'
+  reason: null
+  confirmed: false
+- key: rcc ohwt
+  qs_line: RCC | OHWT
+  sheets:
+  - Concrete Work
+  rows: 4
+  quantity:
+    cft: 93.5
+  mapped_by: CATALOGUE
+  element: RC-18
+  name: 'RCC water tanks: OHWT, UGWT'
+  candidates:
+  - 'RC-18 RCC water tanks: OHWT, UGWT'
+  reason: null
+  confirmed: false
+- key: rcc ugwt
+  qs_line: RCC | UGWT
+  sheets:
+  - Concrete Work
+  rows: 4
+  quantity:
+    cft: 93.5
+  mapped_by: CATALOGUE
+  element: RC-18
+  name: 'RCC water tanks: OHWT, UGWT'
+  candidates:
+  - 'RC-18 RCC water tanks: OHWT, UGWT'
+  reason: null
+  confirmed: false
+- key: ugwt
+  qs_line: UGWT | WALLS
+  sheets:
+  - UGWT
+  rows: 4
+  quantity:
+    kg: 227.2333
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: form work neck columns
+  qs_line: FORM WORK | NECK COLUMNS
+  sheets:
+  - Form Work
+  rows: 3
+  quantity:
+    sft: 194.25
+  mapped_by: CATALOGUE
+  element: RC-08
+  name: RCC column necks (footing to plinth)
+  candidates:
+  - RC-08 RCC column necks (footing to plinth)
+  - 'RF-07 Formwork: columns'
+  reason: null
+  confirmed: false
+- key: form work slab
+  qs_line: FORM WORK | SLAB
+  sheets:
+  - Form Work
+  rows: 3
+  quantity:
+    sft: 3851.739
+  mapped_by: CATALOGUE
+  element: RF-09
+  name: 'Formwork: slabs (soffit and edges)'
+  candidates:
+  - 'RF-09 Formwork: slabs (soffit and edges)'
+  reason: null
+  confirmed: false
+- key: plinth beams
+  qs_line: PLINTH BEAMS | Plinth Beam PB
+  sheets:
+  - Plinth Beams
+  rows: 3
+  quantity:
+    kg: 445.2829
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: rcc neck columns
+  qs_line: RCC | NECK COLUMNS
+  sheets:
+  - Concrete Work
+  rows: 3
+  quantity:
+    cft: 39.376
+  mapped_by: CATALOGUE
+  element: RC-08
+  name: RCC column necks (footing to plinth)
+  candidates:
+  - RC-08 RCC column necks (footing to plinth)
+  reason: null
+  confirmed: false
+- key: roof beams basement
+  qs_line: ROOF BEAMS (BASEMENT) | Roof Beam 9" at Mid
+  sheets:
+  - Beams_B.F
+  rows: 3
+  quantity:
+    kg: 644.7085
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: schedule of doors
+  qs_line: Schedule of Doors
+  sheets:
+  - Doors
+  rows: 3
+  quantity:
+    sft: 175.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: columns r.f
+  qs_line: COLUMNS (R.F) | C-1 (Upto R.S)
+  sheets:
+  - Columns_R.F
+  rows: 2
+  quantity:
+    kg: 112.005
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: ohwt bottom slab
+  qs_line: OHWT | BOTTOM SLAB
+  sheets:
+  - OHWT
+  rows: 2
+  quantity:
+    kg: 79.0485
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: ohwt top slab
+  qs_line: OHWT | TOP SLAB
+  sheets:
+  - OHWT
+  rows: 2
+  quantity:
+    kg: 22.2488
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false
+- key: rcc septic tank
+  qs_line: RCC | SEPTIC TANK
+  sheets:
+  - Concrete Work
+  rows: 2
+  quantity:
+    cft: 78.375
+  mapped_by: CATALOGUE
+  element: RC-19
+  name: RCC septic tank and soakage pit
+  candidates:
+  - RC-19 RCC septic tank and soakage pit
+  - PB-15 Septic tank (if not in RCC) and soakage pit
+  reason: null
+  confirmed: false
+- key: ugwt bottom slab
+  qs_line: UGWT | BOTTOM SLAB
+  sheets:
+  - UGWT
+  rows: 2
+  quantity:
+    kg: 49.13
+  mapped_by: CATALOGUE
+  element: RF-02
+  name: 'Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  candidates:
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  reason: null
+  confirmed: false

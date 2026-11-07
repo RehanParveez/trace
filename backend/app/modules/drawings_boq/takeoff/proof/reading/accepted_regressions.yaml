@@ -6,3 +6,7 @@
   reason: "The 191-C structure truth was not in the repo: the c0f63cff8577 folder held the architecture truth under the structure PDF's key. RP-1 moved that to 6fac7864791a and emptied this folder. RP-2 restores the structure truth from the staged files and takes this entry out."
 - id: "c0f63cff8577:EL:3:FOOTING_PAD:F2:1"
   reason: "The 191-C structure truth was not in the repo: the c0f63cff8577 folder held the architecture truth under the structure PDF's key. RP-1 moved that to 6fac7864791a and emptied this folder. RP-2 restores the structure truth from the staged files and takes this entry out."
+- id: "bef366df7f31:BBS:5:CUT_MISMATCH:F1:-"
+  reason: "Documented gap, not a regression of the reading: expected_findings.yaml of bbs_156 lists item 5 as not raised because the F1 strip length, width and bars were copied from the bar schedule under audit and BB-1 removed them; the footing section is not read (JOIN_MISSING). The item returns when the F1 figures are typed from the footing plan, and this entry is taken out then. The result is the same on the tree before RX-1."
+- id: "bef366df7f31:BBS:6:COUNT_MISMATCH:F1:-"
+  reason: "Documented gap, not a regression of the reading: expected_findings.yaml of bbs_156 lists item 6 as not raised because the F1 strip length, width and bars were copied from the bar schedule under audit and BB-1 removed them; the footing section is not read (JOIN_MISSING). The item returns when the F1 figures are typed from the footing plan, and this entry is taken out then. The result is the same on the tree before RX-1."

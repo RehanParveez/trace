@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import yaml
-from app.modules.drawings_boq.takeoff.proof.reading import adapter as AD
+from app.modules.drawings_boq.takeoff.run import reading_adapter as AD
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
 from app.modules.drawings_boq.takeoff.proof.reading import intake as IN
 from app.modules.drawings_boq.takeoff.proof.reading import profile as PR
@@ -13,7 +13,7 @@ from app.modules.drawings_boq.takeoff.proof.reading import score as SCR
 from app.modules.drawings_boq.takeoff.proof.reading import sets as S
 from app.modules.drawings_boq.takeoff.proof import case as CASE
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
-from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
+from app.modules.drawings_boq.takeoff.run import vocab as V
 
 def _pdf_facts(path: str) -> tuple:
   import pypdfium2 as pdfium

@@ -59,6 +59,13 @@ class Organization(TimestampMixin, Base):
     server_default="false",
   )
 
+  ai_consent: Mapped[str] = mapped_column(
+    String(8),
+    nullable=False,
+    default="OFF",
+    server_default="OFF",
+  )
+
   users: Mapped[list["User"]] = relationship(
     back_populates="organization",
     cascade="all, delete-orphan",

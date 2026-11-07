@@ -7,14 +7,14 @@ import os
 import re
 import sys
 import time
-from app.modules.drawings_boq.takeoff.proof import known_facts as KF
+from app.modules.drawings_boq.takeoff.run import known_facts as KF
 from app.modules.drawings_boq.takeoff.proof import fact_kinds as FK
 from app.modules.drawings_boq.lab import tolerances as T
 from app.modules.drawings_boq.takeoff.proof import offline_accept as OA
 from app.modules.drawings_boq.takeoff.proof import offline_run as OR
 from app.modules.drawings_boq.lab.aliases import KEY_LABEL, SOFTWARE_UNIT, bill_quantity, software_key
 from app.modules.drawings_boq.takeoff import stair_twins as ST
-from app.modules.drawings_boq.takeoff.proof import benchmark as BM
+from app.modules.drawings_boq.takeoff.run import reader as RDR
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.proof import levels as LV
 from app.modules.drawings_boq.takeoff.proof import convention_infer as CV
@@ -33,6 +33,7 @@ from app.modules.drawings_boq.takeoff.extract import safe as SF
 from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 from app.modules.drawings_boq.takeoff import register as RGS
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.proof.answers import answers as ANS
 
 SIZE_TOL_PCT = 2.0
 MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH, ALLOWANCE = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH", "ALLOWANCE"
@@ -56,7 +57,7 @@ def r3(v):
 CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
 
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels", "mark_join", "floor_copies", "tanks", "electrical", "dpc")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels", "mark_join", "floor_copies", "tanks", "electrical", "dpc", "answers")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
@@ -952,7 +953,7 @@ def robust_run(case: dict, files: dict, profile, rule_set, catalog, clean: dict,
   worst = max((v.get("worst_pct", 0.0) for v in out.values()), default=0.0)
   return {"move_pct": MOVE_PCT, "worst_pct": worst, "variants": out}
 
-def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only: bool = False, page_budget: float = BM.PAGE_BUDGET_S, reader=None, both: bool = True, rules: dict | None = None, keep: dict | None = None) -> tuple:
+def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only: bool = False, page_budget: float = RDR.PAGE_BUDGET_S, reader=None, both: bool = True, rules: dict | None = None, keep: dict | None = None) -> tuple:
   t0 = time.monotonic()
   reads, problems, timings = [], [], {}
   whole = None
@@ -962,7 +963,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     for name in case["pdfs"]:
       with open(files[name], "rb") as fh:
         blobs.append((name, fh.read()))
-    whole = {n: (r, pr) for n, r, pr in BM.read_set(blobs, budget_s=page_budget, storeys=case.get("storeys"), sections=case.get("sections"), rules=case.get("overrides"))}
+    whole = {n: (r, pr) for n, r, pr in RDR.read_set(blobs, budget_s=page_budget, storeys=case.get("storeys"), sections=case.get("sections"), rules=case.get("overrides"))}
     timings["read the set"] = round(time.monotonic() - t, 1)
   for name in case["pdfs"]:
     t = time.monotonic()
@@ -1084,6 +1085,9 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   ecov = ECV.view(accs)
   if ecov:
     doc["electrical"] = ecov
+  ans = answers_view(case, ledger, floor_all, catalog)
+  if ans:
+    doc["answers"] = ans
   view = stage_view(case, ledger, floor_all, catalog)
   if view:
     doc["stage_view"] = view
@@ -1108,6 +1112,18 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   doc["marks"] = _mark_lines(reads)
   timings["total"] = round(time.monotonic() - t0, 1)
   return doc, timings
+
+def answers_view(case: dict, ledger: list, floor_of: dict, catalog: dict) -> dict | None:
+  doc = ANS.load(case["folder"])
+  if not doc:
+    return None
+  
+  entries, no_number = ANS.entries_of(doc)
+  lines = trace_lines(ledger, floor_of, catalog, derive={e["family"] for e in entries if e.get("family")})
+  scored, _extra = score_lines(entries, lines)
+  out = ANS.view(doc, scored, entries, no_number)
+  out["problems"] = ANS.problems(doc)
+  return out
 
 def score_ledger(expected: list, ledger: list, accs: list, catalog: dict) -> list:
   floor_of: dict = {}
@@ -1256,6 +1272,11 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     out += [f"**Brick and plaster by stage** ({v['within_10']} of {v['of']} within 10% of the QS; not part of the hash)", "", "| Line | Floor | Stage | Unit | QS | Trace | Diff % | Stages found |", "|---|---|---|---|---|---|---|---|"]
     out += [f"| {l['key']} | {l['floor']} | {l['stage']} | {l['unit']} | {_fmt(l['qs'])} | {_fmt(l['trace'])} | {_fmt(l['diff_pct_qs'])} | {', '.join(l['stages'])} |" for l in v["lines"]]
     out += [""]
+  if doc.get("answers"):
+    a = doc["answers"]
+    out += [f"**Answers from the QS workbook** ({a['items']} items in {a['lines']} lines; {a['items_within_10']} items within 10%, {a['items_not_read']} NOT_READ, {a['items_no_trace_number']} with no Trace number; {a['items_unmapped_lines']} workbook lines unmapped; not part of the hash)", "", "| Line | Unit | QS workbook | Trace | Diff % | Status | Items |", "|---|---|---|---|---|---|---|"]
+    out += [f"| {l['key']} | {l['unit']} | {_fmt(l['qs'])} | {_fmt(l['trace'])} | {_fmt(l['diff_pct'])} | {l['status']} | {l['items']} |" for l in a["table"]]
+    out += [f"Problems in answers.yaml: {'; '.join(a['problems'])}" if a["problems"] else "", ""]
   if doc.get("other_policy") and doc["other_policy"]["summary"]:
     o = doc["other_policy"]["summary"]
     out += [f"Other policy ({doc['other_policy']['policy']}): {o['lines']} lines, {o['within_10']} within 10%, {o['within_5']} within 5% of the QS.", ""]
@@ -1341,7 +1362,7 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--ready-only", action="store_true", help="accept only what the Approve screen accepts by default (the other policy is still reported)")
   ap.add_argument("--baseline", help="a score.json (or the all.json of an earlier run) to compare with")
   ap.add_argument("--cases-dir", help=f"the folder with the PDFs (default: {CIO.CASES_DIR_ENV})")
-  ap.add_argument("--page-budget", type=float, default=BM.PAGE_BUDGET_S)
+  ap.add_argument("--page-budget", type=float, default=RDR.PAGE_BUDGET_S)
   ap.add_argument("--no-other", action="store_true", help="skip the second policy (faster)")
   ap.add_argument("--robust", action="store_true", help="read each case again with every sheet half and twice the size and turned a quarter, and record the worst move of any quantity")
   ap.add_argument("--seed-rules", action="store_true", help="ignore the company_rules of the cases and run on the seed rules alone")
@@ -1406,6 +1427,8 @@ def main(argv: list | None = None) -> int:
           json.dump(r3(body), fh, indent=1, sort_keys=True, ensure_ascii=False, default=str)
     s = doc["summary"]
     print(f"{name}: {s['lines']} lines, {s['within_10']} within 10%, {s['within_5']} within 5% of the QS as written, {d1_signed(doc)} within 2% of the signed figure; floor stages {stage_count(doc)}; invariants failing: {sum(1 for i in doc['invariants'] if i['status'] == 'FAIL')}; hash {doc['hash'][:16]}; {timings['total']} s")
+    if doc.get("answers"):
+      print(f"  {ANS.line_of(doc['answers'])}")
     print(f"  baseline: {pin_status(name, doc, pins)}")
     if args.pin_baseline or args.repin:
       pinned[name] = {"hash": doc["hash"][:16], "engine": str(doc.get("engine_digest") or "")[:16]}

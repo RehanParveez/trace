@@ -1,7 +1,5 @@
 from __future__ import annotations
-import dataclasses
 import datetime
-import enum
 import hashlib
 import json
 import math
@@ -9,12 +7,13 @@ import os
 import random
 import shutil
 import yaml
+from app.modules.drawings_boq.takeoff.run.plain import plain
 from app.modules.drawings_boq.takeoff.proof.reading import sets as S
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
-from app.modules.drawings_boq.takeoff.proof.reading import adapter as AD
+from app.modules.drawings_boq.takeoff.run import reading_adapter as AD
 from app.modules.drawings_boq.takeoff.proof import case as CASE
-from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
+from app.modules.drawings_boq.takeoff.run import vocab as V
 from app.modules.drawings_boq.takeoff.proof.reading import corpus as CP
 from app.modules.drawings_boq.takeoff.proof.reading import profile as PR
 
@@ -25,19 +24,6 @@ DEFAULT_TIER = "B"
 
 class Refused(Exception):
   pass
-
-def plain(v):
-  if isinstance(v, enum.Enum):
-    return v.value
-  if dataclasses.is_dataclass(v) and not isinstance(v, type):
-    return {k: plain(x) for k, x in ((f.name, getattr(v, f.name)) for f in dataclasses.fields(v))}
-  if isinstance(v, dict):
-    return {str(k): plain(x) for k, x in v.items()}
-  if isinstance(v, (list, tuple, set)):
-    return [plain(x) for x in v]
-  if v is None or isinstance(v, (str, int, float, bool)):
-    return v
-  return str(v)
 
 def digest_of(items: list) -> str:
   return hashlib.sha256(json.dumps(items, sort_keys=True).encode("utf-8")).hexdigest()

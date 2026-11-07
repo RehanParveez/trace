@@ -5,9 +5,8 @@ import json
 import os
 import sys
 import time
-
 from app.modules.drawings_boq.takeoff.proof import perturb as PB
-from app.modules.drawings_boq.takeoff.proof import readsummary as RS
+from app.modules.drawings_boq.takeoff.run import readsummary as RS
 
 def scan_copy(pdf: bytes, dpi: int = 150, skew_deg: float = 0.6, noise: float = 0.01, seed: int = 1) -> bytes:
   import numpy as np
@@ -134,7 +133,7 @@ def score(base_read: list, new_read: list) -> dict:
     "pages": len(b), "pages_changed": changed, "pages_silent": silent, "pages_unread": unread}
 
 def run(pdf: bytes, suite: tuple, pages: list | None = None, log=print, text: bool = False) -> dict:
-  from app.modules.drawings_boq.takeoff.proof.benchmark import read_pdf
+  from app.modules.drawings_boq.takeoff.run.reader import read_pdf
   t0 = time.monotonic()
   base, base_problems = read_pdf(pdf, pages)
   clean_words = words_of(pdf, pages) if text else None

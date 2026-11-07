@@ -16,6 +16,7 @@ CASES = HERE / "cases"
 ALLOW = HERE / "gate17_allow.yaml"
 ROOT = APP.parent.parent
 PROOF_PREFIX = "modules/drawings_boq/takeoff/proof/"
+PROMPT_PREFIX = "modules/drawings_boq/takeoff/ai_reader/prompts/"
 CODE_SUFFIXES = (".py",)
 DATA_SUFFIXES = (".yaml", ".yml")
 SKIP_DIRS = ("__pycache__", ".git", "node_modules")
@@ -156,6 +157,17 @@ def scan_data(path: pathlib.Path, names) -> list:
       hits.append({"path": rel, "line": i, "kind": "CASE_NAME", "text": line.strip()[:160]})
   return hits
 
+def scan_prompt(path: pathlib.Path, marks: set) -> list:
+  hits: list = []
+  if not marks:
+    return hits
+  body = re.compile(r"(?<![A-Za-z0-9])(?:" + "|".join(re.escape(m) for m in sorted(marks, key=len, reverse=True)) + r")(?![A-Za-z0-9])")
+  rel = _rel(path)
+  for i, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+    if body.search(line):
+      hits.append({"path": rel, "line": i, "kind": "SHEET_MARK", "text": line.strip()[:160]})
+  return hits
+
 def case_switch_hits() -> list:
   """A case folder may hold answers (decisions, storeys, sections, corrections, truth) and a proof-only override file, never a file or key that turns a reader on."""
   hits: list = []
@@ -244,6 +256,9 @@ def scan() -> dict:
   for path in _files(APP, DATA_SUFFIXES):
     if _outside_proof(path):
       hits.extend(scan_data(path, names))
+      if path.relative_to(APP).as_posix().startswith(PROMPT_PREFIX):
+        hits.extend(scan_prompt(path, marks))
+        
   hits.extend(case_switch_hits())
   hits.extend(registry_hits())
   hits.extend(convention_hits())
@@ -253,7 +268,7 @@ def scan() -> dict:
   for h in hits:
     unique.setdefault((h["path"], h["line"], h["kind"], h["text"]), h)
   for h in unique.values():
-    e = allowed(h, entries) if h["kind"] not in ("REGISTRY", "CASE_SWITCH", "CONVENTION_CONSTANT") else None
+    e = allowed(h, entries) if h["kind"] not in ("REGISTRY", "CASE_SWITCH", "CONVENTION_CONSTANT", "PROOF_IMPORT") else None
     (kept if e else open_hits).append({**h, "reason": e["reason"]} if e else h)
   used = {id(allowed(h, entries)) for h in kept}
   stale = [f"gate17_allow.yaml: {e['path']} pattern {e['pattern']!r} matches nothing" for e in entries if id(e) not in used]

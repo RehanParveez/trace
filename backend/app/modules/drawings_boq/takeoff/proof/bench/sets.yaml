@@ -1,0 +1,29 @@
+sets:
+  IsbP: {office: A}
+  bbs_156: {office: A, audit: true}
+  2053c: {office: B}
+  350c: {office: B}
+  925b: {office: B}
+  959n: {office: B}
+  201cd: {office: B}
+  909a: {office: B}
+  191c: {office: C}
+  plot1: {office: D}
+  652d: {office: E}
+section_groups:
+  structure:
+    - Earthwork and substructure
+    - Concrete and RCC members
+    - Reinforcement and formwork
+    - Masonry
+  architecture_and_services:
+    - Damp proofing, waterproofing, termite, insulation and roof
+    - Plaster, wall and ceiling finishes, paint
+    - Floors, skirting and stair finishes
+    - Doors, windows, glazing, railings and metalwork
+    - Kitchen, wardrobes, fixtures and joinery
+    - Plumbing, drainage, water supply and sanitary
+    - Electrical and low voltage
+    - Plaza and commercial additions
+    - External works
+    - Items that are not read from drawings

@@ -16,5 +16,8 @@ backend-lint:
 check:
 	cd backend && python scripts/check.py
 
+hooks:
+	git config core.hooksPath scripts/hooks
+
 db-migrate:
 	docker compose run --rm backend alembic upgrade head

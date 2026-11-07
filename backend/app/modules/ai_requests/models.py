@@ -2,6 +2,7 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, JSON, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -15,6 +16,11 @@ class AIRequestPurpose(str, enum.Enum):
   PHOTO_TAGGING = "PHOTO_TAGGING"
   PDF_SCHEDULE_EXTRACTION = "PDF_SCHEDULE_EXTRACTION"
   SHEET_CLASSIFICATION = "SHEET_CLASSIFICATION"
+  NOTE_FACT = "NOTE_FACT"
+  SCHEDULE_ROW = "SCHEDULE_ROW"
+  LEGEND_ENTRY = "LEGEND_ENTRY"
+  VOCAB = "VOCAB"
+  EXPLAIN = "EXPLAIN"
 
 class AIEntityType(str, enum.Enum):
   DRAWING_ELEMENT = "DRAWING_ELEMENT"
@@ -98,6 +104,16 @@ class AIRequest(Base):
   requested_by: Mapped[UUID | None] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+
+  input_tokens: Mapped[int | None] = mapped_column(
+    Integer,
+    nullable=True,
+  )
+
+  output_tokens: Mapped[int | None] = mapped_column(
+    Integer,
     nullable=True,
   )
 

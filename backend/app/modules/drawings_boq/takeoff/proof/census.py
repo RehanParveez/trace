@@ -7,7 +7,7 @@ from collections import Counter
 import yaml
 from app.modules.drawings_boq.takeoff.profile import convention as CVN
 from app.modules.drawings_boq.takeoff.profile import run as PRUN
-from app.modules.drawings_boq.takeoff.proof import completeness_run as CR
+from app.modules.drawings_boq.takeoff.run import completeness as CR
 from app.modules.drawings_boq.takeoff.proof.reading import sets as S
 
 HERE = os.path.dirname(os.path.abspath(__file__))

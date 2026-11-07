@@ -112,6 +112,10 @@ class OrganizationService:
     organization = await self.get_organization(organization_id)
     return organization.ai_enabled
 
+  async def get_ai_consent(self, organization_id: UUID) -> str:
+    organization = await self.get_organization(organization_id)
+    return organization.ai_consent
+
   async def update_ai_settings(
     self,
     organization_id: UUID,
@@ -128,17 +132,30 @@ class OrganizationService:
         code="ORGANIZATION_NOT_FOUND",
       )
 
-    organization.ai_enabled = payload.ai_enabled
+    if payload.ai_enabled is not None:
+      organization.ai_enabled = payload.ai_enabled
+    if payload.ai_consent is not None:
+      organization.ai_consent = payload.ai_consent
     await self.session.commit()
 
-    await self.audit.log(
-      organization_id,
-      actor_user_id,
-      AuditEntityType.ORGANIZATION,
-      organization_id,
-      AuditAction.UPDATE,
-      f"AI features {'enabled' if payload.ai_enabled else 'disabled'} for the organization",
-    )
+    if payload.ai_enabled is not None:
+      await self.audit.log(
+        organization_id,
+        actor_user_id,
+        AuditEntityType.ORGANIZATION,
+        organization_id,
+        AuditAction.UPDATE,
+        f"AI features {'enabled' if payload.ai_enabled else 'disabled'} for the organization",
+      )
+    if payload.ai_consent is not None:
+      await self.audit.log(
+        organization_id,
+        actor_user_id,
+        AuditEntityType.ORGANIZATION,
+        organization_id,
+        AuditAction.UPDATE,
+        f"AI consent set to {payload.ai_consent} for the organization",
+      )
 
     return organization.ai_enabled
 

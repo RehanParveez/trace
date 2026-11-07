@@ -17,7 +17,7 @@ from app.modules.drawings_boq.takeoff.extract import wall_steel as WST
 from app.modules.drawings_boq.takeoff.extract import electrical as EL
 from app.engine.measure import takeoff as tk
 from pydantic import ValidationError
-from app.modules.drawings_boq.takeoff.proof import benchmark as BM
+from app.modules.drawings_boq.takeoff.run import reader as RDR
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff import service as svc_mod
@@ -250,7 +250,7 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
   for pdf_name, rows in reads:
     drawing_id = uid(case, "drawing", pdf_name)
     out.drawings[drawing_id] = pdf_name
-    BM.choose_floor_sources(rows)
+    RDR.choose_floor_sources(rows)
     meta = PrepService.floor_heights_from([SimpleNamespace(page_no=r["page_no"], label=None, prep_meta=r.get("meta") or {}) for r in rows])
     SRS.apply(rows, meta["heights"])
     out.wall_steel.append({"drawing_id": drawing_id, **WST.apply(rows, C.note)})

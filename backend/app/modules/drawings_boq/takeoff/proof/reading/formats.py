@@ -4,7 +4,7 @@ import re
 import shutil
 import tempfile
 from dataclasses import dataclass, field
-from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
+from app.modules.drawings_boq.takeoff.run import vocab as V
 import yaml
 
 FILES = ("document.yaml", "register.yaml", "elements.yaml", "joins.yaml", "params.yaml", "truth_log.yaml")

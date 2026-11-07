@@ -179,3 +179,7 @@
   pack: RP-2
   note: 'redraft: 472 element row(s) added from Trace''s own read, every one truth.by DRAFT and source draft; they do not score until checked. Classes: BEAM 18, DISTRIBUTION_BOARD 1, DOOR 18, DRAIN_POINT
     16, ELECTRICAL_POINT 219, FINISH_LAYER 31, LINTEL_TYPE 44, PLINTH_BEAM 1, ROOM 25, SLAB_PANEL 9, STAIR 2, TANK 2, WALL 60, WINDOW 26. Existing rows were not changed.'
+- date: '2026-11-07'
+  by: claude_eye
+  pack: RX-1
+  note: 'RX-1: 7 element rows written for pages 10 and 11 (FOOTING_PAD 1, FOOTING_SECTION 3, COLUMN_SCHEDULE_CELL 3), read again on the page images, so the 4 joins of this set resolve. The RB-C4 log above says 163 rows were written for pages 2 to 13, but the tree held none of the structure rows (SLAB_BAR_CALLOUT 104, NOTE_FACT 22, BEAM_SECTION 20, FOOTING_SECTION 7, TANK 3, COLUMN_SCHEDULE_CELL 3, BOUNDARY_WALL 2, FOOTING_PAD 1) before this pack: the 237 rows of RB-C7 and the 472 draft rows of RP-2 are all it held. These 7 are not the whole of what was lost; the rest of pages 2 to 13 is still unwritten.'

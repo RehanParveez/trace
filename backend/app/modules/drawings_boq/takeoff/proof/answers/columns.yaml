@@ -1,0 +1,47 @@
+roles:
+  serial: ["sr", "sr no", "sr #", "s no", "sno", "serial", "serial no"]
+  description: ["description", "particulars", "item description"]
+  unit: ["unit", "units", "uom"]
+  count: ["no", "nos", "number"]
+  length: ["length", "len"]
+  width: ["width", "breadth"]
+  thick: ["thick", "thickness", "height", "h thick", "depth"]
+  quantity: ["total qty", "quantity", "qty", "total quantity", "total weight"]
+  remarks: ["remarks", "remark", "note", "notes"]
+item_markers: ["item", "job area"]
+units:
+  cft: ["cft", "cuft", "cu ft", "cubic feet"]
+  sft: ["sft", "sqft", "sq ft", "square feet"]
+  rft: ["rft", "running feet"]
+  m: ["m", "mtr", "meter", "metre", "rmt"]
+  kg: ["kg", "kgs"]
+  nos: ["nos", "no", "each", "pcs", "set", "sets"]
+  m3: ["m3", "cum", "cu m"]
+  m2: ["m2", "sqm", "sq m"]
+  ton: ["ton", "tons", "tonne"]
+  ls: ["ls", "lump sum"]
+floor_extra:
+  MF: ROOF
+  RF: ROOF
+  BF: BASEMENT
+  MUMTY: ROOF
+  MUMTYF: ROOF
+  TERRACE: ROOF
+others_words: ["others", "other"]
+stopwords: ["of", "in", "and", "for", "the", "to", "with", "at", "by", "on", "from", "work", "works", "rate", "complete", "all", "per", "as", "a", "an", "up", "upto", "including", "etc", "only", "nos", "no", "type", "size", "under", "over", "using", "using", "main", "building"]
+implied_by_unit:
+  weight: steel
+synonyms:
+  - {pattern: 'brick\s*work|brick\s*masonry|brickwork|masonry', to: "brickwork"}
+  - {pattern: '\bp\.?\s?c\.?\s?c\.?(?=\W|$)|\blean\b|plain\s*cement\s*concrete', to: "pcc"}
+  - {pattern: '\br\.?\s?c\.?\s?c\.?(?=\W|$)|reinforced\s*cement\s*concrete|reinforced\s*concrete', to: "rcc"}
+  - {pattern: 'anti[\s-]*termite|termite', to: "termite"}
+  - {pattern: 'footings?|foundations?', to: "foundation"}
+  - {pattern: 'bar\s*bending\s*schedule|reinforcement|reinforcing|\bsteel\b|\bbars\b', to: "steel"}
+  - {pattern: 'shuttering|form\s*work|formwork', to: "formwork"}
+  - {pattern: 'ventilators?|windows?', to: "window"}
+  - {pattern: 'door\s*frames?', to: "doorframe"}
+  - {pattern: 'membrane|polythene', to: "membrane"}
+  - {pattern: 'lintels?', to: "lintel"}
+  - {pattern: 'staircases?|stairs?', to: "stair"}
+  - {pattern: 'excavation|earth\s*work|digging', to: "excavation"}

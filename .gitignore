@@ -39,5 +39,10 @@ minio-data/
 
 # Generated
 score_out/
+bench_out/
 .claude_stage_*
 alembic/versions/*.pyc
+backend/celerybeat-schedule
+_claude_tmp/
+Claude outputs/
+*.tgz

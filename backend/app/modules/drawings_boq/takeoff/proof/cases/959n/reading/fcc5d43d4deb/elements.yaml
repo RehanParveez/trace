@@ -14672,3 +14672,200 @@
     source: draft
     date: '2026-11-05'
     note: Trace's own read (status READ), taken as a draft; not yet checked against the drawing
+- sheet: 10
+  class: FOOTING_PAD
+  mark: F1
+  at:
+    page_xy:
+    - 303.2
+    - 141.5
+  geom:
+    point:
+    - 303.2
+    - 141.5
+  attrs:
+    key: F1@p10
+    title: R.C.C PORCH COLUMN F1 FOOTING 9"X18"
+    size_printed: 5'-0" x 5'-0"
+    size_in:
+    - 60
+    - 60
+    position_is: caption label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_90dpi_and_text_layer
+    date: '2026-11-07'
+    note: RB-C4 wrote this mark for the joins of this set but the row is not in the tree; read again on page 10.
+- sheet: 10
+  class: FOOTING_SECTION
+  mark: F1
+  at:
+    page_xy:
+    - 307.2
+    - 356.8
+  geom:
+    point:
+    - 307.2
+    - 356.8
+  attrs:
+    key: F1-section@p10
+    title: SECTION AT 1-1
+    bars: '#4@6"c/c b/w'
+    pcc_in: 6
+    pcc_mix: '1:4:8'
+    concrete_mix: 1:1½:3
+    printed_dims:
+    - 5'-0"
+    - 2'-6"
+    - 9"
+    - 6"
+    - 6"
+    position_is: caption label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_90dpi_and_text_layer
+    date: '2026-11-07'
+- sheet: 10
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-1
+  at:
+    page_xy:
+    - 243.3
+    - 694.7
+  geom:
+    point:
+    - 243.3
+    - 694.7
+  attrs:
+    key: C-1@p10
+    size_mm:
+    - 304.8
+    - 457.2
+    bar_count: 10
+    bars: 4#6+6#4
+    ring: '#3@8"c/c'
+    concrete_mix: 1:1½:3
+    position_is: caption label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_90dpi_and_text_layer
+    date: '2026-11-07'
+- sheet: 11
+  class: FOOTING_SECTION
+  mark: GATE-3-3
+  at:
+    page_xy:
+    - 193.3
+    - 356.5
+  geom:
+    point:
+    - 193.3
+    - 356.5
+  attrs:
+    key: GATEFTG-3-3@p11
+    title: R.C.C M-GATE 18"X18" COLUMN FOOTING
+    size_ft:
+    - 4.5
+    - 4.5
+    bars: '#4@7"c/c b/w'
+    soling_in: 6
+    soling_mix: '1:4:8'
+    concrete_mix: 1:1½:3
+    depth_printed: 2'-6"
+    serves: C-3
+    position_is: caption label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_90dpi_and_text_layer
+    date: '2026-11-07'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-3
+  at:
+    page_xy:
+    - 131.2
+    - 694.4
+  geom:
+    point:
+    - 131.2
+    - 694.4
+  attrs:
+    key: C-3@p11
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 8
+    bar_dia_no: 4
+    bars: 8#4
+    ring: '#3@7"c/c'
+    cladding_brick_in: 4.5
+    overall_in: 18
+    concrete_mix: 1:1½:3
+    position_is: caption label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_90dpi_and_text_layer
+    date: '2026-11-07'
+- sheet: 11
+  class: FOOTING_SECTION
+  mark: GATE-4-4
+  at:
+    page_xy:
+    - 471.1
+    - 356.5
+  geom:
+    point:
+    - 471.1
+    - 356.5
+  attrs:
+    key: GATEFTG-4-4@p11
+    title: R.C.C M-GATE 18"X18" COLUMN FOOTING
+    size_ft:
+    - 4.5
+    - 4.5
+    bars: '#4@7"c/c b/w'
+    soling_in: 6
+    soling_mix: '1:4:8'
+    concrete_mix: 1:1½:3
+    depth_printed: 2'-6"
+    serves: C-4
+    position_is: caption label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_90dpi_and_text_layer
+    date: '2026-11-07'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-4
+  at:
+    page_xy:
+    - 449.1
+    - 694.4
+  geom:
+    point:
+    - 449.1
+    - 694.4
+  attrs:
+    key: C-4@p11
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 8
+    bar_dia_no: 4
+    bars: 8#4
+    ring: '#3@7"c/c'
+    cladding_brick_in: 4.5
+    overall_in: 18
+    concrete_mix: 1:1½:3
+    position_is: caption label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_90dpi_and_text_layer
+    date: '2026-11-07'

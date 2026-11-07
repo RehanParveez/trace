@@ -6,7 +6,8 @@ from app.modules.drawings_boq.takeoff.first_run import report as RP
 from app.modules.drawings_boq.takeoff.first_run import service as SV
 from app.modules.drawings_boq.takeoff.first_run import stages as ST
 from app.modules.drawings_boq.takeoff.proof import completeness_run as CR
-from app.modules.drawings_boq.takeoff.proof import first_run_run as FR
+from app.modules.drawings_boq.takeoff.run import completeness as RC
+from app.modules.drawings_boq.takeoff.run import first_run_bindings as FR
 from app.modules.drawings_boq.takeoff.proof import gate16 as G16
 from app.modules.drawings_boq.takeoff.questions import engine as QE
 
@@ -60,7 +61,8 @@ def run_problems(plain: dict, storeys, lines) -> list:
     bad.append(f"stages failed on a good reading: {', '.join(out['failed'])}")
   if [s["name"] for s in out["stages"]] != list(JB.STAGES) or any(s["status"] != JB.DONE for s in out["stages"]):
     bad.append("not every stage reported DONE")
-  direct = CR.run_set(plain, storeys, lines)
+    
+  direct = RC.run_set(plain, storeys, lines)
   if rep["items"] != direct["summary"]["by_state"]:
     bad.append(f"the report's item states {rep['items']} differ from the ledger's {direct['summary']['by_state']}")
   if sum(rep["items"].values()) != rep["entries"]:

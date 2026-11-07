@@ -6,7 +6,7 @@ from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
 from app.modules.drawings_boq.takeoff.proof.reading import score as SCR
 from app.modules.drawings_boq.takeoff.proof.reading import sets as S
-from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
+from app.modules.drawings_boq.takeoff.run import vocab as V
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CORPUS = os.path.join(HERE, "corpus.md")

@@ -25,7 +25,7 @@ from app.modules.drawings_boq.models import Drawing, DrawingFormat, TakeoffExtra
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import member_passes as MP
-from app.modules.drawings_boq.takeoff.proof import benchmark as BM
+from app.modules.drawings_boq.takeoff.run import reader as RDR
 
 URL_ENV = "TRACE_PARITY_DATABASE_URL"
 SAFE_NAMES = ("check", "parity", "test")
@@ -133,8 +133,8 @@ async def _run(case: str, files_dir: str) -> dict:
   inputs = {"sections": spec.get("sections"), "storeys": spec.get("storeys"), "runs": RR.on("BEAM_RUNS")}
   items = [(n, open(files[n], "rb").read()) for n in spec["pdfs"]]
   with RB.using_case(rows):
-    full = [(n, r) for n, r, _p in BM.read_set(items, **inputs)]
-    reads = [(n, r) for n, r, _p in BM.read_set(items, runs=inputs["runs"], structure=False)]
+    full = [(n, r) for n, r, _p in RDR.read_set(items, **inputs)]
+    reads = [(n, r) for n, r, _p in RDR.read_set(items, runs=inputs["runs"], structure=False)]
     
   want = expected_state([(n, copy.deepcopy(r)) for n, r in full])
   engine = create_async_engine(scratch_url(), poolclass=NullPool)

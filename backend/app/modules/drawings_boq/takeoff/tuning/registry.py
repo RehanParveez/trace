@@ -1,7 +1,7 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.tuning import usage as U
 from dataclasses import dataclass
-from app.modules.drawings_boq.takeoff.proof import trace as TR
+from app.modules.drawings_boq.takeoff.run import trace as TR
 import math
 from app.modules.drawings_boq.takeoff.extract import scalegate as SG
 from app.modules.drawings_boq.takeoff.extract import config as C

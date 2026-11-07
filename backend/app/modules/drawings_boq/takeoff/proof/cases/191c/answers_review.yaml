@@ -1,0 +1,3197 @@
+qs: 191c
+workbook: Quantities_191-C.xlsx
+how_to: 'For each entry set confirmed: true when the element is right, or write the right element id (and confirmed: true), or write skip: true with a note when the line is not a catalogue item. Then run: python -m app.modules.drawings_boq.takeoff.proof.answers.qs_map fold 191c'
+mappings:
+- key: labour plumbing works cover area 50
+  qs_line: Labour Plumbing Works Cover Area 50%
+  sheets:
+  - Plumbing Grey Work
+  - 'Plumbing in Finishing '
+  rows: 2
+  quantity:
+    sft: 5052.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: 1 gang switch 2 way 10a 250v including pvc/steel back box with proper screws supply and fixing supply and fixing.
+  qs_line: 1 gang switch, 2 way 10A, 250V, including PVC/steel back box with proper screws supply and fixing, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: 1 x spare
+  qs_line: 1 x Spare
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: 18 wall barcket fan
+  qs_line: 18" Wall Barcket Fan
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: 1x provision of spaces for future.
+  qs_line: 1x provision of spaces for future.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: 2 gang + dimer sheet
+  qs_line: 2 Gang + Dimer Sheet
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: 30 w led flood light
+  qs_line: 30 W LED Flood Light
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: CATALOGUE
+  element: EL-12
+  name: 'Light fixtures: LED panels, downlights, chandeliers'
+  candidates:
+  - 'EL-12 Light fixtures: LED panels, downlights, chandeliers'
+  reason: null
+  confirmed: false
+- key: 6 gang sheet
+  qs_line: 6 Gang Sheet
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: add for each additional light point on same switch circuit/additional circuit for one bell point controlled by more than one push switch wiring complete with pvc single core cable 1.5 mm 2 in concealed pvc conduit stove enamelled supply and fixing.
+  qs_line: Add for each additional light point on same switch circuit/additional circuit, for one bell point controlled by more than one push switch, wiring complete with PVC single core cable 1.5 mm,2 in Concealed PVC conduit, stove enamelled, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 35.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: aluminum glass windows
+  qs_line: Aluminum Glass Windows
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 633.37
+  mapped_by: CATALOGUE
+  element: DW-05
+  name: Aluminium windows (sliding, casement) with glass
+  candidates:
+  - DW-05 Aluminium windows (sliding, casement) with glass
+  reason: null
+  confirmed: false
+- key: back filling
+  qs_line: Back filling
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 7903.1618
+  mapped_by: CATALOGUE
+  element: EW-06
+  name: Back filling around foundations
+  candidates:
+  - EW-06 Back filling around foundations
+  reason: null
+  confirmed: false
+- key: basen bolt kit
+  qs_line: Basen Bolt Kit
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: basin half pedestal
+  qs_line: Basin Half Pedestal
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: CATALOGUE
+  element: PB-18
+  name: Wash basin with pedestal or vanity
+  candidates:
+  - PB-18 Wash basin with pedestal or vanity
+  reason: null
+  confirmed: false
+- key: basin mixture
+  qs_line: Basin Mixture
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: bath accessory set
+  qs_line: Bath Accessory Set
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: bath room floor tile 12x24
+  qs_line: Bath Room Floor Tile (12"x24")
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 251.345
+  mapped_by: CATALOGUE
+  element: FL-02
+  name: Porcelain or ceramic floor tiles (rooms)
+  candidates:
+  - FL-02 Porcelain or ceramic floor tiles (rooms)
+  reason: null
+  confirmed: false
+- key: bath room wall tile 12x24
+  qs_line: Bath Room Wall Tile (12"x24")
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 1168.03
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: bell push double 10 a 250 v gang type supply and fixing.
+  qs_line: Bell, push, Double 10 A, 250 V, gang type, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: bend 20mm dia heavy gauge class b screwed complete
+  qs_line: Bend 20mm Dia heavy gauge Class "B" screwed complete
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 180.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: bend 25mm dia heavy gauge class b screwed complete
+  qs_line: Bend 25mm Dia heavy gauge Class "B" screwed complete
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 125.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: bolt kit for commode hanging
+  qs_line: Bolt Kit for Commode Hanging
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: bottle trap
+  qs_line: Bottle Trap
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: boundary wall light ip65
+  qs_line: Boundary wall Light Ip65
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: brick ballast under floor
+  qs_line: Brick Ballast under floor
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 308.3252
+  mapped_by: CATALOGUE
+  element: EW-15
+  name: Kacha (rammed earth, brick ballast) under floors
+  candidates:
+  - EW-15 Kacha (rammed earth, brick ballast) under floors
+  reason: null
+  confirmed: false
+- key: brick work boundary wall
+  qs_line: Brick Work Boundary Wall
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 963.9439
+  mapped_by: CATALOGUE
+  element: MS-04
+  name: Brickwork in boundary wall
+  candidates:
+  - MS-04 Brickwork in boundary wall
+  reason: null
+  confirmed: false
+- key: brick work in sub structure
+  qs_line: Brick Work In Sub Structure
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 926.7796
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: brick work in sup structure f.f
+  qs_line: Brick Work In Sup Structure F.F
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 1397.3937
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: brick work in sup structure g.f
+  qs_line: Brick Work In Sup Structure G.F
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 1701.3359
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: brick work in sup structure mumty.f
+  qs_line: Brick Work In Sup Structure Mumty.F
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 235.8975
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: btah vanity marble
+  qs_line: Btah Vanity Marble
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 25.0
+  mapped_by: CATALOGUE
+  element: FL-13
+  name: Vanity top marble
+  candidates:
+  - FL-13 Vanity top marble
+  reason: null
+  confirmed: false
+- key: bush reducer upvc 2x1
+  qs_line: Bush Reducer uPVC 2"x1"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: bush reducer upvc 4x2
+  qs_line: Bush Reducer uPVC 4"x2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: c.c tile 12x12 front side of main gate
+  qs_line: C.C Tile (12"x12") Front side of main gate
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 105.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: cable 4 core pvc insulated cable complete excluding of conduit 16 mm2.
+  qs_line: Cable 4 core PVC insulated cable complete, (excluding of conduit) 16 mm2.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: cable unsheathed for earth continuity conductor 1.5 mm2 used for 15 a socket outlet points in concealed or surface conduit but without conduit supply and fixing.
+  qs_line: Cable unsheathed for earth continuity conductor 1.5 mm2 used for 15 A socket outlet points, , in Concealed or Surface conduit, but without conduit, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 205.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: cable unsheathed for earth continuity conductor 2.5 mm2 used for 13-15a socket outlet points but without conduit supply and fixing.
+  qs_line: Cable unsheathed for earth continuity conductor 2.5 mm2 used for 13-15A socket outlet points, but without conduit, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 150.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: ceiling mounted 12 watt led light 4000k
+  qs_line: Ceiling mounted 12 watt LED Light, 4000K
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: celling junction box 20mm
+  qs_line: Celling Junction Box 20mm
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 90.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: column concrete 1:2:4
+  qs_line: Column Concrete (1:2:4)
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 110.9583
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: commode english
+  qs_line: Commode English
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: concealed tank
+  qs_line: Concealed Tank
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: conduit 20 mm din heavy gauge class b screwed complete with all bends tecs boxes saddles etc stove enamelled for concealed wiring supply and fixing
+  qs_line: Conduit 20 mm din, heavy gauge Class "B" screwed complete with all bends, tecs, boxes, saddles etc, stove enamelled for Concealed wiring, supply and fixing
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    rft: 2150.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: conduit 25 mm din heavy gauge class b screwed complete with all bends tco6 boxes saddles etc stove enamelled for concealed wiring supply and fixing
+  qs_line: Conduit 25 mm din, heavy gauge Class "B" screwed complete with all bends, tco6, boxes, saddles etc, stove enamelled for Concealed wiring, supply and fixing
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    rft: 1500.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: connection pipe 1/2x1/2x 6
+  qs_line: Connection Pipe 1/2''x1/2''x 6''
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: connection pipe 24
+  qs_line: Connection Pipe 24''
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: construction of hand hole size 18 x 18 for laying of power and lv cables including top plate to be installed as and where shown on drawings. complete with fixing arrangement as per engineer instruction.
+  qs_line: Construction of hand hole size 18" x 18" for laying of Power and LV cables including top plate to be installed as and where shown on drawings. Complete with fixing arrangement as per engineer instruction.
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: cp cup
+  qs_line: CP Cup
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 0.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: cp nozzle 1
+  qs_line: CP Nozzle 1"
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 20.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: cp nozzle 1-1/2
+  qs_line: CP Nozzle 1-1/2"
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 20.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: cp nozzle 2
+  qs_line: CP Nozzle 2"
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: dead plug pprc 1/2
+  qs_line: Dead plug PPRC 1/2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 47.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: door frame
+  qs_line: Door Frame
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    rft: 325.25
+  mapped_by: CATALOGUE
+  element: DW-01
+  name: 'Door frames: wood (deodar, partal) or MS pressed steel'
+  candidates:
+  - 'DW-01 Door frames: wood (deodar, partal) or MS pressed steel'
+  reason: null
+  confirmed: false
+- key: doors windows lintel concrete
+  qs_line: Doors & Windows Lintel Concrete
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 102.5385
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: double bib cock
+  qs_line: Double Bib Cock
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: dpc 1:2:4
+  qs_line: DPC (1:2:4)
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 390.7563
+  mapped_by: CATALOGUE
+  element: DP-01
+  name: DPC horizontal (1:2:4 concrete with bitumen coat)
+  candidates:
+  - DP-01 DPC horizontal (1:2:4 concrete with bitumen coat)
+  - DP-02 DPC vertical (basement or below-grade face)
+  - RC-06 RCC plinth beam (grade beam, DPC beam)
+  reason: null
+  confirmed: false
+- key: drain installation 6x6
+  qs_line: Drain Installation 6"x6"
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 15.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: drilling of earth bore 4 dia 40 to 80 ft deep or upto permanent water table bore shall be made at 10 ft away from foundation back filling ramming and supply installation of copper spike 1 ft long t thick conical shape upper side threaded for connection of 1 dia g.l pipe 80 ft long only including cost of 2 nos. 10 mmsq bare copper conductor connccted with copper spike and upto copper test link in manhole complete in all respect.
+  qs_line: Drilling of earth bore 4" dia 40 to 80 ft deep or upto permanent water table, bore shall be made at 10 ft away from foundation, back filling, ramming and supply installation of copper spike 1 ft long, T thick conical shape, upper side threaded for connection of 1" dia G.l pipe 80 ft long only Including cost of 2 Nos. 10 mmsq bare copper conductor connccted with copper spike, and upto copper test link in manhole complete in all respect.
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow grey 3/4
+  qs_line: Elbow Grey 3/4''
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 26.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow pprc 25 mm
+  qs_line: Elbow PPRC 25 mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 60.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow pprc 25 x1/2
+  qs_line: Elbow PPRC 25 x1/2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 47.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow pprc 32 mm
+  qs_line: Elbow PPRC 32 mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 60.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow pprc 32mmx25mm
+  qs_line: Elbow PPRC 32mmx25mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 14.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow pprc 40 mm
+  qs_line: Elbow PPRC 40 mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow pprc 50mm
+  qs_line: Elbow PPRC 50mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow upvc 2 45
+  qs_line: Elbow uPVC 2" 45°
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 11.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow upvc 2 90
+  qs_line: Elbow uPVC 2" 90°
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 18.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow upvc 3 45
+  qs_line: Elbow uPVC 3" 45°
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 12.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow upvc 3 90
+  qs_line: Elbow uPVC 3" 90°
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow upvc 4 45
+  qs_line: Elbow uPVC 4" 45°
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 9.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow upvc 4 90
+  qs_line: Elbow uPVC 4" 90°
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: elbow upvc 6 45
+  qs_line: Elbow uPVC 6" 45°
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 0.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: electric bell ac/dc bakelite case pressed iron frame steel contact spring and nickel plated brass contact pillars both having silver contact points round and nickel / cp steel gong supply and fixing.
+  qs_line: Electric bell, AC/DC, Bakelite case, pressed iron frame, steel contact spring and nickel plated brass contact pillars both having silver contact points round and nickel / CP steel gong, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: end cap pprc 25mm
+  qs_line: End cap PPRC 25mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 6.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: end cap pprc 32mm
+  qs_line: End cap PPRC 32mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: end cap pprc 40mm
+  qs_line: End cap PPRC 40mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: end cap pprc 50mm
+  qs_line: End cap PPRC 50mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: end cap upvc 2
+  qs_line: End Cap uPVC 2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: end cap upvc 3
+  qs_line: End Cap uPVC 3"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: end cap upvc 4
+  qs_line: End Cap uPVC 4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 22.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: excavation of main building
+  qs_line: Excavation of Main building
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 2928.125
+  mapped_by: CATALOGUE
+  element: EW-02
+  name: Excavation for foundations (trench and pit)
+  candidates:
+  - EW-02 Excavation for foundations (trench and pit)
+  - EW-03 Bulk excavation for basement
+  - EW-04 Excavation for tanks, septic, soakage
+  - EW-05 Excavation in hard soil or rock
+  reason: null
+  confirmed: false
+- key: f.f floor tile work 24x48
+  qs_line: F.F Floor Tile Work (24"x48")
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 867.6275
+  mapped_by: CATALOGUE
+  element: FL-02
+  name: Porcelain or ceramic floor tiles (rooms)
+  candidates:
+  - FL-02 Porcelain or ceramic floor tiles (rooms)
+  - FL-03 Bathroom floor tiles (anti-skid)
+  reason: null
+  confirmed: false
+- key: fa ade lights recessed/ surface 6 watt 4000k
+  qs_line: Façade lights recessed/ surface 6 watt 4000k
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 6.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: false ceiling
+  qs_line: False Ceiling
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 3024.9062
+  mapped_by: CATALOGUE
+  element: PL-15
+  name: 'False ceiling: gypsum board or tiles'
+  candidates:
+  - 'PL-15 False ceiling: gypsum board or tiles'
+  reason: null
+  confirmed: false
+- key: fan box
+  qs_line: Fan Box
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 11.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: fan electric ac. exhaust fresh air copper winding circulation double way 220/230 v sp 50 cycle having plastic frame body and blades complete with cord operated switch shutter and fixing screw 150 cm pak made supply and fixing.
+  qs_line: Fan electric, AC. Exhaust fresh air copper winding circulation (double way), 220/230 V, SP, 50 cycle, having plastic frame, body and blades, complete with cord operated switch shutter and fixing screw 150 cm Pak made, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: fan electric ac. exhaust fresh air copper winding circulation double way 220/230 v sp 50 cycle having plastic frame body and blades complete with cord operated switch shutter and fixing screw 25 cm pak made supply and fixing.
+  qs_line: Fan electric, AC. Exhaust fresh air copper winding circulation (double way), 220/230 V, SP, 50 cycle, having plastic frame, body and blades, complete with cord operated switch shutter and fixing screw 25 cm Pak made, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: fan electric with blades canopy and rod ind connection provision of cable and ceiling rose for fan 140 cm sweep without regulator deluxe model supply and fixing.
+  qs_line: Fan electric with blades, canopy and rod ind connection, provision of cable and ceiling rose, for fan 140 cm sweep, without regulator (Deluxe Model), supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 9.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: float valve 1 x 1 grey
+  qs_line: Float Valve 1'' x 1'' Grey
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: CATALOGUE
+  element: PB-04
+  name: 'Valves: gate, ball, float, non-return'
+  candidates:
+  - 'PB-04 Valves: gate, ball, float, non-return'
+  reason: null
+  confirmed: false
+- key: flush tank
+  qs_line: Flush Tank
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: g.f floor tile work 24x48
+  qs_line: G.F Floor Tile Work (24"x48")
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 1014.0434
+  mapped_by: CATALOGUE
+  element: FL-02
+  name: Porcelain or ceramic floor tiles (rooms)
+  candidates:
+  - FL-02 Porcelain or ceramic floor tiles (rooms)
+  - FL-03 Bathroom floor tiles (anti-skid)
+  reason: null
+  confirmed: false
+- key: gate light with 24 watt led light
+  qs_line: Gate Light with 24 Watt LED Light
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: gate valve 32mm
+  qs_line: Gate Valve 32mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: CATALOGUE
+  element: PB-04
+  name: 'Valves: gate, ball, float, non-return'
+  candidates:
+  - 'PB-04 Valves: gate, ball, float, non-return'
+  reason: null
+  confirmed: false
+- key: gate valve 50mm
+  qs_line: Gate Valve 50mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: CATALOGUE
+  element: PB-04
+  name: 'Valves: gate, ball, float, non-return'
+  candidates:
+  - 'PB-04 Valves: gate, ball, float, non-return'
+  reason: null
+  confirmed: false
+- key: glass railing stair terrace look below
+  qs_line: Glass Railing (Stair , Terrace & look below)
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    rft: 82.285
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: grey pipe 3/4
+  qs_line: Grey Pipe 3/4''
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 234.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: hockey pipe
+  qs_line: Hockey Pipe
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: hook m.s
+  qs_line: Hook M.S
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 100.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: kitchen cabinet
+  qs_line: Kitchen Cabinet
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 59.738
+  mapped_by: CATALOGUE
+  element: KJ-01
+  name: 'Kitchen cabinets: base and wall units'
+  candidates:
+  - 'KJ-01 Kitchen cabinets: base and wall units'
+  reason: null
+  confirmed: false
+- key: kitchen slab marble
+  qs_line: Kitchen Slab Marble
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 27.73
+  mapped_by: CATALOGUE
+  element: FL-12
+  name: Kitchen counter top (granite or marble slab)
+  candidates:
+  - FL-12 Kitchen counter top (granite or marble slab)
+  reason: null
+  confirmed: false
+- key: kitchen wall tile 12x24
+  qs_line: Kitchen Wall Tile (12"x24")
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 146.605
+  mapped_by: CATALOGUE
+  element: PL-14
+  name: Kitchen wall tiles (backsplash)
+  candidates:
+  - PL-14 Kitchen wall tiles (backsplash)
+  reason: null
+  confirmed: false
+- key: labour cost
+  qs_line: Labour cost
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 500.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: labour cost 40 for grey structure
+  qs_line: Labour Cost (40% for Grey Structure)
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    sft: 2526.0
+  mapped_by: CATALOGUE
+  element: NR-08
+  name: 'Labour: grey structure and finishing'
+  candidates:
+  - 'NR-08 Labour: grey structure and finishing'
+  reason: null
+  confirmed: false
+- key: labour cost 60 for finishes work
+  qs_line: Labour Cost (60% for Finishes Work)
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    sft: 2526.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: looking mirror
+  qs_line: Looking Mirror
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    sft: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: main gate
+  qs_line: Main Gate
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    kg: 137.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: main hole cover upvc 1 x 1
+  qs_line: Main hole Cover uPVC 1' x 1'
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: main hole cover upvc 1-6 x 1-6
+  qs_line: Main hole Cover uPVC 1'-6'' X 1'-6''
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: meter box ip 65 wall/sufrace mounted 24 18 with necessary arrangents for meter hangfing powder coated
+  qs_line: Meter Box IP 65 wall/Sufrace Mounted 24"*18" with necessary arrangents for meter hangfing powder coated
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: mirror light 9 watt
+  qs_line: Mirror Light 9 Watt
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: ms grating in gate
+  qs_line: MS Grating in Gate
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    kg: 40.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: ms sheet door
+  qs_line: MS Sheet Door
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    kg: 51.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: multi floor trap 4x3x2
+  qs_line: Multi Floor Trap 4"x3"x2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 13.0
+  mapped_by: CATALOGUE
+  element: PB-13
+  name: Floor traps and gully traps
+  candidates:
+  - PB-13 Floor traps and gully traps
+  - FL-19 Floor trap jali (stainless)
+  reason: null
+  confirmed: false
+- key: mumty.f floor tile work 24x48
+  qs_line: Mumty.F Floor Tile Work (24"x48")
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 0.0
+  mapped_by: CATALOGUE
+  element: FL-02
+  name: Porcelain or ceramic floor tiles (rooms)
+  candidates:
+  - FL-02 Porcelain or ceramic floor tiles (rooms)
+  - FL-03 Bathroom floor tiles (anti-skid)
+  reason: null
+  confirmed: false
+- key: muslim shower
+  qs_line: Muslim Shower
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 6.0
+  mapped_by: CATALOGUE
+  element: PB-20
+  name: Shower set, mixers, taps, muslim shower
+  candidates:
+  - PB-20 Shower set, mixers, taps, muslim shower
+  reason: null
+  confirmed: false
+- key: ohwt cover
+  qs_line: OHWT Cover
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    kg: 14.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: ohwt septic t ugwt concrete
+  qs_line: OHWT , Septic T, UGWT Concrete
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 308.3252
+  mapped_by: CATALOGUE
+  element: DW-16
+  name: 'Tank covers: OHWT, UGWT, septic (MS or cast iron)'
+  candidates:
+  - 'DW-16 Tank covers: OHWT, UGWT, septic (MS or cast iron)'
+  reason: null
+  confirmed: false
+- key: one fan point; one light point one bell point controlled by one switch wiring complete with pvc single core cable 1.5mm2 in concealed pvc conduit enamelled supply and fixing.
+  qs_line: One fan point; one light point, one bell point, controlled by one switch, wiring complete, with PVC single core cable 1.5mm2, in Concealed PVC conduit, enamelled, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 98.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: one light point controlled by two way switch. wiring complete with pvc single core cable 1.5mm2 but in concealed pvc conduits stove enamelled supply and fixing.
+  qs_line: One light point controlled by two way switch. wiring complete with PVC single core cable 1.5mm2 But in Concealed PVC conduits, stove enamelled, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: over cross pprc 25mm
+  qs_line: Over Cross PPRC 25mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: p trap upvc 3
+  qs_line: P Trap uPVC 3"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: p trap upvc 4
+  qs_line: P Trap uPVC 4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: p.c.c concrete 1:2:4 under floor
+  qs_line: P.C.C Concrete (1:2:4) under Floor
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 2065.0831
+  mapped_by: CATALOGUE
+  element: EW-14
+  name: PCC under floors (e.g. 1:2:4 or 1:4:8)
+  candidates:
+  - EW-14 PCC under floors (e.g. 1:2:4 or 1:4:8)
+  reason: null
+  confirmed: false
+- key: p.c.c concrete 1:4:8 under footing
+  qs_line: P.C.C Concrete (1:4:8) under Footing
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 308.4765
+  mapped_by: CATALOGUE
+  element: EW-13
+  name: PCC under footings (lean, e.g. 1:4:8 or 1:6:12)
+  candidates:
+  - EW-13 PCC under footings (lean, e.g. 1:4:8 or 1:6:12)
+  reason: null
+  confirmed: false
+- key: p.c.c concrete 1:6:12 under footing
+  qs_line: P.C.C Concrete (1:6:12) under Footing
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 85.3578
+  mapped_by: CATALOGUE
+  element: EW-13
+  name: PCC under footings (lean, e.g. 1:4:8 or 1:6:12)
+  candidates:
+  - EW-13 PCC under footings (lean, e.g. 1:4:8 or 1:6:12)
+  reason: null
+  confirmed: false
+- key: paint work external
+  qs_line: Paint Work External
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 6076.0136
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: paint work internal
+  qs_line: Paint Work internal
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 5967.4656
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pipe pprc 25 mm
+  qs_line: Pipe PPRC 25 mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    rft: 220.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pipe pprc 32 mm
+  qs_line: Pipe PPRC 32 mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    rft: 495.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pipe pprc 40 mm
+  qs_line: Pipe PPRC 40 mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    rft: 78.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pipe pprc 50 mm
+  qs_line: Pipe PPRC 50 mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    rft: 104.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pipe upvc 2
+  qs_line: Pipe uPVC 2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    rft: 80.0
+  mapped_by: CATALOGUE
+  element: PB-10
+  name: Drainage pipes, uPVC or PVC, by diameter (2" to 6")
+  candidates:
+  - PB-10 Drainage pipes, uPVC or PVC, by diameter (2" to 6")
+  reason: null
+  confirmed: false
+- key: pipe upvc 3
+  qs_line: Pipe uPVC 3"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    rft: 117.0
+  mapped_by: CATALOGUE
+  element: PB-10
+  name: Drainage pipes, uPVC or PVC, by diameter (2" to 6")
+  candidates:
+  - PB-10 Drainage pipes, uPVC or PVC, by diameter (2" to 6")
+  reason: null
+  confirmed: false
+- key: pipe upvc 4
+  qs_line: Pipe uPVC 4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    rft: 150.0
+  mapped_by: CATALOGUE
+  element: PB-10
+  name: Drainage pipes, uPVC or PVC, by diameter (2" to 6")
+  candidates:
+  - PB-10 Drainage pipes, uPVC or PVC, by diameter (2" to 6")
+  reason: null
+  confirmed: false
+- key: pipe upvc 6
+  qs_line: Pipe uPVC 6"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    rft: 90.0
+  mapped_by: CATALOGUE
+  element: PB-10
+  name: Drainage pipes, uPVC or PVC, by diameter (2" to 6")
+  candidates:
+  - PB-10 Drainage pipes, uPVC or PVC, by diameter (2" to 6")
+  reason: null
+  confirmed: false
+- key: plaster work external
+  qs_line: Plaster work External
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 6577.7636
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: plaster work internal f.f
+  qs_line: Plaster work internal F.F
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 3016.2788
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: plaster work internal g.f
+  qs_line: Plaster work internal G.F
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 3874.3037
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: plaster work internal mumty.f
+  qs_line: Plaster work internal Mumty.F
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 0.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: plug elbow upvc 3
+  qs_line: Plug Elbow uPVC 3"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: plug elbow upvc 4
+  qs_line: Plug Elbow uPVC 4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: plug tee 3
+  qs_line: Plug Tee 3"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 0.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: plug tee 4
+  qs_line: Plug Tee 4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pourch mate tile 16x16
+  qs_line: Pourch Mate Tile (16"x16")
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 440.52
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pvc back box 3 3
+  qs_line: PVC Back Box 3"*3"
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 94.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pvc back box 3 6
+  qs_line: PVC Back Box 3"*6"
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 13.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pvc bend 50mm dia
+  qs_line: PVC Bend 50mm Dia
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 6.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pvc pipe 50mm dia
+  qs_line: PVC pipe 50mm dia
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    rft: 150.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pvc single core cable 2.5 mm2 in concealed pvc conduit supply and fixing. for power and light cecuits
+  qs_line: PVC single core cable 2.5 mm2 in Concealed PVC conduit, supply and fixing. For Power and light cecuits
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 750.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pvc single core cable 4 mm2 in concealed pvc conduit supply and fixing. for power and light cecuits
+  qs_line: PVC single core cable 4 mm2 in Concealed PVC conduit, supply and fixing. For Power and light cecuits
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 495.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: pvc socket 50mm dia
+  qs_line: PVC Socket 50mm Dia
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: rawle plug upvc 1.1/2
+  qs_line: Rawle Plug uPVC 1.1/2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 100.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: recessed niche light 3-5 watt
+  qs_line: Recessed Niche Light 3-5 Watt
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: reducer elbow pprc 32mmx40mm
+  qs_line: Reducer Elbow PPRC 32mmx40mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: reducer socket 32mmx40mm
+  qs_line: Reducer Socket 32mmx40mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: reinforcement
+  qs_line: Reinforcement
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    kg: 5500.0
+  mapped_by: CATALOGUE
+  element: RF-01
+  name: 'Steel reinforcement, Grade 40 or 60, by diameter (#3 to #8, or 10–25 mm)'
+  candidates:
+  - 'RF-01 Steel reinforcement, Grade 40 or 60, by diameter (#3 to #8, or 10–25 mm)'
+  - 'RF-02 Steel by member: footings, columns, beams, slabs, stair, tanks, lintels'
+  - RF-04 Dowels and starter bars
+  - DW-19 Canopies, pergolas, sunshades (steel)
+  reason: null
+  confirmed: false
+- key: roof beams slab concrete 1:2:4
+  qs_line: Roof Beams & Slab Concrete (1:2:4)
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 1372.9957
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: roof water proofing
+  qs_line: Roof Water Proofing
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 1156.92
+  mapped_by: CATALOGUE
+  element: PB-08
+  name: Plastic water tank on roof
+  candidates:
+  - PB-08 Plastic water tank on roof
+  reason: null
+  confirmed: false
+- key: s/c 10 mm pvc cable green
+  qs_line: S/C 10 mm² Pvc Cable Green
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: s/c 16 mm pvc cable green
+  qs_line: S/C 16 mm² Pvc Cable Green
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 9.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: sadle clump 4 x 1
+  qs_line: Sadle Clump 4'' x 1''
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: same as item 24-661 but 25 mm2 cable.
+  qs_line: Same as item 24-661 but 25 mm2 cable.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 10.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: same as item 24-763 but 2 gang 10a
+  qs_line: Same as item 24-763, but 2 gang, 10A
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: same as item 24-763 but 2 gang+socket 10a
+  qs_line: Same as item 24-763, but 2 gang+Socket, 10A
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: same as item 24-763 but 4 gang small 10a
+  qs_line: Same as item 24-763, but 4 gang Small, 10A
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: same as item 24-763 but 4 gang+dimer 10 a.
+  qs_line: Same as item 24-763, but 4 gang+Dimer, 10 A.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: same as item 24-763 but 6 gang+ dimer 10 a.
+  qs_line: Same as item 24-763, but 6 gang+ Dimer, 10 A.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 6.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: screw s/s 1.1/2
+  qs_line: Screw S/S 1.1/2''
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 100.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: seat cover
+  qs_line: Seat Cover
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: septic tank cover
+  qs_line: Septic Tank Cover
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    kg: 14.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: shower set complete accessories
+  qs_line: Shower Set (Complete Accessories)
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: CATALOGUE
+  element: PB-20
+  name: Shower set, mixers, taps, muslim shower
+  candidates:
+  - PB-20 Shower set, mixers, taps, muslim shower
+  reason: null
+  confirmed: false
+- key: silicon
+  qs_line: Silicon
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: single bib cock
+  qs_line: Single Bib Cock
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: sink bowl
+  qs_line: Sink Bowl
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: sink mixture
+  qs_line: Sink Mixture
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: sink waste double
+  qs_line: Sink Waste Double
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: CATALOGUE
+  element: PB-19
+  name: Kitchen sink (single or double)
+  candidates:
+  - PB-19 Kitchen sink (single or double)
+  reason: null
+  confirmed: false
+- key: socket 20mm dia heavy gauge class b screwed complete
+  qs_line: Socket 20mm Dia heavy gauge Class "B" screwed complete
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 100.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket 25mm dia heavy gauge class b screwed complete
+  qs_line: Socket 25mm Dia heavy gauge Class "B" screwed complete
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 130.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket 3/4
+  qs_line: Socket 3/4''
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 11.0
+  mapped_by: CATALOGUE
+  element: EL-04
+  name: 'Socket outlets: 5 A light plug, 15 A power plug'
+  candidates:
+  - 'EL-04 Socket outlets: 5 A light plug, 15 A power plug'
+  - 'PB-03 Fittings: elbows, tees, sockets'
+  reason: null
+  confirmed: false
+- key: socket pprc 25mm
+  qs_line: Socket PPRC 25mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 7.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 25mmx1/2
+  qs_line: Socket PPRC 25mmx1/2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 32mm
+  qs_line: Socket PPRC 32mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 20.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 32mmx1
+  qs_line: Socket PPRC 32mmx1"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 32mmx3/4
+  qs_line: Socket PPRC 32mmx3/4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 32x25mm
+  qs_line: Socket PPRC 32x25mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 40mm
+  qs_line: Socket PPRC 40mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 40x32mm
+  qs_line: Socket PPRC 40x32mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 50mm
+  qs_line: Socket PPRC 50mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 50mm x 1.1/2
+  qs_line: Socket PPRC 50mm x 1.1/2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 50x32mm
+  qs_line: Socket PPRC 50x32mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket pprc 50x40mm
+  qs_line: Socket PPRC 50x40mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket upvc 2
+  qs_line: Socket uPVC 2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket upvc 3
+  qs_line: Socket uPVC 3"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: socket upvc 4
+  qs_line: Socket uPVC 4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: solvent solution 500 ml
+  qs_line: Solvent Solution 500 ML
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    ten: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: stair concrete 1:2:4
+  qs_line: Stair Concrete (1:2:4)
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    cft: 63.0929
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: stair marble
+  qs_line: Stair Marble
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 173.3398
+  mapped_by: CATALOGUE
+  element: FL-08
+  name: Stair treads and risers (marble or granite)
+  candidates:
+  - FL-08 Stair treads and risers (marble or granite)
+  reason: null
+  confirmed: false
+- key: steel clump 2
+  qs_line: Steel Clump 2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: steel clump 3
+  qs_line: Steel Clump 3"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: steel clump 4
+  qs_line: Steel Clump 4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 4.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: submersible pump 0.75 kv
+  qs_line: Submersible Pump 0.75 KV
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: 'supply and wiring of cat 6 utp cable in pre installed 1 pvc pipe newage/3m/schneider complete in all respect note: cctv cable will lay individually nvr to camera and testing cable should be approved by electrical consultant. manufacturer: 3m'
+  qs_line: 'Supply and wiring of CAT 6 UTP Cable in pre installed 1" PVC Pipe (Newage/3M/Schneider) complete in all respect NOTE: CCTV cable will lay individually NVR to camera, and testing cable should be approved by electrical Consultant. (Manufacturer: 3M)'
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 80.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: supply installation of 20 amp double pole switch for split ac
+  qs_line: Supply & installation of 20 Amp Double Pole switch for Split AC
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 9.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: supply installation testing and commissioning of optical network terminal ont to be installed in each apartments for upper ground floor. including cost of all necessary materials. complete in all respects.
+  qs_line: Supply, installation, testing and commissioning of Optical Network Terminal (ONT) to be installed in each apartments for upper ground floor. Including cost of all necessary materials. Complete in all respects.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: supply of earth connecting points consisting of copper plute 6 long x 2 wide x 1/2 thick to be installed as and where shown on drawings complete with fixing arrangement brass nuts bolls washers lugs. 1/2 dia. holes to facilitate connections of incoming copper strips / copper conductors and outgoing cpc.
+  qs_line: Supply of earth connecting points consisting of copper plute 6" long x 2" wide x 1/2" thick to be installed as and where shown on drawings, complete with fixing arrangement, brass nuts bolls, washers, lugs. 1/2" dia. holes to facilitate connections of Incoming copper strips / copper conductors and outgoing CPC.
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: surface mounted light12 watt
+  qs_line: surface mounted light12 watt
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 74.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: switch sp socket out let 3 pin 15a shuttered pattern mounted in bakelite box complete supply and fixing.
+  qs_line: Switch SP socket out let 3 pin, 15A, shuttered pattern, mounted in Bakelite box complete, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 9.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: switch sp socket outlet 3 pin 13a bakelite shuttered pattern complete supply and fixing.
+  qs_line: Switch, SP, socket outlet 3 pin, 13A, Bakelite, shuttered pattern, complete, supply and fixing.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 45.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tee 3/4
+  qs_line: Tee 3/4''
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: CATALOGUE
+  element: PB-03
+  name: 'Fittings: elbows, tees, sockets'
+  candidates:
+  - 'PB-03 Fittings: elbows, tees, sockets'
+  reason: null
+  confirmed: false
+- key: tee cock
+  qs_line: Tee Cock
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 9.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tee pprc 25mm
+  qs_line: Tee PPRC 25mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 28.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tee pprc 25x1/2
+  qs_line: Tee PPRC 25x1/2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 0.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tee pprc 32mm
+  qs_line: Tee PPRC 32mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 10.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tee pprc 32x25mm
+  qs_line: Tee PPRC 32x25mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 16.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tee pprc 50mm
+  qs_line: Tee PPRC 50mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tee pprc 50x32mm
+  qs_line: Tee PPRC 50x32mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tee upvc 2
+  qs_line: Tee uPVC 2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: teflon
+  qs_line: Teflon
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 25.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: telephone socket shuttered including pvc/steel back box with proper screws complete supply and fixing
+  qs_line: Telephone socket shuttered, including PVC/steel back box with proper screws complete, supply and fixing
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: termite
+  qs_line: Termite
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 3055.485
+  mapped_by: CATALOGUE
+  element: DP-04
+  name: Anti-termite treatment
+  candidates:
+  - DP-04 Anti-termite treatment
+  reason: null
+  confirmed: false
+- key: tile work of front side front elevation
+  qs_line: Tile Work of Front side (front elevation)
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 827.605
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tuff tile 8x4 passage area
+  qs_line: Tuff Tile (8"x4") Passage Area
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 348.48
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: tv socket shuttered including pvc/steel back box with proper screws complete supply and fixing
+  qs_line: TV socket shuttered, including PVC/steel back box with proper screws complete, supply and fixing
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    nos: 8.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: ug tank cover
+  qs_line: UG Tank Cover
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    kg: 17.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: union 32mm
+  qs_line: Union 32mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: union 50mm
+  qs_line: Union 50mm
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: valve socket 1 x 1 grey
+  qs_line: Valve Socket 1'' x 1'' Grey
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: vanity
+  qs_line: Vanity
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 5.0
+  mapped_by: CATALOGUE
+  element: FL-13
+  name: Vanity top marble
+  candidates:
+  - FL-13 Vanity top marble
+  - KJ-03 Vanity units
+  - PB-18 Wash basin with pedestal or vanity
+  reason: null
+  confirmed: false
+- key: vent cowel 2
+  qs_line: Vent Cowel 2"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 2.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: vertical dpc 1:2:4
+  qs_line: Vertical DPC (1:2:4)
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 164.97
+  mapped_by: CATALOGUE
+  element: DP-02
+  name: DPC vertical (basement or below-grade face)
+  candidates:
+  - DP-02 DPC vertical (basement or below-grade face)
+  reason: null
+  confirmed: false
+- key: wall junction box 20 mm
+  qs_line: Wall Junction Box 20 mm
+  sheets:
+  - Electric Grey
+  rows: 1
+  quantity:
+    nos: 36.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: wardrobes
+  qs_line: Wardrobes
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 304.5
+  mapped_by: CATALOGUE
+  element: KJ-02
+  name: Wardrobes and built-in cupboards
+  candidates:
+  - KJ-02 Wardrobes and built-in cupboards
+  reason: null
+  confirmed: false
+- key: waste pipe with coupling
+  qs_line: Waste Pipe With Coupling
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: water proofing ohw tank septic tank
+  qs_line: Water Proofing OHW Tank, Septic Tank
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    sft: 251.755
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: water stoper
+  qs_line: Water Stoper
+  sheets:
+  - BOQ Grey Structure work
+  rows: 1
+  quantity:
+    rft: 65.43
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: wc indian
+  qs_line: WC (Indian)
+  sheets:
+  - 'Plumbing in Finishing '
+  rows: 1
+  quantity:
+    nos: 1.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: windows sill marble
+  qs_line: Windows Sill Marble
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 163.91
+  mapped_by: CATALOGUE
+  element: FL-10
+  name: Window sills (marble)
+  candidates:
+  - FL-10 Window sills (marble)
+  reason: null
+  confirmed: false
+- key: wiring of tv points with rg-7 co-axial cable from ont to tv outlet in already installed pvc conduit complete in all respect as per the specification and drawings and approval of the engineer.
+  qs_line: Wiring of TV Points with RG-7 co-axial cable from ONT to TV outlet in already installed PVC conduit, complete in all respect as per the specification and drawings and approval of the engineer.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 130.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: wirring of telephone / wifi access points with utp cat. 6 cable in pre installed 20mm dia pvc conduit from ont to telephone data point with rj-45 jack complete in all respects as per the specification or as approved by engineer.
+  qs_line: Wirring of Telephone / Wifi Access Points with UTP CAT. 6 cable in pre installed 20mm dia PVC conduit from ONT to telephone, Data Point with RJ-45 jack complete in all respects as per the specification or as approved by engineer.
+  sheets:
+  - Electric finishes
+  rows: 1
+  quantity:
+    m: 131.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: wooden doors
+  qs_line: Wooden Doors
+  sheets:
+  - BOQ Finishing work
+  rows: 1
+  quantity:
+    sft: 471.75
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: yee tee 3
+  qs_line: Yee Tee 3"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 7.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false
+- key: yee tee 4
+  qs_line: Yee Tee 4"
+  sheets:
+  - Plumbing Grey Work
+  rows: 1
+  quantity:
+    nos: 3.0
+  mapped_by: null
+  element: null
+  name: null
+  candidates: []
+  reason: null
+  confirmed: false

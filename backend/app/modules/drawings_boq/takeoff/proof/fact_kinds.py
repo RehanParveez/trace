@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
-from app.modules.drawings_boq.takeoff.proof import known_facts as KF
+from app.modules.drawings_boq.takeoff.run import known_facts as KF
 from app.modules.drawings_boq.takeoff.proof import closure_checks as CC
 from app.modules.drawings_boq.takeoff.proof import structure_facts as SF
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _live, _sheet_floor

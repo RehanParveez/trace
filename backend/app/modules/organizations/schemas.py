@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from app.modules.identity.models import Role, User
@@ -12,7 +13,8 @@ class OrganizationResponse(BaseModel):
   slug: str
   is_active: bool
   ai_enabled: bool
-  currency: str   
+  ai_consent: str
+  currency: str      
   created_at: datetime
   updated_at: datetime
 
@@ -58,9 +60,11 @@ class OrganizationUpdateRequest(BaseModel):
 
 class AISettingsResponse(BaseModel):
   ai_enabled: bool
+  ai_consent: str = "OFF"
 
 class AISettingsUpdateRequest(BaseModel):
-  ai_enabled: bool
+  ai_enabled: bool | None = None
+  ai_consent: Literal["OFF", "LOCAL", "OUTSIDE"] | None = None
 
 class PermissionResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)

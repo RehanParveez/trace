@@ -125,14 +125,14 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--out", default="substructure_out")
   args = ap.parse_args(argv)
   from app.engine.measure import rulebook as RB
-  from app.modules.drawings_boq.takeoff.proof import benchmark as BM
+  from app.modules.drawings_boq.takeoff.run import reader as RDR
   from app.modules.drawings_boq.takeoff.proof import case_io as CIO
   
   spec = CIO.load_case(os.path.join(CIO.HERE, args.case))
   files, _ = CIO.find_files(spec, args.cases_dir or os.environ.get("TRACE_CASES_DIR"))
   rows, _b, _f = CIO.load_company_rules(spec)
   with RB.using_case(rows):
-    res = BM.read_set([(n, open(files[n], "rb").read()) for n in spec["pdfs"]])
+    res = RDR.read_set([(n, open(files[n], "rb").read()) for n in spec["pdfs"]])
   read = [r for _n, rws, _p in res for r in rws]
   docs = foundation_docs(read)
   if not docs:

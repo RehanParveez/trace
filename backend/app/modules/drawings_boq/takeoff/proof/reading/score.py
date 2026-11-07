@@ -4,11 +4,11 @@ import json
 import math
 import os
 import yaml
-from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
+from app.modules.drawings_boq.takeoff.run import vocab as V
 from app.modules.drawings_boq.takeoff.proof.reading import match as M
 from app.modules.drawings_boq.takeoff.proof.reading import sets as S
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
-from app.modules.drawings_boq.takeoff.proof.reading import adapter as AD
+from app.modules.drawings_boq.takeoff.run import reading_adapter as AD
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 
 HERE = os.path.dirname(os.path.abspath(__file__))
