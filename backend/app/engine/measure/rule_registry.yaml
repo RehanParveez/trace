@@ -236,7 +236,34 @@
     - {office: D, sets: 1, metric: "reading: truth level marks matched by mark and place (43 of 43; off: 0 of 43), none invented", value: 43, pack: CV-9b, met: true}
     - {office: A, sets: 1, metric: "reading: level marks made on the set (0; the set prints no mark in this form)", value: 0, pack: CV-9b, met: false}
   notes: A level mark is a sign and a height in feet and inches, or in inches alone, printed as two words or as one word that ends in the mark. The reader takes the words of a sheet in each of the four directions of text. The place is the middle of the mark, and the mark is the sign and the height followed by the name of the level when the same line goes on to print one that ends in LEV, LEV. or LEVEL. A name printed before the height is not part of the mark. A sheet with no drawing role keeps none.
+- id: FOOTING_RUNS_FROM_GRID
+  module: takeoff/extract/footing_strips.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "reading: 9 inch wall runs on the footing plan 369.2 ft against the bar schedule's strip of 396 ft (-6.8%); the 4.5 inch runs, 280.6 ft, are not matched to a bar schedule line", value: 369.2, pack: RD-1, met: true}
+  notes: A footing layout plan that prints no scale and no wall marks is scaled from its own grid, the lettered row and the numbered column of bubbles against the printed overall dimensions, and the wall runs on it are summed per drawn thickness (4.5, 9 or 13.5 inch). A plan on which the grid and the printed dimensions do not agree reports NO_SCALE. The runs are a reading only; no quantity and no audit expectation is drawn from them.
+- id: SLAB_TOP_EXTENTS
+  module: takeoff/extract/slab_top_extents.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "reading: 79 of the 84 #4@6 callouts on the three slab plans paired with a printed extent; the extent plus 9 inch matches 26 of the 51 distinct top extra bar cut lengths in the bar schedule (an offset chosen at random matches 8 on average, the next best offset 18)", value: 79, pack: RD-2, met: true}
+    - {office: B, sets: 1, metric: "reading: 2 of 2 slab layout plans found, 31 callouts, no printed extent on either, nothing paired", value: 0, pack: RD-2, met: false}
+  notes: A slab layout plan is the sheet whose title line has a word SLAB and a word LAYOUT at one type height, with at least 6 bar callouts. Each callout of one spacing (not a stirrup pair) is paired with the nearest printed feet-and-inches length that runs the same way, within 6 type heights; a length is used once. The reading is the printed extent only. It does not turn it into a cut length, reads no panel and draws no span, and the pairing does not tell a top bar from a bottom bar (two bottom callouts on the one set pair with a dimension that is not theirs).
+- id: TANK_CAPACITY_LABELS
+  module: takeoff/extract/tank_capacity.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "reading: the underground tank size read from the architectural plan, 8 x 6 ft by 5 ft deep, with the printed gallons agreeing to the size (1497.06 printed, 1497.6 computed); before, no size was read for it from the drawings", value: 1, pack: TK-1, met: true}
+    - {office: B, sets: 1, metric: "reading: 0 tanks labelled in words with a size product on the set, so nothing read and nothing changed", value: 0, pack: TK-1, met: false}
+  notes: A tank is found by its words (under ground, over head, septic with tank) and its size is the product of two or three feet-and-inch lengths, with the gallons per cubic foot as a last factor, in the lines nearest the label. The two longer-side lengths are the plan and the third is the depth. When the gallons are printed they are checked against the size and the result is written beside the size. The label reader that splits a line at the first x, and the label words of the tank marks, are not changed when the rule is off. The harvesting tank of such a plan is not a kind the tank record knows and is not read.
 - id: TUBE_FIXTURE_ITEMS
+
   module: takeoff/extract/tube_fixtures.py
   kind: READING
   default: off

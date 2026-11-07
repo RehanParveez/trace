@@ -330,6 +330,20 @@ def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.
       meta["foundation_runs"] = runs_doc
   except Exception:
     meta["foundation_runs_reader"] = "FAILED"
+  try:
+    from app.modules.drawings_boq.takeoff.extract import footing_strips as FS
+    strips = FS.read(index, raw.words)
+    if strips:
+      meta[FS.META_KEY] = strips
+  except Exception:
+    meta["footing_strip_reader"] = "FAILED"
+  try:
+    from app.modules.drawings_boq.takeoff.extract import slab_top_extents as STX
+    extents = STX.read(raw.words)
+    if extents:
+      meta[STX.META_KEY] = extents
+  except Exception:
+    meta["slab_top_extent_reader"] = "FAILED"
   pdf = raw.stats.get("pdf_type")
   if pdf:
     meta["pdf_type"] = pdf

@@ -84,7 +84,8 @@ def label_fields(words: list, label, page_no: int | None = None) -> dict:
     pair = (text, d, sorted((a, b), reverse=True))
     break
   if pair is None:
-    return {}
+    from app.modules.drawings_boq.takeoff.extract import tank_capacity as TC
+    return TC.fields(words, label, page_no) if TC.enabled() else {}
   out = {"plan": {"route": "LABEL", "page_no": page_no, "mm": [round(v * MM_PER_IN, 1) for v in pair[2]], "basis": "INSIDE", "text": pair[0]}}
   
   lone = []
@@ -160,6 +161,9 @@ def sheet_fields(sites: list, walls: list, words: list, mm_per_pt: float) -> int
   
     fields = detail_fields(f)
     labels = [w for w in words if _is_label(kind, w)]
+    if not labels:
+      from app.modules.drawings_boq.takeoff.extract import tank_capacity as TC
+      labels = TC.labels(words).get(kind, []) if TC.enabled() else []
     if labels and "plan" not in fields:
       for k, v in label_fields(words, labels[0]).items():
         fields.setdefault(k, v)

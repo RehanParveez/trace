@@ -80,6 +80,11 @@ def _tank_labels(words: list) -> dict:
       if 0 < da <= 4.0 * max(w.length, h) and dc <= 1.2 * h:
         out.setdefault("SEPTIC", []).append(w)
         break
+  from app.modules.drawings_boq.takeoff.extract import tank_capacity as TC
+  if TC.enabled():
+    for kind, found in TC.labels(words).items():
+      mine = out.setdefault(kind, [])
+      mine.extend(w for w in found if w not in mine)
   return out
 
 NEAR_LABEL_LINES = 5.0

@@ -33,6 +33,8 @@ import { SpacesSchedulesSection } from "./SpacesSchedulesSection";
 import { RebarSummaryPanel } from "../../drawings_boq/rebar/components/RebarSummaryPanel";
 import { SteelAuditPanel } from "../rebar/bbs/components/SteelAuditPanel";
 import { BOQPricingPanel } from "../pricing/components/BOQPricingPanel";
+import { ProjectBillingPanel } from "../pricing/components/ProjectBillingPanel";
+import { ProjectPricedPanel } from "../pricing/components/ProjectPricedPanel";
 import { ProjectRateOverridesPanel } from "../pricing/components/ProjectRateOverridesPanel";
 import { RevisionComparePanel } from "../pricing/components/RevisionComparePanel";
 import { useTranslation } from "react-i18next";
@@ -303,6 +305,10 @@ export function DrawingsBoqSection({
             versionId={selectedVersion.id}
             canPrice={canPriceBOQ}
           />
+
+          <ProjectBillingPanel projectId={projectId} />
+
+          <ProjectPricedPanel projectId={projectId} />
 
           <BOQItemTable
             boqVersionId={selectedVersion.id}
