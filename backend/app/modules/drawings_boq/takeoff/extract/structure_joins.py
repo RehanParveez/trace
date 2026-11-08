@@ -5,6 +5,7 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 
 FLOOR_RANK = ("BASEMENT", "GROUND", "FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "ROOF", "MUMTY")
 JOINED, ASSUMED, MISSING, UNSURE = "JOINED", "ASSUMED", "JOIN_MISSING", "UNSURE"
+AI_READ = "AI_READ"
 SIZE_TOL_MM = 13.0
 IN_MM = 25.4
 
@@ -30,7 +31,7 @@ def cell_trusted(rec: dict) -> bool:
 def schedule_index(rows: list) -> dict:
   out: dict = {}
   for row in rows:
-    cells = ((((row.get("meta") or {}).get("structure_tables") or {}).get("column_schedule")) or {}).get("cells") or []
+    cells = [*(((((row.get("meta") or {}).get("structure_tables") or {}).get("column_schedule")) or {}).get("cells") or []), *(((row.get("meta") or {}).get("ai_schedule") or {}).get("column_schedule") or [])]
     for rec in cells:
       if rec.get("state") != "READ":
         continue
@@ -77,7 +78,7 @@ def join_column(mark: str, floor: str | None, index: dict) -> dict:
 def beam_section_index(rows: list) -> dict:
   out: dict = {}
   for row in rows:
-    for rec in ((((row.get("meta") or {}).get("structure_tables") or {}).get("beam_sections")) or {}).get("sections") or []:
+    for rec in [*(((((row.get("meta") or {}).get("structure_tables") or {}).get("beam_sections")) or {}).get("sections") or []), *(((row.get("meta") or {}).get("ai_schedule") or {}).get("beam_sections") or [])]:
       k = norm(rec["mark"])
       held = out.get(k)
       if held is None:
@@ -95,6 +96,8 @@ def join_beam(mark: str, size_mm: tuple | None, index: dict) -> dict:
   rec = held["rec"]
   to = {"sheet": held["sheet"], "class": "BEAM_SECTION", "key": f"{rec['mark']}-section"}
   sec = [round(rec["width_in"] * IN_MM, 1), round(rec["depth_in"] * IN_MM, 1)]
+  if rec.get("source") == AI_READ:
+    return {"status": UNSURE, "to": to, "size_mm": sec, "feed": False, "reason": "the section was read from a schedule by the AI and no drawn section confirms it"}
   if held["conflict"] or rec.get("conflicts"):
     return {"status": UNSURE, "to": to, "size_mm": sec, "feed": False, "reason": "the section is drawn with different sizes or disagrees with its own sketch"}
   if size_mm and (abs(size_mm[0] - sec[0]) > SIZE_TOL_MM or abs(size_mm[1] - sec[1]) > SIZE_TOL_MM):

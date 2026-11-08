@@ -76,14 +76,15 @@ class Settings(BaseSettings):
   
   engine_v2_org_ids: str = ""
   engine_ai_shadow_org_ids: str = ""
+  engine_ai_role_vote_org_ids: str = ""
+  engine_ai_note_org_ids: str = ""
+  engine_ai_schedule_org_ids: str = ""
   engine_spec_org_ids: str = ""
   engine_stage_org_ids: str = ""
   engine_layer_org_ids: str = ""
   engine_derived_org_ids: str = ""
   engine_pdf_derived_auto: bool = True
-  takeoff_project_facts: bool = True
   engine_default_convention: str = "FRAME_MONOLITHIC_A"
-
   calc_max_concurrent_runs_per_org: int = 3
   calc_run_rate_limit_per_minute: int = 5
   calc_run_rate_limit_per_hour: int = 30

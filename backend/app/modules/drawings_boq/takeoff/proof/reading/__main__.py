@@ -3,8 +3,8 @@ import argparse
 import json
 import os
 import sys
-import yaml
 from app.modules.drawings_boq.takeoff.run import reading_adapter as AD
+from app.modules.drawings_boq.takeoff.proof.reading import evidence as EVD
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
 from app.modules.drawings_boq.takeoff.proof.reading import intake as IN
 from app.modules.drawings_boq.takeoff.proof.reading import profile as PR
@@ -305,6 +305,10 @@ def main(argv: list | None = None) -> int:
   sp.add_argument("--out", default="reading_out")
   sp.add_argument("--score-dir", help="a folder with <case>/score.json from proof.score, to take the fact results from instead of reading the case again")
   sp.add_argument("--write-baseline", action="store_true")
+  ep = sub.add_parser("evidence", help="score every set with every reading rule off and on, fill the rule registry's evidence from the reading score, and with --write turn the rules that meet their metric on two offices GENERAL and on")
+  ep.add_argument("--out", default="reading_out")
+  ep.add_argument("--score-dir")
+  ep.add_argument("--write", action="store_true")
   dp = sub.add_parser("diff", help="the outcomes that changed since the baseline")
   dp.add_argument("--out", default="reading_out")
   pf = sub.add_parser("profile", help="measure every page of a PDF (words, paths, images, fonts, decode gain, text type); --draft-register fills register.yaml from Trace's own identity")
@@ -334,7 +338,7 @@ def main(argv: list | None = None) -> int:
   cp.add_argument("--score-json", help="reading_score.json from a score run, for the first-sight scores (default reading_out/reading_score.json)")
   args = ap.parse_args(argv)
   return {"list": cmd_list, "validate": cmd_validate, "init": cmd_init, "score": cmd_score, "diff": cmd_diff, "parity": cmd_parity, "set-join": cmd_set_join, "gate": cmd_gate, "profile": cmd_profile,
-    "intake": IN.cmd_intake, "redraft": IN.cmd_redraft, "first-sight-check": IN.cmd_first_sight_check, "corpus": IN.cmd_corpus}[args.command](args)
+    "evidence": EVD.cmd_evidence, "intake": IN.cmd_intake, "redraft": IN.cmd_redraft, "first-sight-check": IN.cmd_first_sight_check, "corpus": IN.cmd_corpus}[args.command](args)
 
 if __name__ == "__main__":
   sys.exit(main())

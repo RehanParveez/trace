@@ -235,6 +235,7 @@ def items_of(rows: list) -> SetRead:
     cov = {r["class"]: r["status"] for r in ((row.get("stats") or {}).get("coverage") or {}).get("classes") or []}
     out.pages[sheet] = PageInfo(sheet=sheet, mm_per_pt=row.get("mm_per_pt"), paper_mm=(paper.get("width_mm"), paper.get("height_mm")) if paper else None, upright=upright, register=register_of(row), coverage=cov)
     source = _source(meta.get("pdf_type") or {})
+    walls = WPC.sheet_walls([c for c in row.get("candidates") or [] if _live(c) and class_of(c) == V.ElementClass.WALL], row.get("mm_per_pt")) if WPC.junctions_enabled() else []
     for c in row.get("candidates") or []:
       if not _live(c):
         continue
@@ -254,14 +255,14 @@ def items_of(rows: list) -> SetRead:
       reasons = [r for r in RS.reasons_of(c) if r in V.Reason.names()]
       mark = None if c.tag in (None, "") else str(c.tag)
       join = (c.facts or {}).get(JOIN_OF.get(c.category, "")) if c.category in JOIN_OF else None
-      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.enabled():
-        parts = WPC.pieces_of(c, row.get("mm_per_pt"))
+      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.active():
+        parts = WPC.pieces_of(c, row.get("mm_per_pt"), walls)
         if len(parts) > 1:
           for part in parts:
             out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom={"polyline": part}, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))
           continue
-      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.enabled():
-        parts = WPC.pieces_of(c, row.get("mm_per_pt"))
+      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.active():
+        parts = WPC.pieces_of(c, row.get("mm_per_pt"), walls)
         if len(parts) > 1:
           for part in parts:
             out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom={"polyline": part}, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))

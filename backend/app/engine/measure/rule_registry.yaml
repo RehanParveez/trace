@@ -80,32 +80,56 @@
 - id: COLUMN_PLAN_CENSUS
   module: takeoff/extract/column_census_items.py
   kind: READING
+  class: COLUMN
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
   default: off
   status: CANDIDATE
   evidence:
     - {office: A, sets: 1, metric: "reading: truth columns matched with the rule on (51 of 51; off: 51 of 51), none invented, nothing else moved", value: 51, pack: CV-3, met: true}
     - {office: C, sets: 1, metric: "reading: truth columns matched with the rule on (2 of 5; off: 2 of 5), the other 3 are hatched squares the census does not count", value: 2, pack: CV-3, met: false}
     - {office: D, sets: 1, metric: "reading: truth columns matched with the rule on (37 of 37; off: 0 of 37), 16 more made and all flagged for confirmation", value: 37, pack: CV-3, met: false}
+    - {office: A, sets: 1, metric: "reading score, class COLUMN, every reading rule on: matched 51 of 51 (right value 51), true 51 of 51 read; off: matched 51 of 51", value: 51, pack: GX-2, met: true}
+    - {office: B, sets: 1, metric: "reading score, class COLUMN, every reading rule on: matched 0 of 4 (right value 0), true 0 of 0 read; off: matched 0 of 4", value: 0, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class COLUMN, every reading rule on: matched 2 of 5 (right value 2), true 2 of 2 read; off: matched 2 of 5", value: 2, pack: GX-2, met: false}
+    - {office: D, sets: 1, metric: "reading score, class COLUMN, every reading rule on: matched 37 of 37 (right value 37), true 37 of 53 read; off: matched 0 of 37", value: 37, pack: GX-2, met: false}
   notes: Each column the plan census finds on a floor, basement, roof or slab plan becomes one column member of its measured size and floor, read as unsure, with its mark left open and its storey height asked for. It stands in for members the schedule stacks cannot make, so a set with no column schedule still counts its columns. Not read here, because no PDF of the set is in the workspace, offices B and E. Held at CANDIDATE until a set of office B is read with the rule on.
 - id: COLUMN_DETAIL_CELLS
   module: takeoff/extract/column_detail_cells.py
   kind: READING
-  default: off
-  status: CANDIDATE
+  class: COLUMN_SCHEDULE_CELL
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
+  default: on
+  status: GENERAL
   evidence:
     - {office: C, sets: 1, metric: "reading: column schedule cells matched from the column details (4 of 4; off: 0 of 4)", value: 4, pack: CV-3, met: true}
     - {office: D, sets: 1, metric: "reading: column schedule cells matched from the column details (5 of 5; off: 0 of 5)", value: 5, pack: CV-3, met: true}
     - {office: A, sets: 1, metric: "reading: column details on the set (none printed; 17 of 17 schedule cells unchanged)", value: 0, pack: CV-3, met: false}
+    - {office: A, sets: 1, metric: "reading score, class COLUMN_SCHEDULE_CELL, every reading rule on: matched 17 of 17 (right value 17), true 17 of 17 read; off: matched 17 of 17", value: 17, pack: GX-2, met: true}
+    - {office: B, sets: 3, metric: "reading score, class COLUMN_SCHEDULE_CELL, every reading rule on: matched 10 of 10 (right value 6), true 7 of 7 read; off: matched 0 of 10", value: 6, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class COLUMN_SCHEDULE_CELL, every reading rule on: matched 4 of 4 (right value 4), true 4 of 4 read; off: matched 0 of 4", value: 4, pack: GX-2, met: true}
+    - {office: D, sets: 1, metric: "reading score, class COLUMN_SCHEDULE_CELL, every reading rule on: matched 5 of 5 (right value 5), true 5 of 5 read; off: matched 0 of 5", value: 5, pack: GX-2, met: true}
   notes: Each column section a detail sheet draws, with its mark, its size and its bars, is read as a schedule cell, one cell for the mark on that sheet. A cell whose size differs from the size the schedule prints for the mark carries CONFLICT_IN_DRAWING and becomes a question of which governs. The ties are not read as one spacing, because a detail may print a second one. Cells read with fewer than three votes on a size carry OCR_LOW_CONFIDENCE. Evidence is from two offices, but office B cannot be read here to show nothing else moves, so it stays CANDIDATE.
 - id: COLUMN_SCHEDULE_AXES
   module: takeoff/extract/schedule_axes.py
   kind: READING
-  default: off
-  status: CANDIDATE
+  class: COLUMN_SCHEDULE_CELL
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
+  default: on
+  status: GENERAL
   evidence:
     - {office: A, sets: 1, metric: "reading: false schedules found on the set's pages (0 of 17)", value: 0, pack: CV-3, met: false}
     - {office: C, sets: 2, metric: "reading: false schedules found on the set's pages (0 of 60)", value: 0, pack: CV-3, met: false}
     - {office: D, sets: 1, metric: "reading: false schedules found on the set's pages (0 of 6)", value: 0, pack: CV-3, met: false}
+    - {office: A, sets: 1, metric: "reading score, class COLUMN_SCHEDULE_CELL, every reading rule on: matched 17 of 17 (right value 17), true 17 of 17 read; off: matched 17 of 17", value: 17, pack: GX-2, met: true}
+    - {office: B, sets: 3, metric: "reading score, class COLUMN_SCHEDULE_CELL, every reading rule on: matched 10 of 10 (right value 6), true 7 of 7 read; off: matched 0 of 10", value: 6, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class COLUMN_SCHEDULE_CELL, every reading rule on: matched 4 of 4 (right value 4), true 4 of 4 read; off: matched 0 of 4", value: 4, pack: GX-2, met: true}
+    - {office: D, sets: 1, metric: "reading score, class COLUMN_SCHEDULE_CELL, every reading rule on: matched 5 of 5 (right value 5), true 5 of 5 read; off: matched 0 of 5", value: 5, pack: GX-2, met: true}
   notes: A column schedule whose marks run across the top and whose size and steel labels run down the side, or the reverse, is read from where the words lie, when the sheet's own reader found no schedule. It reads nothing on any set here, so it has no measured gain; it is proved on a made-up layout in both orientations and on a plan, and it made no false schedule on 183 pages of 5 PDFs. Floors and stirrups are not read by it.
 - id: SUPPORT_CONFLICT_QUESTIONS
   module: takeoff/completeness/ledger.py
@@ -120,42 +144,73 @@
 - id: FOOTING_SECTION_ITEMS
   module: takeoff/extract/footing_section_items.py
   kind: READING
+  class: FOOTING_SECTION
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
   default: off
   status: CANDIDATE
   evidence:
     - {office: C, sets: 1, metric: "reading: truth footing sections matched from the section and view sheets (8 of 8; off: 0 of 8)", value: 8, pack: CV-4, met: true}
     - {office: D, sets: 1, metric: "reading: truth footing sections matched (0 of 6; off: 0 of 6); the captions print no mark and the pad sections have no reader", value: 0, pack: CV-4, met: false}
     - {office: A, sets: 1, metric: "reading: truth footing sections matched (0 of 5; off: 0 of 5); no section on the set has a caption the reader knows", value: 0, pack: CV-4, met: false}
+    - {office: A, sets: 1, metric: "reading score, class FOOTING_SECTION, every reading rule on: matched 0 of 5 (right value 0), true 0 of 0 read; off: matched 0 of 5", value: 0, pack: GX-2, met: false}
+    - {office: B, sets: 3, metric: "reading score, class FOOTING_SECTION, every reading rule on: matched 0 of 21 (right value 0), true 0 of 0 read; off: matched 0 of 21", value: 0, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class FOOTING_SECTION, every reading rule on: matched 8 of 8 (right value 8), true 8 of 8 read; off: matched 0 of 8", value: 8, pack: GX-2, met: true}
+    - {office: D, sets: 1, metric: "reading score, class FOOTING_SECTION, every reading rule on: matched 0 of 6 (right value 0), true 0 of 0 read; off: matched 0 of 6", value: 0, pack: GX-2, met: false}
   notes: A footing section the prep reader read whole (a mark, a wall, its steps, its trench, its plain concrete and sand) and a foundation view with its two sides become footing section records, so the sections the engine already uses are also in the reading. Only what a drawing prints whatever datum its office measures depth from is carried, so the depth below ground, the mix and the bars are left out. A section whose own check found a disagreement carries CONFLICT_IN_DRAWING. A section with no mark is not made. Not read here, offices B and E. Held at CANDIDATE because one office shows a gain.
 - id: BEAM_CALLOUTS
   module: takeoff/extract/beam_callouts.py
   kind: READING
-  default: off
-  status: CANDIDATE
+  class: BEAM_SECTION
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
+  default: on
+  status: GENERAL
   evidence:
     - {office: C, sets: 1, metric: "reading: beam sections whose top and bottom bars and ring are read by place (4 of 4 on the section sheet, all equal to the truth)", value: 4, pack: CV-5, met: true}
     - {office: D, sets: 1, metric: "reading: beam sections the callouts give (0; the section sheet's callouts are not one to a picture, and the two the reader found had no bars and were dropped)", value: 0, pack: CV-5, met: false}
-    - {office: A, sets: 1, metric: "reading: beam sections the callouts give (0; the sheet already has its sections from the schedule reader)", value: 0, pack: CV-5, met: false}
+     - {office: A, sets: 1, metric: "reading: beam sections the callouts give (0; the sheet already has its sections from the schedule reader)", value: 0, pack: CV-5, met: false}
+    - {office: A, sets: 1, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 27 of 27 (right value 27), true 27 of 27 read; off: matched 27 of 27", value: 27, pack: GX-2, met: true}
+    - {office: B, sets: 2, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 0 of 54 (right value 0), true 0 of 0 read; off: matched 0 of 54", value: 0, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 4 of 5 (right value 4), true 4 of 4 read; off: matched 0 of 5", value: 4, pack: GX-2, met: true}
+    - {office: D, sets: 1, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 8 of 9 (right value 8), true 8 of 9 read; off: matched 0 of 9", value: 8, pack: GX-2, met: false}
   notes: A beam caption (a mark right after the word BEAM) owns the bar callouts that lie right of or beneath its picture and above the caption block, each callout to the nearest caption. The highest of at least two bar callouts is the top steel and the lowest the bottom steel; a callout followed by letters on its line is a note about a bar and is left out. The ring is taken only from a picture that also gave two bar callouts. A caption with fewer than two bar callouts gives nothing. Not read here, offices B and E. Held at CANDIDATE because a second office shows no gain.
 - id: BEAM_SECTION_ITEMS
   module: takeoff/extract/beam_section_items.py
   kind: READING
-  default: off
-  status: CANDIDATE
+  class: BEAM_SECTION
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
+  default: on
+  status: GENERAL
   evidence:
     - {office: C, sets: 1, metric: "reading: truth beam sections matched (4 of 5; off: 0 of 5)", value: 4, pack: CV-5, met: true}
     - {office: D, sets: 1, metric: "reading: truth beam sections matched (8 of 9; off: 0 of 9), 1 more made under another name and flagged", value: 8, pack: CV-5, met: true}
     - {office: A, sets: 1, metric: "reading: truth beam sections matched (27 of 27; off: 27 of 27), nothing else moved", value: 27, pack: CV-5, met: true}
+    - {office: A, sets: 1, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 27 of 27 (right value 27), true 27 of 27 read; off: matched 27 of 27", value: 27, pack: GX-2, met: true}
+    - {office: B, sets: 2, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 0 of 54 (right value 0), true 0 of 0 read; off: matched 0 of 54", value: 0, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 4 of 5 (right value 4), true 4 of 4 read; off: matched 0 of 5", value: 4, pack: GX-2, met: true}
+    - {office: D, sets: 1, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 8 of 9 (right value 8), true 8 of 9 read; off: matched 0 of 9", value: 8, pack: GX-2, met: false}
   notes: The beam sections the prep reader read (top and bottom bars, the ring) and the callouts read by place become beam section records, one for each mark of a sheet, the callouts winning where both give a mark. A sheet whose sections the schedule reader gave is not read again. The width and depth are left out on purpose, because the vertical label of a flat beam is its width. Evidence is from two offices that both show a gain and one that shows no change, but office B cannot be read here to show nothing else moves, so it stays CANDIDATE.
 - id: SLAB_CALLOUT_ITEMS
   module: takeoff/extract/slab_callouts.py
   kind: READING
-  default: off
-  status: CANDIDATE
+  class: SLAB_BAR_CALLOUT
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
+  default: on
+  status: GENERAL
   evidence:
     - {office: A, sets: 1, metric: "reading: truth slab bar callouts matched (132 of 132; off: 0 of 132), none invented", value: 132, pack: CV-6, met: true}
     - {office: C, sets: 1, metric: "reading: truth slab bar callouts matched (31 of 31; off: 0 of 31), none invented", value: 31, pack: CV-6, met: true}
     - {office: D, sets: 1, metric: "reading: slab bar callouts made on the set (0; its plan sheets are not titled as reinforcement plans, and no callout is in its truth)", value: 0, pack: CV-6, met: false}
+    - {office: A, sets: 1, metric: "reading score, class SLAB_BAR_CALLOUT, every reading rule on: matched 132 of 132 (right value 132), true 132 of 132 read; off: matched 0 of 132", value: 132, pack: GX-2, met: true}
+    - {office: B, sets: 2, metric: "reading score, class SLAB_BAR_CALLOUT, every reading rule on: matched 312 of 313 (right value 312), true 312 of 312 read; off: matched 0 of 313", value: 312, pack: GX-2, met: true}
+    - {office: C, sets: 1, metric: "reading score, class SLAB_BAR_CALLOUT, every reading rule on: matched 31 of 31 (right value 31), true 31 of 31 read; off: matched 0 of 31", value: 31, pack: GX-2, met: true}
   notes: A slab bar string is a word that is a bar number and a spacing ("#4@6 inch C/C"), read from the sheet's text layer with the word's own place. It is kept only on a sheet that has a plan view titled as a reinforcement plan (not a foundation, column or beam one), because a footing section or a stirrup prints the same string. A string with two spacings ("#3@4"/8"C/C") is listed apart and not read. The place is the page's own frame, the one the truth uses. Binding to a panel or to a drawn bar line is not done here; the panel graph still does it on the one sheet it reads. Not read here, offices B and E. Held at CANDIDATE because office D shows nothing and office B cannot be read here.
 - id: SLAB_THICKNESS_ITEMS
   module: takeoff/extract/slab_thickness_items.py
@@ -170,32 +225,48 @@
 - id: DRAIN_LABEL_ITEMS
   module: takeoff/extract/drain_labels.py
   kind: READING
+  class: DRAIN_POINT
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
   default: off
   status: CANDIDATE
   evidence:
     - {office: C, sets: 1, metric: "reading: truth drain points matched (42 of 42; off: 0 of 42), none invented", value: 42, pack: CV-10, met: true}
     - {office: A, sets: 1, metric: "reading: drain labels made on the set (0; it has no plumbing plan sheet in this form)", value: 0, pack: CV-10, met: false}
     - {office: D, sets: 1, metric: "reading: drain labels made on the set (0; it has no plumbing plan sheet in this form)", value: 0, pack: CV-10, met: false}
+    - {office: C, sets: 1, metric: "reading score, class DRAIN_POINT, every reading rule on: matched 42 of 42 (right value 42), true 42 of 42 read; off: matched 0 of 42", value: 42, pack: GX-2, met: true}
   notes: A drain point on a plumbing plan is printed as a short label in the sheet's text layer (manhole, gully trap, kitchen hole, P-trap, rain pipe). The place is the middle of the label word, and a size printed as 18"x18" just above it is the size of the point. A label is kept only on a sheet whose title block says plumbing and whose role is a plan, because the legend prints the same letters and a section prints a manhole that is not a point on the plan. The five labels are the ones this office prints; another office that writes them another way gets nothing here, which is a gap and not a wrong count. Not read here, offices B and E. Held at CANDIDATE because one office shows a gain.
 - id: FINISH_SPEC_ITEMS
   module: takeoff/extract/finish_spec_items.py
   kind: READING
+  class: FINISH_LAYER
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
   default: off
   status: CANDIDATE
   evidence:
     - {office: C, sets: 1, metric: "reading: truth finish layers matched with every printed value equal (27 of 27; off: 0 of 27), none invented", value: 27, pack: CV-9, met: true}
     - {office: A, sets: 1, metric: "reading: finish specification lists made on the set (0; none is printed in the bullet form)", value: 0, pack: CV-9, met: false}
     - {office: D, sets: 1, metric: "reading: finish specification lists made on the set (0; none is printed in the bullet form)", value: 0, pack: CV-9, met: false}
+    - {office: B, sets: 1, metric: "reading score, class FINISH_LAYER, every reading rule on: matched 0 of 16 (right value 0), true 0 of 0 read; off: matched 0 of 16", value: 0, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class FINISH_LAYER, every reading rule on: matched 27 of 27 (right value 27), true 27 of 27 read; off: matched 0 of 27", value: 27, pack: GX-2, met: true}
   notes: A finish specification list is a heading line that ends in SPECIFICATION followed by lines that each start with a bullet, read from the sheet's text layer with the place of each line. A line belongs to the nearest heading before it whose text span holds its bullet. The mark of a list is the heading without the word SPECIFICATION. The layers are numbered from the first line, a line that wraps under the text of the one before it is joined to it, and a thickness is stated only where the number is followed by THICK or TH. A list needs two lines. A list printed without bullets is not read. Not read here, offices B and E. Held at CANDIDATE because one office shows a gain.
 - id: LINTEL_SCHEDULE_ITEMS
   module: takeoff/extract/lintel_schedule_items.py
   kind: READING
+  class: LINTEL_TYPE
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
   default: off
   status: CANDIDATE
   evidence:
     - {office: D, sets: 1, metric: "reading: truth lintel types matched with every printed value equal (5 of 5; off: 0 of 5), none invented", value: 5, pack: CV-8, met: true}
     - {office: C, sets: 1, metric: "reading: lintel types made from the printed table (4, marks printed; the set's truth has no lintel rows, so nothing is scored)", value: 0, pack: CV-8, met: false}
     - {office: A, sets: 1, metric: "reading: lintel types made on the set (0; no lintel table is read from it)", value: 0, pack: CV-8, met: false}
+    - {office: D, sets: 1, metric: "reading score, class LINTEL_TYPE, every reading rule on: matched 5 of 5 (right value 5), true 5 of 5 read; off: matched 0 of 5", value: 5, pack: GX-2, met: true}
   notes: A row of the lintel schedule the prep reader has already read (span, width, depth, bars, rings) becomes a lintel type with the bars as printed. A mark the table prints is kept. A table that prints no marks gets L1, L2 and so on counted down the rows in the order printed; those items carry the reason VALUE_DEFAULTED because the mark is the reader's own. The printed span is not made an item; it is written with an inch mark and read as feet, which is not settled. Not read here, offices B and E. Held at CANDIDATE because one office shows a gain, and that office's marks are the reader's.
 - id: TANK_NO_SEED
   module: takeoff/extract/tank_record.py
@@ -210,31 +281,65 @@
 - id: WALL_PIECES_AT_DOORS
   module: takeoff/extract/wall_pieces.py
   kind: READING
+  class: WALL
+  recall: 0.5
+  precision: 0.8
+  accuracy: 0.9
   default: off
   status: CANDIDATE
   evidence:
     - {office: C, sets: 1, metric: "reading: truth walls matched by a read run (28 of 48; off: 24 of 48)", value: 4, pack: CV-8b, met: true}
     - {office: D, sets: 1, metric: "reading: truth walls matched by a read run (27 of 61; off: 29 of 61); the truth keeps three long walls whole across their doors", value: -2, pack: CV-8b, met: false}
     - {office: A, sets: 1, metric: "reading: wall runs of the set cut at doors (the set's truth has no wall rows, so nothing is scored)", value: 0, pack: CV-8b, met: false}
+    - {office: B, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 69 of 87 (right value 69), true 57 of 75 read; off: matched 25 of 87", value: 69, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 20 of 48 (right value 20), true 20 of 64 read; off: matched 24 of 48", value: 20, pack: GX-2, met: false}
+    - {office: D, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 19 of 61 (right value 19), true 19 of 108 read; off: matched 29 of 61", value: 19, pack: GX-2, met: false}
   notes: A straight wall run the reader has drawn through its doors is reported as the pieces between the door gaps. A gap counts as a door when its printed width is within 15 percent of the width of a door opening the run carries. A gap that matches a window or no opening is closed because a window does not end a wall on a plan. A piece shorter than the wall thickness is left out. A run that is not one straight line, or has no door gap, is reported whole.
+- id: WALL_PIECES_AT_JUNCTIONS
+  module: takeoff/extract/wall_pieces.py
+  kind: READING
+  class: WALL
+  recall: 0.5
+  precision: 0.8
+  accuracy: 0.9
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: B, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 69 of 87 (right value 69), true 57 of 75 read; off: matched 25 of 87", value: 69, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 20 of 48 (right value 20), true 20 of 64 read; off: matched 24 of 48", value: 20, pack: GX-2, met: false}
+    - {office: D, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 19 of 61 (right value 19), true 19 of 108 read; off: matched 29 of 61", value: 19, pack: GX-2, met: false}
+  notes: A straight wall run the reader has drawn through the places where another wall run meets or crosses it is reported as the pieces between those places, each gap as long as the drawn thickness of the run that meets it. A run meets another when the end of the other lies within one wall thickness of its line, or the other crosses it, and the two are at least 20 degrees from parallel. A piece shorter than the wall thickness is left out. A run that is not one straight line is reported whole.
 - id: PARAPET_FROM_ROOF_PLAN
   module: takeoff/extract/roof_plan_walls.py
   kind: READING
+  class: PARAPET
+  recall: 0.5
+  precision: 0.8
+  accuracy: 0.9
   default: off
   status: CANDIDATE
   evidence:
     - {office: C, sets: 1, metric: "reading: truth parapets matched (6 of 12; off: 0 of 12), wall pairs unchanged at 24 of 48", value: 6, pack: CV-8b, met: true}
     - {office: D, sets: 1, metric: "reading: truth parapets matched (0 of 11; the roof-wall stage finds no outline on the set, so nothing changes)", value: 0, pack: CV-8b, met: false}
+    - {office: C, sets: 1, metric: "reading score, class PARAPET, every reading rule on: matched 7 of 12 (right value 7), true 7 of 12 read; off: matched 0 of 12", value: 7, pack: GX-2, met: false}
+    - {office: D, sets: 1, metric: "reading score, class PARAPET, every reading rule on: matched 0 of 11 (right value 0), true 0 of 0 read; off: matched 0 of 11", value: 0, pack: GX-2, met: false}
   notes: A wall run that the roof-wall stage has judged to be a parapet is reported as a parapet and not as a wall. The judgement is the stage's own and is not widened here, so a plan on which the stage found no outline reports no parapet.
 - id: LEVEL_MARK_ITEMS
   module: takeoff/extract/level_marks.py
   kind: READING
-  default: off
-  status: CANDIDATE
+  class: LEVEL
+  recall: 0.7
+  precision: 0.9
+  accuracy: 0.9
+  default: on
+  status: GENERAL
   evidence:
     - {office: C, sets: 1, metric: "reading: truth level marks matched by mark and place (35 of 35; off: 0 of 35), none invented on a sheet the truth lists", value: 35, pack: CV-9b, met: true}
     - {office: D, sets: 1, metric: "reading: truth level marks matched by mark and place (43 of 43; off: 0 of 43), none invented", value: 43, pack: CV-9b, met: true}
     - {office: A, sets: 1, metric: "reading: level marks made on the set (0; the set prints no mark in this form)", value: 0, pack: CV-9b, met: false}
+    - {office: B, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 2 of 21 (right value 2), true 0 of 5 read; off: matched 0 of 21", value: 2, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 35 of 35 (right value 35), true 35 of 35 read; off: matched 0 of 35", value: 35, pack: GX-2, met: true}
+    - {office: D, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 43 of 43 (right value 43), true 43 of 43 read; off: matched 0 of 43", value: 43, pack: GX-2, met: true}
   notes: A level mark is a sign and a height in feet and inches, or in inches alone, printed as two words or as one word that ends in the mark. The reader takes the words of a sheet in each of the four directions of text. The place is the middle of the mark, and the mark is the sign and the height followed by the name of the level when the same line goes on to print one that ends in LEV, LEV. or LEVEL. A name printed before the height is not part of the mark. A sheet with no drawing role keeps none.
 - id: FOOTING_RUNS_FROM_GRID
   module: takeoff/extract/footing_strips.py
@@ -273,3 +378,15 @@
     - {office: D, sets: 1, metric: "reading: tube fixtures made (0; the set has no electrical plan sheet)", value: 0, pack: CV-10b, met: false}
     - {office: A, sets: 1, metric: "reading: tube fixtures made (0; the set has no electrical plan sheet)", value: 0, pack: CV-10b, met: false}
   notes: A tube light drawn on an electrical plan sheet as two equal straight lines side by side is read as an electrical point at the middle of the pair. The two lines are heavy strokes of the sheet, parallel within one and a half degrees, equal in length within 4 percent and one along the other. The pair is a fixture only when its length is between 300 and 1500 mm and the gap between its lines between 10 and 60 mm at the sheet's scale; the lines of a wall are a brick apart and are left out. The point is not named from the legend. A tube light drawn in any other way is not read.
+- id: PROJECT_FACTS
+  module: takeoff/run/reader.py
+  kind: PIPELINE
+  default: on
+  status: GENERAL
+  evidence:
+    - {office: A, sets: 2, metric: "reading: recall 80.3 to 80.3 percent, precision 83.0 to 83.0 percent, project facts off to on", value: 0.0, pack: GX-3, met: false}
+    - {office: B, sets: 7, metric: "reading: recall 64.1 to 64.1 percent, precision 96.7 to 96.8 percent, project facts off to on", value: 0.0, pack: GX-3, met: true}
+    - {office: C, sets: 2, metric: "reading: recall 47.6 to 47.2 percent, precision 90.6 to 90.5 percent, project facts off to on", value: -0.4, pack: GX-3, met: false}
+    - {office: D, sets: 1, metric: "reading: recall 56.6 to 66.1 percent, precision 67.1 to 81.4 percent, project facts off to on", value: 9.4, pack: GX-3, met: true}
+    - {office: E, sets: 1, metric: "reading: recall 66.7 to 66.7 percent, no judged rows, project facts off to on", value: 0.0, pack: GX-3, met: false}
+  notes: The reader takes what the other PDFs of a project print (scales, floor heights, level names, and the choice of one plan for each floor) and uses it where a drawing prints nothing of its own. Off, each PDF is read alone. This switch was a setting of the application, TAKEOFF_PROJECT_FACTS; it is now a rule of the registry so that the product and the proof read the same way.

@@ -6,8 +6,8 @@ ARCH_PLAN, FURNITURE_PLAN, STRUCT_PLAN, DETAIL, SECTION, ELEVATION, MEP_PLAN, NO
   "ARCH_PLAN", "FURNITURE_PLAN", "STRUCT_PLAN", "DETAIL", "SECTION", "ELEVATION", "MEP_PLAN", "NOTES", "SCHEDULE", "COVER")
 ROLES = (ARCH_PLAN, FURNITURE_PLAN, STRUCT_PLAN, DETAIL, SECTION, ELEVATION, MEP_PLAN, NOTES, SCHEDULE, COVER)
 PLAN_ROLES = (ARCH_PLAN, FURNITURE_PLAN, STRUCT_PLAN, MEP_PLAN)
-WEIGHTS = {"TITLE_BLOCK": 0.35, "DRAWING_LIST": 0.30, "VIEW_TITLES": 0.20, "CONTENT": 0.15, "VIEW_COUNT": 0.30}
-DETAIL_TITLE = re.compile(r"\bSEC(?:TION)?\.?\s*\w+\s*[-\u2013]\s*\w+|\bFOUNDATION\s+PLAN\s+\w+|\bTYP\.|\bDETAILS?\b", re.I)   
+WEIGHTS = {"TITLE_BLOCK": 0.35, "DRAWING_LIST": 0.30, "VIEW_TITLES": 0.20, "CONTENT": 0.15, "VIEW_COUNT": 0.30, "AI_SHEET": 0.25}
+DETAIL_TITLE = re.compile(r"\bSEC(?:TION)?\.?\s*\w+\s*[-\u2013]\s*\w+|\bFOUNDATION\s+PLAN\s+\w+|\bTYP\.|\bDETAILS?\b", re.I)
 MIN_DETAIL_VIEWS = 3            
 DETAIL_SHARE = 0.8              
 MAX_ROOM_SIZES = 3             
@@ -17,6 +17,8 @@ STRONG = 0.7
 IMAGE_PAGE_COVER = 0.5          
 IMAGE_PAGE_MAX_WORDS = 120
 VIEW_MAJORITY = 0.5             
+AI_QUOTE_CHARS = 60
+CONFIDENCE_CERTAINTY = {"high": 0.9, "medium": 0.6, "low": 0.3}
 SHEET_TYPE_ROLE = {"SECTION": SECTION, "ELEVATION": ELEVATION, "DETAIL": DETAIL, "SCHEDULE": SCHEDULE, "LEGEND": NOTES, "SPEC": NOTES}
 
 READ_AS_OF = {COVER: "SKIP", NOTES: "SKIP", ELEVATION: "SKIP", DETAIL: "DETAILS_ONLY", SECTION: "DETAILS_ONLY", SCHEDULE: "DETAILS_ONLY"}
@@ -148,3 +150,37 @@ def apply(identity: dict, signals: list) -> dict:
   vote = decide(signals)
   identity["role_vote"] = vote
   return vote
+
+def ai_signal(answer: dict | None) -> dict | None:
+  a = answer or {}
+  role = a.get("role")
+  if role not in ROLES:
+    return None
+  quote = str((a.get("quotes") or {}).get("role") or "").strip()[:AI_QUOTE_CHARS]
+  certainty = CONFIDENCE_CERTAINTY.get(str(a.get("confidence") or "").lower(), 0.0)
+  return _signal("AI_SHEET", role, certainty, f"the AI read this page as {role.lower().replace('_', ' ')}" + (f": {quote}" if quote else ""))
+
+def rule_signals(vote: dict | None) -> list:
+  return [s for s in (vote or {}).get("signals") or [] if s.get("signal") != "AI_SHEET"]
+
+def shadow_vote(vote: dict | None, answer: dict | None) -> dict | None:
+  ai = ai_signal(answer)
+  signals = rule_signals(vote)
+  if ai is None:
+    return None
+  without, with_ai = decide(signals), decide([*signals, ai])
+  flagged = ai["certainty"] >= STRONG and any(s["certainty"] >= STRONG and s["role"] != ai["role"] for s in signals)
+  keep = ("role", "held", "why", "votes", "read_as")
+  return {"without": {k: without[k] for k in keep}, "with": {k: with_ai[k] for k in keep}, "ai_role": ai["role"], "ai_why": ai["why"], "flagged": flagged,
+    "changes": without["role"] != with_ai["role"]}
+
+def apply_ai(identity: dict, answer: dict | None) -> bool:
+  if identity.get("basis") == "PERSON":
+    return False
+  ai = ai_signal(answer)
+  signals = rule_signals(identity.get("role_vote"))
+  if ai is None:
+    return False
+  identity["role_vote"] = decide([*signals, ai])
+  return True
+

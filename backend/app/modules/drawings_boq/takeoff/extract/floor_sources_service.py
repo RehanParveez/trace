@@ -9,7 +9,7 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
 from app.modules.drawings_boq.takeoff.extract.pipeline import _status
 from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import ChooseFloorSourcesRequest
-from app.core.config import settings
+from app.modules.drawings_boq.takeoff.run import reader as RDR
 
 def _now() -> datetime:
   return datetime.now(timezone.utc)
@@ -30,7 +30,7 @@ class FloorSourceService(ExtractService):
   async def _read(self, org: UUID, drawing_id: UUID, project: bool = False) -> tuple:
     drawing = await self.core._pdf_drawing(org, drawing_id)
     drawings = [drawing]
-    if project and settings.takeoff_project_facts and drawing.is_current_revision:
+    if project and RDR.project_facts_on() and drawing.is_current_revision:
       drawings = await self.core.repo.project_pdf_drawings(org, drawing.project_id)
       if drawing.id not in {d.id for d in drawings}:
         drawings = [*drawings, drawing]

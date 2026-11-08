@@ -8,7 +8,7 @@ class NotesService(ExtractService):
   async def report(self, org: UUID, drawing_id: UUID) -> dict:
     await self.core._pdf_drawing(org, drawing_id)
     sheets = await self.core.repo.sheets(org, drawing_id)
-    read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
+    read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts"), "ai_facts": (s.prep_meta or {}).get("ai_facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
     items = drawing_facts.gather(read)["items"]
     page_of = {s.id: s.page_no for s in sheets}
     rows = await self.repo.candidates(org, [s.id for s in sheets])

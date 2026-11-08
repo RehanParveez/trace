@@ -17,12 +17,12 @@ def _org(user: User) -> UUID:
   return user.active_membership.organization_id
 
 @router.get("/drawings/{drawing_id}/takeoff/ai-shadow", response_model=ShadowSummaryResponse)
-async def shadow_summary(drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db)):
-  return await AiShadowService(session).summary(_org(current_user), drawing_id)
+async def shadow_summary(drawing_id: UUID, task: str = "SHEET", current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db)):
+  return await AiShadowService(session).summary(_org(current_user), drawing_id, task)
 
 @router.post("/drawings/{drawing_id}/takeoff/ai-shadow", response_model=ShadowRunResponse)
 async def shadow_run(drawing_id: UUID, payload: ShadowRunRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db)):
-  return await AiShadowService(session).run(_org(current_user), current_user.id, drawing_id, payload.mode, payload.limit, payload.force)
+  return await AiShadowService(session).run(_org(current_user), current_user.id, drawing_id, payload.mode, payload.limit, payload.force, payload.task)
 
 @router.get("/takeoff/ai-shadow/{read_id}/crop", response_class=Response, responses={200: {"content": {"image/png": {}}}})
 async def shadow_crop(read_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db)):

@@ -42,6 +42,8 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--cases-dir", help="the folder with the case PDFs (default: TRACE_CASES_DIR)")
   ap.add_argument("--out", default="score_out")
   ap.add_argument("--robust", action="store_true")
+  ap.add_argument("--no-parity", action="store_true", help="skip the parity step (it reads each case that has overrides once more, as the product does)")
+  ap.add_argument("--parity-out", default="bench_out", help="the folder parity.md and parity.json are written to")
   ap.add_argument("--no-toggles", action="store_true", help="skip the convention toggle proofs (each reads its case twice)")
   ap.add_argument("--write-hashes", action="store_true", help="write the engine output of this run to proof/cases/<case>/engine_hash.txt instead of comparing")
   args = ap.parse_args(argv)
@@ -74,6 +76,11 @@ def main(argv: list | None = None) -> int:
   print("== score")
   score_args = [*CHECK_CASES, "--out", args.out, "--no-other"] + (["--cases-dir", args.cases_dir] if args.cases_dir else []) + (["--robust"] if args.robust else [])
   SC.main(score_args)
+  if not args.no_parity and not args.write_hashes:
+    from app.modules.drawings_boq.takeoff.proof import parity as PA
+    print("== parity")
+    ok_p, note_p = PA.step(args.out, args.cases_dir, args.parity_out, list(CHECK_CASES))
+    results.append(("product and proof parity", ok_p, note_p))
   
   for case in CHECK_CASES:
     path = pathlib.Path(args.out) / case / "score.json"

@@ -79,6 +79,11 @@ def _merge_project(sheets: list, others: list) -> dict:
   from app.modules.drawings_boq.takeoff.prep import project_facts as PF
   return PF.bundle([("this", s) for s in sheets] + [(name, s) for name, group in others for s in group], "this")
 
+PROJECT_FACTS_RULE = "PROJECT_FACTS"
+
+def project_facts_on() -> bool:
+  return RR.on(PROJECT_FACTS_RULE)
+
 def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, project: bool | None = None, storeys: list | None = None,
   sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None) -> list:
   if rules:
@@ -86,8 +91,7 @@ def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_B
       return read_set(items, pages, budget_s=budget_s, scale_unverified=scale_unverified, project=project, storeys=storeys, sections=sections, runs=runs, structure=structure)
     
   from types import SimpleNamespace
-  from app.core.config import settings
-  use = settings.takeoff_project_facts if project is None else project
+  use = project_facts_on() if project is None else project
   prepared = [analyse_pdf(data, (pages or {}).get(name)) for name, data in items]
   scales = _outline_scales(prepared) if use else [dict() for _ in prepared]
   groups = [[SimpleNamespace(page_no=no, label=None, prep_meta=a.meta) for no, a in sorted(analysed.items())] for _doc, analysed, _p in prepared]
@@ -128,7 +132,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
   schedule = DS.gather(PSV.PrepService._schedule_sheets(sheets))
   floor_keys = PSV.PrepService._floor_keys(sheets)
 
-  gathered = DF.gather([{"page_no": s.page_no, "label": s.label, "facts": s.prep_meta.get("facts")} for s in sheets if s.prep_meta.get("facts") is not None])
+  gathered = DF.gather([{"page_no": s.page_no, "label": s.label, "facts": s.prep_meta.get("facts"), "ai_facts": s.prep_meta.get("ai_facts")} for s in sheets if s.prep_meta.get("facts") is not None])
   drawing = {"floor_heights": storey_heights(floor_keys, gathered.get("storeys")), "slab_values": DF.slab_values(gathered["items"]), "spec_facts": SPF.build(gathered["items"]),
     "beam_sections": BD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("beam_details")} for s in sheets if s.prep_meta.get("beam_details")]),
     "tank_details": TD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("tank_details")} for s in sheets if s.prep_meta.get("tank_details")]),
@@ -214,7 +218,8 @@ def choose_floor_sources(read: list, chosen: dict | None = None) -> dict:
     key = (sh.get("drawing_order") or 0, sh["page_no"])
     info[key] = {"page_no": sh["page_no"], "drawing_order": key[0], "from_plans": bool(title.get("composite")), "plan_kind": (meta.get("identity") or {}).get("plan_kind"),
       "dims": int((meta.get("floor_clues") or {}).get("dim_pairs") or 0), "advice": ((sh.get("stats") or {}).get("sheet_role") or {}).get("advice"),
-      "read_as": (sh.get("stats") or {}).get("read_as")}
+      "read_as": (sh.get("stats") or {}).get("read_as"),
+      "purpose": ((sh.get("stats") or {}).get("sheet_role") or {}).get("purpose") or (meta.get("identity") or {}).get("purpose")}
     
     sheet_floor = None if title.get("composite") else title.get("level_hint")
     floors = set(FO.floors_read(sh.get("stats"), title)[0]) | ({sheet_floor} if sheet_floor else set())
@@ -226,15 +231,21 @@ def choose_floor_sources(read: list, chosen: dict | None = None) -> dict:
   used = {}
   for floor, pages in by_floor.items():
     pool = [k for k in pages if BP.eligible(info[k])]
-    if len(pool) < 2:
+    sheets = [k for k in pages if BP.openings_sheet(info[k])]
+    if not pool or (len(pool) < 2 and not sheets):
       continue
     keep = next((k for k in pool if k[1] == chosen.get(floor)), None) or min(pool, key=lambda k: BP.key(info[k]))
     used[floor] = keep[1]
-    for page in pool:
+    source = BP.openings_source(keep, sheets, pages)
+    for page in [*pool, *sheets]:
       if page != keep:
         services = BP.keeps_services(info[page], info[keep], [info[k] for k in pool])
         for c in pages[page]:
-          if services and BP.is_services(c):
+          if (services and BP.is_services(c)) or (page == source and BP.is_opening(c)):
             continue
           c.facts = {**(c.facts or {}), FS.SET_ASIDE: {"by": FS.SET_ASIDE_BY, "page_no": keep[1]}}
+    if source != keep:
+      for c in pages[keep]:
+        if BP.is_opening(c):
+          c.facts = {**(c.facts or {}), FS.SET_ASIDE: {"by": FS.SET_ASIDE_BY, "page_no": source[1]}}
   return used

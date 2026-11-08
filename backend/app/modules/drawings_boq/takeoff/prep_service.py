@@ -39,7 +39,7 @@ from app.modules.drawings_boq.takeoff.prep import scale_bar
 from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
 from app.modules.drawings_boq.takeoff.prep import picture_checks, reader_status
 from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, AGREE_TOL as ANALYSIS_AGREE_TOL, analyze_page
-from app.core.config import settings
+from app.modules.drawings_boq.takeoff.run import reader as RDR
 from app.modules.drawings_boq.takeoff.prep import project_facts as PF, outline_witness as OW
 from app.modules.drawings_boq.takeoff.extract import scale_outline as SO
 from app.modules.drawings_boq.takeoff.extract.scalegate import auto_scale_gate
@@ -324,7 +324,7 @@ class PrepService:
     locked = await self._sheet(org, sheet.id, lock=True)
     old_meta = dict(locked.prep_meta or {})
     meta = {**result.meta, "prepared_at": _now().isoformat()}
-    for keep in ("user_unit", "kind_source"):
+    for keep in ("user_unit", "kind_source", "ai_facts", "ai_schedule"):
       if keep in old_meta:
         meta[keep] = old_meta[keep]
     if (old_meta.get("identity") or {}).get("basis") == "PERSON":
@@ -685,8 +685,8 @@ class PrepService:
 
   async def fact_bundle(self, org: UUID, drawing, *, project: bool | None = None) -> dict:
     """The facts the reader takes for one drawing (project_facts.bundle): its own, with what the other current PDFs of the project print added where the drawing prints nothing. With
-    TAKEOFF_PROJECT_FACTS off, or a project of one PDF, they are the drawing's own, as drawing_* gives them."""
-    use = settings.takeoff_project_facts if project is None else project
+    the PROJECT_FACTS rule off, or a project of one PDF, they are the drawing's own, as drawing_* gives them."""
+    use = RDR.project_facts_on() if project is None else project
     pairs = [(d.id, s) for d, s in await self._project_sheets(org, drawing.project_id)] if use and drawing.is_current_revision else []
     if not any(d == drawing.id for d, _ in pairs):
       pairs = [(drawing.id, s) for s in await self.repo.sheets(org, drawing.id)] + ([p for p in pairs if p[0] != drawing.id] if use and drawing.is_current_revision else [])
@@ -728,7 +728,7 @@ class PrepService:
       await self.session.rollback()
 
   async def _outline_pass_safe(self, org: UUID, project_id: UUID) -> None:
-    if not settings.takeoff_project_facts:
+    if not RDR.project_facts_on():
       return
     try:
       await self.outline_pass(org, project_id)

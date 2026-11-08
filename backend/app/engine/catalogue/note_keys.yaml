@@ -1,0 +1,18 @@
+agree_tolerance_mm: 0.5
+units_mm:
+  mm: 1.0
+  cm: 10.0
+  m: 1000.0
+  in: 25.4
+  ft: 304.8
+keys:
+  - {key: CLEAR_COVER, shape: MM, unit: mm, range: [10.0, 100.0], scopes: [slab, beam, column, footing, wall], fills: [steel_cover_slab_mm, steel_cover_beam_mm, steel_cover_column_mm, steel_cover_footing_mm, steel_cover_wall_mm], about: "Concrete cover to the steel, by member"}
+  - {key: LAP_LENGTH, shape: LAP, unit: mm, range: [150.0, 3000.0], scopes: null, fills: [bar_lap_dia], about: "Lap length of a bar, with the bar number it is given for"}
+  - {key: SLAB_THICKNESS, shape: MM, unit: mm, range: [75.0, 400.0], scopes: null, fills: [], about: "Thickness of a slab"}
+  - {key: RCC_WALL_THICKNESS, shape: MM, unit: mm, range: [100.0, 600.0], scopes: null, fills: [], about: "Thickness of a concrete wall"}
+  - {key: PLASTER_THICKNESS, shape: MM, unit: mm, range: [6.0, 40.0], scopes: [cement mortar plaster], fills: [plaster_inside_mm], about: "Thickness of cement mortar plaster"}
+  - {key: FILL_LAYER, shape: MM, unit: mm, range: [50.0, 600.0], scopes: null, fills: [fill_layer_mm], about: "Thickness of a compacted fill layer"}
+  - {key: PCC_THICKNESS, shape: MM, unit: mm, range: [25.0, 300.0], scopes: [pcc bed], fills: [pcc_thickness_mm], about: "Thickness of a plain concrete bed"}
+  - {key: STAIR_WIDTH, shape: MM, unit: mm, range: [600.0, 3000.0], scopes: null, fills: [], about: "Clear width of a stair"}
+  - {key: STEEL_GRADE, shape: GRADE, unit: grade, range: [40.0, 75.0], values: [40, 60, 75], scopes: null, fills: [], about: "Grade of reinforcing steel, 40, 60 or 75, and the bars it is for"}
+  - {key: CONCRETE_CLASS, shape: PSI, unit: psi, range: [1000.0, 10000.0], scopes: null, fills: [], about: "Compressive strength of concrete in psi, and the members it is for"}

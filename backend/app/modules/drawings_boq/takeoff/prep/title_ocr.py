@@ -55,6 +55,7 @@ def apply(page, raw, meta: dict) -> None:
     return
   identity["floor"], identity["floor_basis"] = found["floor"], found["basis"]
   identity.setdefault("evidence", []).append({"floor": found["floor"], "text": found["text"], "ocr": True, "where": found["where"]})
+  identity["purpose"] = identity.get("purpose") or PR.purpose([(found["text"], 0.0)])
   title = meta.get("title")
   if isinstance(title, dict) and not title.get("level_hint") and not title.get("composite"):
     title["level_hint"] = found["floor"]

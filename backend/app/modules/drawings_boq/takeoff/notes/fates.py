@@ -48,7 +48,7 @@ def _pages(rows: list) -> list:
 
 def _row(it: dict, fate: str, why: str, param: str | None = None, **extra) -> dict:
   return {"kind": it.get("kind"), "text": it.get("text"), "pages": sorted(it.get("pages") or []), "count": int(it.get("count", 1)), "value_mm": it.get("value_mm"),
-    "value": it.get("value"), "scope": it.get("scope"), "heading": it.get("heading"), "fate": fate, "param": param, "param_text": PARAM_TEXT.get(param) if param else None, "why": why, **extra}
+    "value": it.get("value"), "scope": it.get("scope"), "heading": it.get("heading"), "source": it.get("source"), "quote": it.get("quote"), "fate": fate, "param": param, "param_text": PARAM_TEXT.get(param) if param else None, "why": why, **extra}
 
 def _flag(code: str, severity: str, title: str, message: str, pages: list) -> dict:
   return {"code": code, "severity": severity, "title": title, "message": message, "pages": sorted({int(p) for p in pages})}

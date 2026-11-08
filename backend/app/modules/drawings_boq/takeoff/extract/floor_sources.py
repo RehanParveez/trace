@@ -54,7 +54,7 @@ def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
   basis = "ORDER" if sheet.get("_order") else ((sheet.get("identity") or {}).get("floor_basis") if (sheet.get("identity") or {}).get("floor") == floor else None) or "TITLE"
   return {"sheet_id": sheet["sheet_id"], "page_no": sheet["page_no"], "from_plans": from_plans, "drawing_id": sheet.get("drawing_id"), "drawing_name": sheet.get("drawing_name"),
     "drawing_order": sheet.get("drawing_order") or 0, "plan_kind": (sheet.get("identity") or {}).get("plan_kind"), "dims": int((sheet.get("clues") or {}).get("dim_pairs") or 0),
-    "read_as": (sheet["stats"] or {}).get("read_as"),"floor_basis": basis, "floor_guess": (sheet.get("_order") or {}).get("reason"), "advice": ((sheet["stats"] or {}).get("sheet_role") or {}).get("advice"), "purpose": ((sheet["stats"] or {}).get("sheet_role") or {}).get("purpose"),
+    "read_as": (sheet["stats"] or {}).get("read_as"),"floor_basis": basis, "floor_guess": (sheet.get("_order") or {}).get("reason"), "advice": ((sheet["stats"] or {}).get("sheet_role") or {}).get("advice"), "purpose": ((sheet["stats"] or {}).get("sheet_role") or {}).get("purpose") or ((sheet.get("identity") or {}).get("purpose")),
     "caption": plan["caption"] if plan else title.get("title"),
     "wall_m": round(sum(float((c.facts or {}).get("length_cc_m") or 0.0) for c in walls), 1), "walls": len(walls), "items": len(rows),
     "open": open_n, "accepted": accepted, "rejected": sum(1 for c in rows if c.decision == "REJECTED"),

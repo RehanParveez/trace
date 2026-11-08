@@ -10,6 +10,7 @@ from app.modules.drawings_boq.takeoff.prep import title_block as TB
 ZONE = "TITLE_BLOCK_STRIPS"
 PAGE_ZONE = "PAGE"
 BOX_ZONE = "BOX"
+SHEET_ZONE = "SHEET"
 LONG_SIDE_PX = 1500
 MAX_SCALE = 2.0
 GAP_PX = 12
@@ -38,6 +39,9 @@ def title_block_region() -> dict:
 
 def page_region() -> dict:
   return {"zone": PAGE_ZONE, "long_side_px": PAGE_LONG_SIDE_PX}
+
+def sheet_region() -> dict:
+  return {"zone": SHEET_ZONE, "strips": title_block_region(), "page": page_region()}
 
 def box_region(box) -> dict:
   return {"zone": BOX_ZONE, "box": [round(float(v), 1) for v in box], "long_side_px": BOX_LONG_SIDE_PX}
@@ -120,3 +124,26 @@ def text_in_boxes(contents: bytes, page_no: int, boxes) -> str | None:
       textpage.close()
   finally:
     doc.close()
+
+def page_text(contents: bytes, page_no: int, page_pt) -> str | None:
+  width, height = (float(v) for v in page_pt)
+  return text_in_boxes(contents, page_no, [[0.0, 0.0, width, height]])
+
+NOTE_GRIDS = ((350, 1, 1), (800, 2, 1), (10 ** 9, 2, 2))
+NOTE_TILE_OVERLAP = 0.04
+
+def note_grid(words: int) -> tuple:
+  return next((cols, rows) for limit, cols, rows in NOTE_GRIDS if words <= limit)
+
+def note_region() -> dict:
+  return {"zone": "NOTE_TILES", "grids": [list(g) for g in NOTE_GRIDS], "overlap": NOTE_TILE_OVERLAP, "long_side_px": BOX_LONG_SIDE_PX}
+
+def schedule_region() -> dict:
+  return {**note_region(), "zone": "SCHEDULE_TILES"}
+
+def note_tiles(page_pt, words: int) -> list:
+  width, height = (float(v) for v in page_pt)
+  cols, rows = note_grid(words)
+  dx, dy = width * NOTE_TILE_OVERLAP, height * NOTE_TILE_OVERLAP
+  return [[max(0.0, c * width / cols - dx), max(0.0, r * height / rows - dy), min(width, (c + 1) * width / cols + dx), min(height, (r + 1) * height / rows + dy)] for r in range(rows) for c in range(cols)]
+

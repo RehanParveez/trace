@@ -1,15 +1,18 @@
 from __future__ import annotations
 import re
+from app.engine.measure import readings as RD
 from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.extract import slab_panels as SP
 
 RULE = "SLAB_CALLOUT_ITEMS"
 META_KEY = "slab_callout_items"
 SOURCE_KEY = "slab_callouts"
-CALLOUT = re.compile(r"^#\s*(?P<bar>\d{1,2})\s*[\"”″]?\s*@\s*(?P<s>\d{1,2}(?:\.\d)?)\s*[\"”″]?\s*(?P<alt>/\s*\d{1,2}(?:\.\d)?\s*[\"”″]?)?\s*(?:C\s*/\s*C)?\s*$", re.I)
+INCH_MARK = r"(?:[\"”″]|'')?"
+CALLOUT = re.compile(rf"^#\s*(?P<bar>\d{{1,2}})\s*{INCH_MARK}\s*@\s*(?P<s>\d{{1,2}}(?:\.\d)?)\s*{INCH_MARK}\s*(?P<alt>/\s*\d{{1,2}}(?:\.\d)?\s*{INCH_MARK})?\s*(?:C\s*/\s*C)?\s*$", re.I)
 PLAN_KINDS = ("STRUCT_PLAN", "PLAN")
-PLAN_WORD = "REINFORCEMENT"
-NOT_SLAB = ("FOUNDATION", "FOOTING", "COLUMN", "BEAM", "LINTEL", "STAIR", "TANK", "SEPTIC")
+PLAN_WORDS = ("REINFORCEMENT", "SLAB")
+NOT_SLAB = ("FOUNDATION", "FOOTING", "COLUMN", "STAIR", "TANK", "SEPTIC")
+NOT_SLAB_UNLESS_SLAB = ("BEAM", "LINTEL")
 
 def enabled() -> bool:
   return RR.on(RULE)
@@ -40,9 +43,19 @@ def plan_view(meta: dict) -> str | None:
     key = (view.get("key") if isinstance(view, dict) else None) or ""
     kind, _, rest = key.partition(":")
     title = rest.partition(":")[2].upper()
-    if kind in PLAN_KINDS and PLAN_WORD in title and not any(n in title for n in NOT_SLAB):
-      return key
+    if kind in PLAN_KINDS and any(w in title for w in PLAN_WORDS) and not any(n in title for n in NOT_SLAB):
+      if "REINFORCEMENT" in title or "SLAB" in title or not any(n in title for n in NOT_SLAB_UNLESS_SLAB):
+        return key
   return None
+
+def captionless_plan(meta: dict, got: dict) -> bool:
+  if len(got.get("callouts") or []) < RD.SLAB_PLAN_MIN_CALLOUTS:
+    return False
+  for view in meta.get("views") or []:
+    key = (view.get("key") if isinstance(view, dict) else None) or ""
+    if any(n in key.upper() for n in NOT_SLAB):
+      return False
+  return True
 
 def apply(rows: list) -> int:
   made = 0
@@ -56,8 +69,10 @@ def apply(rows: list) -> int:
       continue
     
     got = (meta.get("structure_tables") or {}).get(SOURCE_KEY)
-    key = plan_view(meta) if got else None
-    if not got or key is None or not got.get("callouts"):
+    if not got or not got.get("callouts"):
+      continue
+    key = plan_view(meta)
+    if key is None and not captionless_plan(meta, got):
       continue
     meta[META_KEY] = {"view": key, "callouts": got["callouts"], "alternate": len(got.get("alternate") or [])}
     made += len(got["callouts"])

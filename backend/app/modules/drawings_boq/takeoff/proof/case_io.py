@@ -98,12 +98,24 @@ def load_storeys(folder: str) -> list:
     out.append({"floor": floor, given[0]: float(e[given[0]]), "answered_by": by, "date": str(e["date"]), "source": str(e["source"])})
   return out
 
+PACK_ID = re.compile(r"^[A-Z]{2}-\d$")
+
+def load_override_entries(folder: str) -> list:
+  from app.engine.measure import rule_registry as RR
+  path = os.path.join(folder, RR.OVERRIDES_FILE)
+  out = []
+  for i, e in enumerate(_list_file(path)):
+    _need(path, i, e, "rule", "value", "reason", "date", "until")
+    if not PACK_ID.match(str(e["until"])):
+      raise ValueError(f"{path}, entry {i + 1}: until names a pack, as in BX-3.")
+    out.append(dict(e))
+  return out
+
 def load_overrides(folder: str) -> dict:
   from app.engine.measure import rule_registry as RR
   path = os.path.join(folder, RR.OVERRIDES_FILE)
   out: dict = {}
-  for i, e in enumerate(_list_file(path)):
-    _need(path, i, e, "rule", "value", "reason", "date")
+  for i, e in enumerate(load_override_entries(folder)):
     if str(e["value"]).lower() not in ("on", "off") and not isinstance(e["value"], bool):
       raise ValueError(f"{path}, entry {i + 1}: value is on or off.")
     try:

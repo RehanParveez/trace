@@ -1370,6 +1370,7 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--rules", help="run every case named under this rules file (a company_rules file), whatever its case.yaml says")
   ap.add_argument("--pin-baseline", action="store_true", help="write the hash and engine output of each case run to baseline_scores.json where the case has no pin")
   ap.add_argument("--repin", action="store_true", help="write them even where the case already has a different pin")
+  ap.add_argument("--product", action="store_true", help="read each case as the product does: the rules its proof_overrides.yaml forces on are left at the registry's defaults")
 
   args = ap.parse_args(argv)
   names = args.cases or CIO.list_cases()
@@ -1388,6 +1389,8 @@ def main(argv: list | None = None) -> int:
       print(f"{name}: SKIPPED. {e}")
       done[name] = {"case": name, "status": "BAD_CASE", "message": str(e)}
       continue
+    if args.product:
+      case = {**case, "overrides": None}
     files, probs = CIO.find_files(case, files_dir)
     if probs:
       print(f"{name}: NO_FILES. {' '.join(probs)}")

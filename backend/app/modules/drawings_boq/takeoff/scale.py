@@ -45,6 +45,9 @@ def _fraction(raw: str) -> Decimal:
     return Decimal(num) / Decimal(den)
   return Decimal(raw)
 
+def is_not_to_scale(text: str | None) -> bool:
+  return bool(_NOT_TO_SCALE.search(_clean(text or "")))
+
 def parse_scale_text(text: str | None) -> Decimal | None:
   s = _clean(text or "")
   if not s or _NOT_TO_SCALE.search(s):

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 NOT_IN_CHOICE = ("OVERLAY", "FRAMING", "FOUNDATION")
+OPENINGS = "OPENINGS"
+OPENING_CATEGORIES = ("DOOR", "WINDOW", "VENTILATOR")
+DRAWN_BY = "SYMBOL_SCAN"
 
 def tier(plan_kind, dims: int) -> int | None:
   if plan_kind in NOT_IN_CHOICE:
@@ -11,8 +14,21 @@ def tier(plan_kind, dims: int) -> int | None:
     return 2
   return 3
 
+def openings_sheet(src: dict) -> bool:
+  return src.get("purpose") == OPENINGS and src.get("read_as") in (None, "PLAN_ITEMS") and src.get("plan_kind") not in NOT_IN_CHOICE
+
 def eligible(src: dict) -> bool:
-  return src.get("read_as") in (None, "PLAN_ITEMS") and tier(src.get("plan_kind"), int(src.get("dims") or 0)) is not None
+  return src.get("read_as") in (None, "PLAN_ITEMS") and tier(src.get("plan_kind"), int(src.get("dims") or 0)) is not None and src.get("purpose") != OPENINGS
+
+def is_opening(c) -> bool:
+  return c.category in OPENING_CATEGORIES
+
+def marked_openings(rows: list) -> int:
+  return sum(1 for c in rows if is_opening(c) and (c.facts or {}).get("found_by") != DRAWN_BY)
+
+def openings_source(keep: tuple, sheets: list, pages: dict):
+  best = max(sheets, key=lambda k: (marked_openings(pages[k]), -k[1]), default=None)
+  return best if best is not None and marked_openings(pages[best]) > marked_openings(pages.get(keep, [])) else keep
 
 def key(src: dict) -> tuple:
   return (bool(src.get("from_plans")), tier(src.get("plan_kind"), int(src.get("dims") or 0)), src.get("advice") not in (None, "READ"), -int(src.get("dims") or 0),

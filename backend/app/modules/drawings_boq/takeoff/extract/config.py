@@ -63,11 +63,12 @@ SUGGESTIONS = {
 }
 CATEGORIES = tuple(SUGGESTIONS)
 
+DOOR_MARK_PREFIXES = ("D", "DR", "DD", "SD", "MD")
 TAG_CATEGORIES = (
   ("COLUMN", re.compile(r"^(?:C|COL)[-.]?\d{1,3}[A-Z]?$")),
   ("FOOTING", re.compile(r"^(?:F|FT|FTG|PF|SF|IF|CF)[-.]?\d{1,3}[A-Z]?$")),
   ("BEAM", re.compile(r"^(?:B|BM|GB|PB|RB|LB)[-.]?\d{1,3}[A-Z]?$")),
-  ("DOOR", re.compile(r"^(?:D|DR)[-.]?\d{1,3}[A-Z]?$")),
+  ("DOOR", re.compile(r"^(?:" + "|".join(DOOR_MARK_PREFIXES) + r")[-.]?\d{1,3}[A-Z]?$")),
   ("WINDOW", re.compile(r"^(?:W|WN|WIN)[-.]?\d{1,3}[A-Z]?$")),
   ("WINDOW", re.compile(r"^(?:V|VENT)[-.]?\d{1,3}[A-Z]?$")),   
 )

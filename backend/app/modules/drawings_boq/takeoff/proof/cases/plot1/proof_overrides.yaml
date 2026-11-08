@@ -1,24 +1,15 @@
-- rule: COLUMN_DETAIL_CELLS
-  value: on
-  reason: Column details read as schedule cells are proved on two offices, with no set of office B read. Forced on for this proof run so the schedule cell lines of this case are scored.
-  date: '2026-11-06'
 - rule: COLUMN_PLAN_CENSUS
   value: on
   reason: Columns counted from the floor plans have 16 members here that are made and flagged for confirmation. Forced on for this proof run so the 37 columns of the truth are scored.
   date: '2026-11-06'
-- rule: BEAM_SECTION_ITEMS
-  value: on
-  reason: Beam sections read as section records are proved on two offices, with no set of office B read. Forced on for this proof run so the beam section lines of this case are scored.
-  date: '2026-11-06'
+  until: BX-3
 - rule: SLAB_THICKNESS_ITEMS
   value: on
   reason: Slab thickness facts read as reading items are shown on one office only. Forced on for this proof run so the thickness lines of this case are scored.
   date: '2026-11-06'
+  until: BX-3
 - rule: LINTEL_SCHEDULE_ITEMS
   value: on
   reason: The lintel types of the printed table are shown as reading items on one office only. Forced on for this proof run so the lintel lines of this case are scored. The marks are counted down the rows because the table prints none.
   date: '2026-11-06'
-- rule: LEVEL_MARK_ITEMS
-  value: on
-  reason: The level marks a sheet prints are shown as reading items on two offices only, with no set of office B read. Forced on for this proof run so the level lines of this case are scored.
-  date: '2026-11-06'
+  until: BX-3

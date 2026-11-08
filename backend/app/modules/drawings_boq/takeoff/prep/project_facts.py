@@ -60,7 +60,7 @@ def gather_all(sheets: list) -> dict:
   from app.modules.drawings_boq.takeoff.prep import beam_details as BD, facts as DF, schedules as DS, tank_details as TD, units as UR
   from app.modules.drawings_boq.takeoff.prep.storeys import storey_heights
   floor_keys = PSV.PrepService._floor_keys(sheets)
-  gathered = DF.gather([{"page_no": s.page_no, "label": s.label, "facts": s.prep_meta.get("facts")} for s in sheets if s.prep_meta.get("facts") is not None])
+  gathered = DF.gather([{"page_no": s.page_no, "label": s.label, "facts": s.prep_meta.get("facts"), "ai_facts": s.prep_meta.get("ai_facts")} for s in sheets if s.prep_meta.get("facts") is not None])
   return {
     "floor_keys": floor_keys, "gathered": gathered,
     "storey_heights": storey_heights(floor_keys, gathered.get("storeys")),

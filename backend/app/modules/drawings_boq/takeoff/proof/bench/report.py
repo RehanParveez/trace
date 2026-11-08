@@ -17,6 +17,7 @@ from app.modules.drawings_boq.takeoff.ai_reader import cache as CACHE
 from app.modules.drawings_boq.takeoff.ai_reader import cost as COST
 from app.modules.drawings_boq.takeoff.completeness import facts as F
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from app.modules.drawings_boq.takeoff.proof import parity as PA
 from app.modules.drawings_boq.takeoff.proof.bench import failures as FL
 from app.modules.drawings_boq.takeoff.proof.bench import reads as RD
 from app.modules.drawings_boq.takeoff.proof.bench import rows as RW
@@ -171,7 +172,8 @@ def render(ctx: dict) -> str:
     [[n, g["key"], f"{g['offices']} ({','.join(g['office_letters'])})", g["sets"], len(g["items"]), g["rows"], g["money"] if g["money_at_risk"] is None else f"{g['money_at_risk']:,.0f} ({g['money']})", g["suggested_owner"]] for n, g in enumerate(top, 1)]) + [""]
   L += [f"{len(ctx['failures'])} groups in all; the full list with items and example pages is in failures.json. Money is the answer-file quantity times a rate from `rates.yaml`; items with no rate are counted as unpriced, never guessed.", ""]
   L += ["## Checks", "", f"- Silent entries over all sets: product {ctx['silent_total'][PRODUCT]}, proof {ctx['silent_total'][PROOF]} (must be 0).",
-    f"- Stages failed: {ctx['failed_stages'] or 'none'}.", f"- Answers whose element has no ledger entry: {ctx['lost_answers'] or 'none'}."]
+    f"- Stages failed: {ctx['failed_stages'] or 'none'}.", f"- Answers whose element has no ledger entry: {ctx['lost_answers'] or 'none'}.",
+    f"- {PA.bench_line()}"]
   for name, a in ctx["agreement"].items():
     L.append(f"- {name}: {a['compared']} answers-pass line(s) compared with the bench rows, {a['identical']} identical, {a['not_compared']} not compared (several elements or lines per element; {a['no_floor_row']} on a floor the ledger holds no row for)" + (f"; differences: {'; '.join(a['differences'][:5])}" if a["differences"] else "") + ".")
   L += ["", ctx["notes"], ""]

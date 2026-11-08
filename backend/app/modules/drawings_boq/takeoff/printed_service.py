@@ -11,8 +11,8 @@ async def printed_for_drawings(session: AsyncSession, org: UUID, drawing_ids) ->
   if not ids:
     return printed_params.from_items([])
   sheets = (await session.execute(select(TakeoffSheet).where(TakeoffSheet.organization_id == org, TakeoffSheet.drawing_id.in_(ids))
-    .order_by(TakeoffSheet.drawing_id, TakeoffSheet.page_no))).scalars().all()
-  read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
+     .order_by(TakeoffSheet.drawing_id, TakeoffSheet.page_no))).scalars().all()
+  read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts"), "ai_facts": (s.prep_meta or {}).get("ai_facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
   return printed_params.from_items(drawing_facts.gather(read)["items"])
 
 async def spec_facts_for_project(session: AsyncSession, org: UUID, project_id: UUID) -> dict:
@@ -24,7 +24,7 @@ async def spec_facts_for_project(session: AsyncSession, org: UUID, project_id: U
   current = (await session.execute(select(Drawing.id).where(Drawing.organization_id == org, Drawing.id.in_(ids), Drawing.is_current_revision.is_(True)))).scalars().all()
   sheets = (await session.execute(select(TakeoffSheet).where(TakeoffSheet.organization_id == org, TakeoffSheet.drawing_id.in_(current))
     .order_by(TakeoffSheet.drawing_id, TakeoffSheet.page_no))).scalars().all()
-  read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
+  read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts"), "ai_facts": (s.prep_meta or {}).get("ai_facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
   items = drawing_facts.gather(read)["items"]
   pages = sorted({p for it in items if it.get("kind") == "WATERPROOF_LAYER" and it.get("material") == "waterproofing coat" for p in it.get("pages") or []})
   return {"waterproof_pages": pages}

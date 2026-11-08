@@ -5,7 +5,7 @@ from contextlib import contextmanager
 import yaml
 
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rule_registry.yaml")
-KINDS = ("READING", "MEASUREMENT", "CONVENTION")
+KINDS = ("READING", "MEASUREMENT", "CONVENTION", "PIPELINE")
 STATUSES = ("CANDIDATE", "GENERAL", "RETIRED")
 DEFAULTS = ("on", "off")
 MIN_OFFICES = 2
@@ -13,6 +13,7 @@ OVERRIDES_FILE = "proof_overrides.yaml"
 RETIRED_CASE_FILES = ("beam_runs.yaml",)
 FIELDS = ("id", "module", "kind", "default", "status", "evidence", "notes")
 EVIDENCE_FIELDS = ("office", "sets", "metric", "value", "pack", "met")
+CLASS_FIELDS = ("recall", "precision", "accuracy")
 _FORCED = contextvars.ContextVar("rule_forced", default=None)
 _CACHE: dict = {}
 
@@ -51,6 +52,10 @@ def problems(rules: list) -> list:
       missing = [k for k in EVIDENCE_FIELDS if k not in e]
       if missing:
         out.append(f"{rid}: an evidence entry lacks {', '.join(missing)}")
+    if r.get("class"):
+      for f in CLASS_FIELDS:
+        if not isinstance(r.get(f), (int, float)) or not 0 < r[f] <= 1:
+          out.append(f"{rid}: {f} must be a number above 0 and at most 1 when the rule names a class")
     if r.get("default") == "on" and r.get("status") != "GENERAL":
       out.append(f"{rid}: default on needs status GENERAL")
     if r.get("status") == "GENERAL" and len(offices_met(r)) < MIN_OFFICES:
@@ -58,6 +63,9 @@ def problems(rules: list) -> list:
     if r.get("status") == "RETIRED" and r.get("default") != "off":
       out.append(f"{rid}: a retired rule is off")
   return out
+
+def reload() -> None:
+  _CACHE.clear()
 
 def rules() -> list:
   return load()
@@ -72,7 +80,6 @@ def default_of(rule_id: str) -> bool:
   return get(rule_id)["default"] == "on"
 
 def resolve(overrides: dict | None = None) -> dict:
-  """Every rule's state: the registry default, then the overrides given (a proof run only; the application never passes any)."""
   states = {r["id"]: r["default"] == "on" for r in load()}
   for k, v in (overrides or {}).items():
     if k not in states:

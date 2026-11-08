@@ -3,11 +3,20 @@ import math
 from app.engine.measure import rule_registry as RR
 
 RULE = "WALL_PIECES_AT_DOORS"
+JUNCTION_RULE = "WALL_PIECES_AT_JUNCTIONS"
 DOOR = "DOOR"
 WIDTH_SHARE = 0.15
+PARALLEL_SINE = 0.34
+REACH_THICKNESSES = 1.0
 
 def enabled() -> bool:
   return RR.on(RULE)
+
+def junctions_enabled() -> bool:
+  return RR.on(JUNCTION_RULE)
+
+def active() -> bool:
+  return enabled() or junctions_enabled()
 
 def _dist(a, b) -> float:
   return math.hypot(a[0] - b[0], a[1] - b[1])
@@ -51,10 +60,50 @@ def pieces(points: list, gaps: list, min_len: float = 0.0) -> list:
     return [points]
   return [[[a[0] + ux * s, a[1] + uy * s], [a[0] + ux * e, a[1] + uy * e]] for s, e in parts]
 
-def pieces_of(cand, mm_per_pt: float | None) -> list:
-  points = [[float(p[0]), float(p[1])] for p in ((cand.geometry or {}).get("points") or []) if isinstance(p, (list, tuple)) and len(p) >= 2]
-  if not enabled() or len(points) < 2:
-    return [points]
+
+def thickness_pt(cand, mm_per_pt: float | None) -> float:
   thickness = (cand.params or {}).get("thickness_mm")
-  min_len = (float(thickness) / mm_per_pt) if thickness and mm_per_pt else 0.0
-  return pieces(points, door_gaps(cand.facts, cand.params), min_len)
+  return float(thickness) / mm_per_pt if thickness and mm_per_pt else 0.0
+
+def straight(cand) -> list | None:
+  points = [[float(p[0]), float(p[1])] for p in ((cand.geometry or {}).get("points") or []) if isinstance(p, (list, tuple)) and len(p) >= 2]
+  return points if len(points) == 2 and _dist(points[0], points[1]) > 0 else None
+
+def sheet_walls(cands: list, mm_per_pt: float | None) -> list:
+  out = []
+  for c in cands:
+    points = straight(c)
+    if points:
+      out.append((id(c), points, thickness_pt(c, mm_per_pt)))
+  return out
+
+def junction_gaps(points: list, own: int, thick: float, walls: list) -> list:
+  a, b = points[0], points[-1]
+  length = _dist(a, b)
+  ux, uy = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+  reach = REACH_THICKNESSES * thick
+  out = []
+  
+  for ident, (p, q), w in walls:
+    vx, vy = q[0] - p[0], q[1] - p[1]
+    span = math.hypot(vx, vy)
+    cross = ux * vy - uy * vx
+    if ident == own or span <= 0 or abs(cross) / span < PARALLEL_SINE:
+      continue
+    dx, dy = p[0] - a[0], p[1] - a[1]
+    along = (dx * vy - dy * vx) / cross
+    beyond = (dx * uy - dy * ux) / cross
+    if -reach <= beyond * span and beyond * span <= span + reach and 0.0 < along < length:
+      out.append([[a[0] + ux * (along - w / 2.0), a[1] + uy * (along - w / 2.0)], [a[0] + ux * (along + w / 2.0), a[1] + uy * (along + w / 2.0)]])
+  return out
+
+def pieces_of(cand, mm_per_pt: float | None, walls: list | None = None) -> list:
+  points = [[float(p[0]), float(p[1])] for p in ((cand.geometry or {}).get("points") or []) if isinstance(p, (list, tuple)) and len(p) >= 2]
+  if not active() or len(points) < 2:
+    return [points]
+  thick = thickness_pt(cand, mm_per_pt)
+  gaps = door_gaps(cand.facts, cand.params) if enabled() else []
+  if junctions_enabled() and walls and len(points) == 2 and thick > 0:
+    gaps = [*gaps, *junction_gaps(points, id(cand), thick, walls)]
+  return pieces(points, gaps, thick)
+

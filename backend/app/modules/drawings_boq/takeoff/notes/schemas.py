@@ -11,6 +11,8 @@ class NoteRow(BaseModel):
   value: float | None = None
   scope: str | None = None
   heading: str | None = None
+  source: str | None = None
+  quote: str | None = None
   fate: str = Field(description="USED, GRADE, CHECKED, LISTED, CONFLICT or NOT_MADE.")
   param: str | None = None
   param_text: str | None = None

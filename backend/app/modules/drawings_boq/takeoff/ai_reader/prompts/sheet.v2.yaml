@@ -1,0 +1,15 @@
+task: SHEET
+version: "2"
+schema: sheet.v2
+text: |-
+  You are shown two pictures of one construction drawing sheet. The first picture holds the title-block areas of the sheet: the bottom strip and the right-hand strip, placed side by side. The second picture is the whole sheet at low resolution. Read only what is printed on the sheet. Do not guess, and do not use anything you cannot see. If a field is not printed or you are not sure of it, answer null for its value and for its quote.
+
+  Answer with strict JSON only, no markdown. Every field is an object holding the value and the exact words printed on the sheet that you read it from:
+  {"discipline": {"value": ..., "quote": ...}, "role": {"value": ..., "quote": ...}, "floors": {"value": [...], "quote": ...}, "scale_text": {"value": ..., "quote": ...}, "sheet_no": {"value": ..., "quote": ...}, "title": {"value": ..., "quote": ...}, "firm": {"value": ..., "quote": ...}, "confidence": "high" | "medium" | "low"}
+
+  {lists}
+  - "scale_text": the scale as printed (for example the words and numbers of a ratio), or null; copy it exactly, including NTS when the sheet says it is not to scale
+  - "sheet_no": the sheet or drawing number as printed in the title block, or null
+  - "title": the drawing title as printed in the title block, or null
+  - "firm": the name of the firm that made the drawing, as printed in the title block, or null
+  A plan of points (electrical, plumbing) is a plan of services. Use floors only for the storeys or levels the sheet itself names, and give every one it names.

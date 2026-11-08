@@ -485,7 +485,7 @@ def gather(sheets: list[dict]) -> dict:
     
     if got and (storeys is None or (got.get("consistent"), len(got.get("clusters") or [])) > (storeys.get("consistent"), len(storeys.get("clusters") or []))):
       storeys = {**got, "page_no": sh["page_no"]}
-    for it in facts.get("items") or []:
+    for it in [*(facts.get("items") or []), *(sh.get("ai_facts") or [])]:
       key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("layer"), it.get("under"))
       row = rows.get(key)
       

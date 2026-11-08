@@ -18,9 +18,9 @@ class Task:
   validators: tuple
 
 TASKS = {
-  "SHEET": Task("SHEET", TITLE_BLOCK, AIRequestPurpose.SHEET_CLASSIFICATION, C.PROMPT_NAME, C.PROMPT_NAME, ("quote_printed",)),
-  "NOTE_FACT": Task("NOTE_FACT", BOX, AIRequestPurpose.NOTE_FACT, None, None, ()),
-  "SCHEDULE_ROW": Task("SCHEDULE_ROW", BOX, AIRequestPurpose.SCHEDULE_ROW, None, None, ()),
+  "SHEET": Task("SHEET", TITLE_BLOCK, AIRequestPurpose.SHEET_CLASSIFICATION, C.PROMPT_NAME, C.PROMPT_NAME, ("quote_printed", "value_in_quote", "scale_parses", "choice_offered", "box_on_page")),
+  "NOTE_FACT": Task("NOTE_FACT", BOX, AIRequestPurpose.NOTE_FACT, "note.v1", "note.v1", ("quote_printed", "number_printed", "unit_parses", "value_in_range", "choice_offered")),
+  "SCHEDULE_ROW": Task("SCHEDULE_ROW", BOX, AIRequestPurpose.SCHEDULE_ROW, "schedule.v1", "schedule.v1", ("quote_printed", "fields_given", "cells_in_quote", "mark_in_vocab", "floor_known", "size_parses", "size_in_range")),
   "LEGEND_ENTRY": Task("LEGEND_ENTRY", BOX, AIRequestPurpose.LEGEND_ENTRY, None, None, ()),
   "VOCAB": Task("VOCAB", TEXT, AIRequestPurpose.VOCAB, "vocab.v1", "vocab.v1", ("choice_offered",)),
   "EXPLAIN": Task("EXPLAIN", PAGE, AIRequestPurpose.EXPLAIN, None, None, ()),

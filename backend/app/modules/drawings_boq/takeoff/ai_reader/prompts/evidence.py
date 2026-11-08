@@ -4,10 +4,13 @@ import re
 from app.engine.catalogue import model as CM
 from app.modules.drawings_boq.boq_logic import normalise_unit
 from app.modules.drawings_boq.takeoff.prep import texts as TX
+from app.modules.drawings_boq.takeoff import scale as SC
 
 EDGE_SLACK = 0.001
 NUMBER_RX = re.compile(r"(?<![\w.])\d{1,3}(?:,\d{3})+(?:\.\d+)?|(?<![\w.])\d+(?:\.\d+)?")
-NAMES = ("quote_printed", "number_printed", "unit_parses", "value_in_range", "box_on_page", "choice_offered")
+GLYPH_FRACTION = {"\u00bd": 0.5, "\u00bc": 0.25, "\u00be": 0.75, "\u215b": 0.125, "\u215c": 0.375, "\u215d": 0.625, "\u215e": 0.875}
+FRACTION_RX = re.compile(r"(?<![\w.])(?:(?P<w>\d{1,3})\s*)?(?:(?P<n>\d{1,2})\s*/\s*(?P<d>\d{1,2})|(?P<g>[\u00bd\u00bc\u00be\u215b\u215c\u215d\u215e]))(?![\w.])")
+NAMES = ("quote_printed", "number_printed", "unit_parses", "value_in_range", "box_on_page", "choice_offered", "scale_parses", "value_in_quote", "fields_given", "cells_in_quote", "mark_in_vocab", "floor_known", "size_parses", "size_in_range")
 
 def result(name: str, passed: bool, detail: str) -> dict:
   return {"name": name, "passed": bool(passed), "detail": detail}
@@ -30,7 +33,17 @@ def quote_printed(quote, region_text: str | None) -> dict:
   return result("quote_printed", False, "not printed in the region: " + " ".join(missing[:6]))
 
 def printed_numbers(region_text: str | None) -> set:
-  return {float(m.group(0).replace(",", "")) for m in NUMBER_RX.finditer(region_text or "")}
+  text = region_text or ""
+  found = {float(m.group(0).replace(",", "")) for m in NUMBER_RX.finditer(text)}
+  for m in FRACTION_RX.finditer(text):
+    if m.group("g"):
+      part = GLYPH_FRACTION[m.group("g")]
+    elif int(m.group("d")):
+      part = int(m.group("n")) / int(m.group("d"))
+    else:
+      continue
+    found.add(round(float(m.group("w") or 0) + part, 6))
+  return found
 
 def number_printed(value, region_text: str | None) -> dict:
   if region_text is None:
@@ -54,6 +67,25 @@ def unit_parses(text) -> dict:
   if readings:
     return result("unit_parses", True, f"dimension in {readings[0].unit}")
   return result("unit_parses", False, f"{raw!r} is not a unit the catalogue or the dimension reader knows")
+
+def scale_parses(text) -> dict:
+  raw = str(text or "").strip()
+  if not raw:
+    return result("scale_parses", False, "no scale text given")
+  if SC.is_not_to_scale(raw):
+    return result("scale_parses", True, "the text says the view is not to scale")
+  ratio = SC.parse_scale_text(raw)
+  if ratio is None:
+    return result("scale_parses", False, f"{raw!r} is not a scale the scale reader knows")
+  return result("scale_parses", True, f"a scale of 1 to {ratio:g}")
+
+def value_in_quote(value, quote) -> dict:
+  v, q = squash(value), squash(quote)
+  if not v:
+    return result("value_in_quote", False, "the value is empty")
+  if v in q:
+    return result("value_in_quote", True, "the value is inside its quote")
+  return result("value_in_quote", False, "the value is not inside its quote")
 
 def value_in_range(value, low, high) -> dict:
   try:

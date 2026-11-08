@@ -4,6 +4,7 @@ import json
 import math
 import os
 import yaml
+from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.run import vocab as V
 from app.modules.drawings_boq.takeoff.proof.reading import match as M
 from app.modules.drawings_boq.takeoff.proof.reading import sets as S
@@ -247,7 +248,7 @@ def ledger_after_join(ts: F.TruthSet, joined: dict) -> dict:
 def _case_facts(root: str, case: str) -> list:
   return CIO.load_facts(os.path.join(root, case, "facts.yaml"))
 
-def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: str = CIO.HERE, on_read=None) -> dict:
+def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: str = CIO.HERE, on_read=None, overrides: dict | None = None) -> dict:
   want = {"dev": ("DEV",), "heldout": ("HELDOUT",), "all": ("DEV", "HELDOUT")}[split]
   files_dir = CIO.cases_dir(cases_dir)
   outcomes, sets_out, unmapped, notes = [], [], {}, []
@@ -284,9 +285,10 @@ def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: s
       if problems:
         raise RuntimeError("; ".join(problems))
       if ref.case not in reads_by_case:
-        reads_by_case[ref.case] = AD.read_case(case, found)
+        reads_by_case[ref.case] = AD.read_case(case if overrides is None else {**case, "overrides": overrides}, found)
       rows = reads_by_case[ref.case]
-      read = AD.items_of(rows[ref.pdf])
+      with RR.using(overrides):
+        read = AD.items_of(rows[ref.pdf])
       if on_read is not None:
         on_read(ref, read)
       for k, n in read.unmapped.items():

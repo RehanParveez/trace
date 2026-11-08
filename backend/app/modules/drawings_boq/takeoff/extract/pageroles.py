@@ -15,6 +15,7 @@ _STRONG_TITLE = re.compile(r"\b(?:PLAN|LAYOUT|MUMTY|FRAMING|REINFORCEMENT|FOUNDA
 _DRAWING_ROLES = ("PLAN", "STRUCTURAL")
 _FURNITURE = re.compile(r"^(?:[A-Z0-9.]+\s+){0,3}FURNITURE\s+(?:LAYOUTS?|PLANS?)(?:\s+PLANS?)?$", re.I)
 _WORKING = re.compile(r"^(?:[A-Z0-9.]+\s+){0,3}WORKING\s+(?:LAYOUTS?|PLANS?|DRAWINGS?)(?:\s+PLANS?)?$", re.I)
+_OPENINGS = re.compile(r"^(?:[A-Z0-9.]+\s+){0,4}(?:DOORS?|WINDOWS?|OPENINGS?)\b(?:\s+(?:AND|&)?\s*\w+){0,2}?\s+(?:LAYOUTS?|SCHEDULES?|PLANS?)\b", re.I)
 NOT_A_PLAN = ("SECTION", "ELEVATION", "DETAIL", "SCHEDULE", "LEGEND", "SPEC", "COVER", "DIVIDER", "SITE")
 
 def _title_lines(words: list) -> list:
@@ -30,10 +31,11 @@ def _title_lines(words: list) -> list:
   return out
 
 def purpose(lines: list) -> str | None:
-  """What the title block says the plan is for: FURNITURE (a furniture layout, the same walls with furniture drawn in) or WORKING (the working drawing)."""
   texts = [t.strip() for t, _s in lines]
   if any(_WORKING.match(t) for t in texts):
     return "WORKING"
+  if any(_OPENINGS.match(t) for t in texts):
+    return "OPENINGS"
   return "FURNITURE" if any(_FURNITURE.match(t) for t in texts) else None
 
 def page_role(words: list, kind: dict | None = None, drawn: int = 0) -> dict:

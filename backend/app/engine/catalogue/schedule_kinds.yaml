@@ -1,0 +1,30 @@
+agree_tolerance_in: 0.01
+min_cells: 1
+kinds:
+  - key: COLUMN_SCHEDULE
+    about: "Column schedule: one row for each column mark and floor, with the printed size, the bars and the ties"
+    mark_category: COLUMN
+    size_mm: [[100.0, 1500.0], [100.0, 1500.0]]
+    fields: [mark, floor, size, bars, ties]
+    quoted: [mark, size, bars, ties]
+    needs: [mark, floor, size]
+    floors: true
+    feeds: structure_tables.column_schedule.cells
+  - key: BEAM_SCHEDULE
+    about: "Beam schedule: one row for each beam mark, with the printed width and depth, the top and bottom bars and the stirrups"
+    mark_category: BEAM
+    size_mm: [[100.0, 1500.0], [100.0, 1500.0]]
+    fields: [mark, size, bars, ties]
+    quoted: [mark, size, bars, ties]
+    needs: [mark, size]
+    floors: false
+    feeds: structure_tables.beam_sections.sections
+  - key: FINISH_SCHEDULE
+    about: "Finish schedule: one row for each layer of a finish, with the room or area it is for, the layer as printed and its thickness if printed"
+    mark_category: null
+    size_mm: null
+    fields: [mark, layer, thickness]
+    quoted: [layer, thickness]
+    needs: [mark, layer]
+    floors: false
+    feeds: finish_specs.blocks
