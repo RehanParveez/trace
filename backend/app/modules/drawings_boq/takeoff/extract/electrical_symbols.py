@@ -240,7 +240,11 @@ def _ocr_cell(page, rect: tuple, started: float) -> str:
       lines[-1][1].append(r)
     else:
       lines.append([r["t"], [r]])
-  return re.sub(r"\s+", " ", " ".join(w["text"] for _t, ws in lines for w in sorted(ws, key=lambda w: w["l"]))).strip()
+    return re.sub(r"\s+", " ", " ".join(w["text"] for _t, ws in lines for w in sorted(ws, key=lambda w: w["l"]))).strip()
+
+def read_cell(page, rect: tuple) -> str:
+  import time
+  return _ocr_cell(page, rect, time.monotonic())
 
 def _symbol(desc: str, cell: list, token: str, ti: int, ri: int, heights: dict, block, inner: tuple, ocr: bool = False) -> LegendSymbol:
   m = IN_NAME_HEIGHT_RE.search(desc)

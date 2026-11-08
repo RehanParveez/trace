@@ -10,7 +10,7 @@ EDGE_SLACK = 0.001
 NUMBER_RX = re.compile(r"(?<![\w.])\d{1,3}(?:,\d{3})+(?:\.\d+)?|(?<![\w.])\d+(?:\.\d+)?")
 GLYPH_FRACTION = {"\u00bd": 0.5, "\u00bc": 0.25, "\u00be": 0.75, "\u215b": 0.125, "\u215c": 0.375, "\u215d": 0.625, "\u215e": 0.875}
 FRACTION_RX = re.compile(r"(?<![\w.])(?:(?P<w>\d{1,3})\s*)?(?:(?P<n>\d{1,2})\s*/\s*(?P<d>\d{1,2})|(?P<g>[\u00bd\u00bc\u00be\u215b\u215c\u215d\u215e]))(?![\w.])")
-NAMES = ("quote_printed", "number_printed", "unit_parses", "value_in_range", "box_on_page", "choice_offered", "scale_parses", "value_in_quote", "fields_given", "cells_in_quote", "mark_in_vocab", "floor_known", "size_parses", "size_in_range")
+NAMES = ("quote_printed", "number_printed", "unit_parses", "value_in_range", "box_on_page", "choice_offered", "scale_parses", "value_in_quote", "fields_given", "cells_in_quote", "mark_in_vocab", "floor_known", "size_parses", "size_in_range", "meaning_given", "symbol_present", "meaning_not_contradicted")
 
 def result(name: str, passed: bool, detail: str) -> dict:
   return {"name": name, "passed": bool(passed), "detail": detail}

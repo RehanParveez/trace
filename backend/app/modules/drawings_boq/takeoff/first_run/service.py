@@ -11,6 +11,7 @@ from app.modules.drawings_boq import company_conventions as CCV
 from app.modules.drawings_boq.takeoff.first_run import job as JB
 from app.modules.drawings_boq.takeoff.first_run import report as RP
 from app.modules.drawings_boq.takeoff.first_run import stages as ST
+from app.modules.drawings_boq.takeoff.flow import sitting as SIT
 from app.modules.drawings_boq.takeoff.run import first_run_bindings as FR
 from app.modules.drawings_boq.takeoff.questions import answers as AN
 from app.modules.drawings_boq.takeoff.service import TakeoffService
@@ -63,6 +64,7 @@ class FirstRunService(TakeoffService):
     if "facts" in state and "evidence" in state:
       meta[AN.META_LEDGER] = snapshot_of(state)
     meta[META_REPORT] = {**report, "at": datetime.now(timezone.utc).isoformat()}
+    meta[SIT.KEY] = SIT.mark(meta.get(SIT.KEY), "read_done", datetime.now(timezone.utc))
     home.ingestion_meta = meta
     if user_id is not None:
       await self._log(org, user_id, home.id, AuditAction.UPDATE, f"First-upload job: {report['items']}, {report['questions']['open']} question(s) open", commit=False)

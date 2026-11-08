@@ -2,11 +2,12 @@ from __future__ import annotations
 import os
 import yaml
 from app.engine.catalogue import loader as CL
+from app.engine.catalogue import vocabulary as V
 from app.modules.drawings_boq.lab.aliases import SOFTWARE_UNIT, bill_quantity
 
 FILE = "answers.yaml"
 SOURCES = ("QS_BOQ", "CHECKED_DRAFT")
-MAPPERS = ("AI", "PERSON", "CATALOGUE")
+MAPPERS = ("AI", "PERSON", "CATALOGUE", "VOCAB")
 ITEM_KEYS = ("element", "floor", "quantity", "unit", "qs_line", "sheet", "rows", "mapped_by", "confirmed")
 WITHIN_PCT = 10.0
 
@@ -30,6 +31,8 @@ def write_yaml(path: str, doc) -> None:
 
 def document(case_name: str, imp: dict, qs_id: str, res: dict) -> dict:
   from app.modules.drawings_boq.takeoff.proof.answers import qs_import as QI
+
+
   mapped = sum(1 for _ in res["items"])
   return {"answers": {
     "set": case_name, "source": "QS_BOQ", "workbook": imp["workbook"], "workbook_sha256": imp["sha256"], "qs": qs_id,

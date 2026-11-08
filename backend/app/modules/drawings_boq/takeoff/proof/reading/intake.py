@@ -16,6 +16,8 @@ from app.modules.drawings_boq.takeoff.proof import case as CASE
 from app.modules.drawings_boq.takeoff.run import vocab as V
 from app.modules.drawings_boq.takeoff.proof.reading import corpus as CP
 from app.modules.drawings_boq.takeoff.proof.reading import profile as PR
+from app.modules.drawings_boq.takeoff.proof.bench import offices as OFF
+from app.modules.drawings_boq.takeoff.proof import offices as OFC
 
 SAMPLE_SHARE = 0.10
 SAMPLE_MIN = 10
@@ -87,7 +89,7 @@ def _eye_pages(prof: dict, read: AD.SetRead, per_page: dict) -> list:
     out.append((p["sheet"], p["text_type"], per_page.get(p["sheet"], 0), why))
   return out
 
-def intake(pdf_path: str, case: str, consultant: str | None, cases_dir: str | None, root: str, alias: str | None = None, note: str | None = None, declared: dict | None = None) -> dict:
+def intake(pdf_path: str, case: str, consultant: str | None, cases_dir: str | None, root: str, alias: str | None = None, note: str | None = None, declared: dict | None = None, boq: str | None = None, building_type: str | None = None) -> dict:
   if not os.path.isfile(pdf_path):
     raise Refused(f"{pdf_path} is not a file.")
   files_dir = CIO.cases_dir(cases_dir)
@@ -126,6 +128,8 @@ def intake(pdf_path: str, case: str, consultant: str | None, cases_dir: str | No
   from app.modules.drawings_boq.takeoff.profile import run as PRUN
   register = [{"page": n, **{k: i.register.get(k) for k in ("role", "plan_kind", "floor", "discipline", "title", "scale_basis")}} for n, i in read.pages.items()]
   convention = PRUN.summary(PRUN.profile_pdfs([target], register))
+  OFC.write_checklist(folder, OFC.checklist(register, {**(declared or {}), "building_type": building_type}, boq, len(prof["pages"])))
+  office = OFC.propose(OFF.load(), folder, {name: target}, consultant)
   items = [plain(i) for i in read.items]
   kinds: dict = {}
   for p in prof["pages"]:
@@ -140,6 +144,7 @@ def intake(pdf_path: str, case: str, consultant: str | None, cases_dir: str | No
     by_status[i["status"]] = by_status.get(i["status"], 0) + 1
   first = {"pdf_key": key, "alias": doc["alias"], "case": case, "pdf": name, "sha256": sha, "consultant": consultant, "taken": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
     "convention": convention,
+    "office_proposal": office,
     "profile": {"producer": prof["producer"], "pages": len(prof["pages"]), "text_types": kinds, "damaged_font_pages": [p["sheet"] for p in prof["pages"] if PR.damaged_fonts(p)]},
     "register_rows": len(rows), "items": {"count": len(items), "by_class": dict(sorted(by_class.items())), "by_status": dict(sorted(by_status.items())), "digest": digest_of(items)},
     "unmapped": dict(read.unmapped), "read": items}
@@ -157,7 +162,7 @@ def intake(pdf_path: str, case: str, consultant: str | None, cases_dir: str | No
 
 def cmd_intake(args) -> int:
   try:
-    res = intake(args.pdf, args.case, args.consultant, args.cases_dir, args.root, args.alias, args.note, {"plot_size": args.plot_size, "storeys": args.storeys, "city": args.city, "companions": args.companions})
+    res = intake(args.pdf, args.case, args.consultant, args.cases_dir, args.root, args.alias, args.note, {"plot_size": args.plot_size, "storeys": args.storeys, "city": args.city, "companions": args.companions}, args.boq, args.building_type)
   except Refused as e:
     print(f"REFUSED  {e}")
     return 2
@@ -176,6 +181,9 @@ def cmd_intake(args) -> int:
   print(f"\n{int(SAMPLE_SHARE * 100)}% sample of the items, for you to check on the drawing ({len(res['sample'])} of {f['items']['count']}):")
   for i in res["sample"]:
     print(f"  sheet {i['sheet']:>3}  {i['cls']:<22} {str(i['mark'] or '-'):<12} {i['status']}" + (f"  {','.join(i['reasons'])}" if i["reasons"] else ""))
+  print("\nOffice, from the title block:")
+  print("\n".join(OFC.describe(f["office_proposal"])))
+  print(f"  confirm it with: python -m app.modules.drawings_boq.takeoff.proof.offices confirm {f['case']} --office <letter> --by <your name>" + (" --new --firm <firm text>" if f["office_proposal"]["status"] in (OFC.NEW, OFC.NONE) else "") + "; the benchmark will not run until it is confirmed.")
   print("\nNext: write its truth in an inventory pack, then `proof.reading score --split heldout`. Do not tune the reader on this set before that score is recorded.")
   return 0
 

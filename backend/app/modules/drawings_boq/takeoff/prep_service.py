@@ -324,7 +324,7 @@ class PrepService:
     locked = await self._sheet(org, sheet.id, lock=True)
     old_meta = dict(locked.prep_meta or {})
     meta = {**result.meta, "prepared_at": _now().isoformat()}
-    for keep in ("user_unit", "kind_source", "ai_facts", "ai_schedule"):
+    for keep in ("user_unit", "kind_source", "ai_facts", "ai_schedule", "ai_legend"):
       if keep in old_meta:
         meta[keep] = old_meta[keep]
     if (old_meta.get("identity") or {}).get("basis") == "PERSON":
@@ -660,7 +660,7 @@ class PrepService:
   async def project_electrical_legend(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
     pairs = await self._project_sheets(org, project_id, exclude_superseded=exclude_superseded)
     sheets, table = PF.stamp([(d.id, s) for d, s in pairs])
-    got = electrical_reader.gather_legend([{"page_no": s.page_no, "legend": s.prep_meta.get("electrical_legend")} for s in sheets if s.prep_meta.get("electrical_legend")])
+    got = electrical_reader.gather_legend([{"page_no": s.page_no, "legend": s.prep_meta.get("electrical_legend"), "ai_legend": s.prep_meta.get("ai_legend")} for s in sheets if s.prep_meta.get("electrical_legend")])
     return PF.unstamp(got, table)
 
   async def project_wall_vocab(self, org: UUID, project_id: UUID, imperial: bool | None, *, exclude_superseded: bool = True) -> list:
@@ -905,7 +905,7 @@ class PrepService:
   async def drawing_electrical_legend(self, org: UUID, drawing_id: UUID) -> dict:
     """The electrical legend printed on any sheet of the drawing: {pages: [page numbers of the legend sheets], rows: [one for each symbol: name, description, text tag, picture]}."""
     sheets = await self.repo.sheets(org, drawing_id)
-    return electrical_reader.gather_legend([{"page_no": s.page_no, "legend": (s.prep_meta or {}).get("electrical_legend")} for s in sheets if (s.prep_meta or {}).get("electrical_legend")])
+    return electrical_reader.gather_legend([{"page_no": s.page_no, "legend": (s.prep_meta or {}).get("electrical_legend"), "ai_legend": (s.prep_meta or {}).get("ai_legend")} for s in sheets if (s.prep_meta or {}).get("electrical_legend")])
 
   async def sheet_electrical(self, org: UUID, sheet, words: list) -> dict | None:
     """The symbols of the drawing's electrical legend counted on this sheet, when it is an electrical plan; None when the drawing has no legend or this is not a plan. A failure is

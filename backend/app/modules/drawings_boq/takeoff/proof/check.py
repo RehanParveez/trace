@@ -188,6 +188,9 @@ def main(argv: list | None = None) -> int:
   for name, ok, note in results:
     print(f"{'ok  ' if ok else 'FAIL'}  {name}" + (f"   {note}" if note else ""))
   failed = [r for r in results if not r[1]]
+  os.makedirs(args.out, exist_ok=True)
+  with open(os.path.join(args.out, "check.json"), "w", encoding="utf-8", newline="\n") as fh:
+    json.dump({"passed": not failed, "results": [{"name": n, "ok": bool(ok), "note": note} for n, ok, note in results]}, fh, indent=1)
   print("check passed" if not failed else f"check FAILED: {len(failed)} of {len(results)}")
   return 1 if failed else 0
 

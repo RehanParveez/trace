@@ -13,6 +13,7 @@ from app.modules.drawings_boq.takeoff.ai_reader import evidence as EV
 from app.modules.drawings_boq.takeoff.ai_reader import prompts as PR
 from app.modules.drawings_boq.takeoff.ai_reader import tasks as TASKS
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from app.engine.catalogue import vocabulary as V
 from app.modules.drawings_boq.takeoff.proof.answers import answers as AN
 from app.modules.drawings_boq.takeoff.proof.answers import qs_import as QI
 
@@ -25,12 +26,10 @@ PARTIAL_RATIO = 0.6
 MAX_SPECIFIC = 3
 CHOICES_LIMIT = 40
 UNIT_CLASS = {"cft": "volume", "m3": "volume", "sft": "area", "m2": "area", "rft": "length", "m": "length", "kg": "weight", "ton": "weight", "nos": "count", "ls": "lump", "lump_sum": "lump"}
-CATALOGUE, PERSON, AI, MAP_SKIP = "CATALOGUE", "PERSON", "AI", "SKIP"
+CATALOGUE, PERSON, AI, VOCAB, MAP_SKIP = "CATALOGUE", "PERSON", "AI", "VOCAB", "SKIP"
 
 def norm_key(raw) -> str:
-  t = re.sub(r"[\"'`]", "", str(raw or "").lower())
-  t = re.sub(r"[^a-z0-9:;/.+-]+", " ", t)
-  return re.sub(r"\s+", " ", t).strip()
+  return V.norm(raw)
 
 def load_map(path: str = MAP_PATH) -> dict:
   if not os.path.isfile(path):
@@ -144,6 +143,10 @@ def resolve(row: dict, qs_map: dict, index: Index, ai: dict) -> dict:
       if hit.get("skip"):
         return {"element": None, "mapped_by": PERSON, "confirmed": True, "key": k, "reason": hit.get("note") or "marked by the QS map as not a catalogue item", "skip": True}
       return {"element": hit["element"], "mapped_by": PERSON, "confirmed": True, "key": k, "floor": hit.get("floor")}
+  for k in keys:
+    got = V.item_for(k)
+    if got:
+      return {"element": got, "mapped_by": VOCAB, "confirmed": True, "key": k}
   for k in keys:
     if k in ai:
       a = ai[k]
@@ -309,7 +312,7 @@ def review_rows(groups: dict, unmapped: dict, summary_groups: dict, index: Index
   return out
 
 def percentages(items: list, unmapped: list, imp: dict) -> dict:
-  rows = {"PERSON": 0, "CATALOGUE": 0, "AI": 0, "unmapped": 0}
+  rows = {"PERSON": 0, "VOCAB": 0, "CATALOGUE": 0, "AI": 0, "unmapped": 0}
   for it in items:
     n = sum(b - a + 1 for a, b in ((int(x.split("-")[0]), int(x.split("-")[-1])) for x in it["rows"].split(",") if x))
     rows[it["mapped_by"]] += n

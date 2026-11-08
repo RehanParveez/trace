@@ -4,7 +4,7 @@ import yaml
 from app.modules.drawings_boq.takeoff.proof import census as CEN
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.engine.catalogue import loader as CL
-from app.modules.drawings_boq.takeoff.proof.reading import sets as RS
+from app.modules.drawings_boq.takeoff.proof.bench import offices as OFF
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEV, TEST, FIRST_SIGHT, UNSPLIT = "DEV", "TEST", "FIRST_SIGHT", "UNSPLIT"
@@ -17,7 +17,10 @@ def load(path: str | None = None) -> dict:
 def group_of(section: str, doc: dict) -> str | None:
   return next((g for g, names in (doc.get("section_groups") or {}).items() if section in names), None)
 
-def split_of(office: str, group: str, splits: dict | None = None) -> str:
+def split_of(office: str, group: str, splits: dict | None = None, row: dict | None = None) -> str:
+  own = OFF.split_label(row or {}, group)
+  if own:
+    return own
   groups = (splits if splits is not None else CEN.splits()).get("groups") or {}
   row = groups.get(group) or {}
   return next((label for key, label in SPLIT_KEYS if office in (row.get(key) or [])), UNSPLIT)
@@ -34,13 +37,11 @@ def problems(doc: dict | None = None, root: str = CIO.HERE) -> list:
   for name, row in sorted(sets.items()):
     if not row.get("office"):
       bad.append(f"{name} has no office letter")
-    elif RS.office_of(name) != row["office"]:
-      bad.append(f"{name}: sets.yaml says office {row['office']}, the reading sets say {RS.office_of(name)}")
-      
   splits = CEN.splits().get("groups") or {}
   for group in doc.get("section_groups") or {}:
     if group not in splits:
       bad.append(f"section group {group} has no split in reading/splits.yaml")
+  bad += OFF.problems(doc)
   seen: dict = {}
   for group, names in (doc.get("section_groups") or {}).items():
     for n in names:

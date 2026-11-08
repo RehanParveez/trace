@@ -125,7 +125,7 @@ class PricedService(SV.BillingService):
       return found
     return await repo.default_stack(org, date.today())
 
-  async def _compute(self, org: UUID, project_id: UUID, profile_id: str | None, book_id: UUID | None):
+  async def _prepared(self, org: UUID, project_id: UUID, profile_id: str | None, book_id: UUID | None):
     try:
       profile = P.get(profile_id) if profile_id else P.get(P.DEFAULT_PROFILE)
     except ValueError:
@@ -143,7 +143,13 @@ class PricedService(SV.BillingService):
     items = [await repo.all_items(b.id) for b in books]
     rows = [{"id": b.id, "code": b.code, "version": b.immutable_version, "edition": b.edition, "scope": "SYSTEM" if b.organization_id is None else "ORGANISATION", "items": len(i), "content_hash": b.content_hash}
       for b, i in zip(books, items)]
-    return priced_view(billed, parts, parts["measured"], profile, items, rows), head, profile
+    return {"entries": entries, "parts": parts, "billed": billed, "items": items, "rows": rows}, head, profile
+
+  async def _compute(self, org: UUID, project_id: UUID, profile_id: str | None, book_id: UUID | None):
+    prepared, head, profile = await self._prepared(org, project_id, profile_id, book_id)
+    if prepared is None:
+      return None, head, profile
+    return priced_view(prepared["billed"], prepared["parts"], prepared["parts"]["measured"], profile, prepared["items"], prepared["rows"]), head, profile
 
   async def priced(self, org: UUID, project_id: UUID, profile_id: str | None = None, book_id: UUID | None = None) -> dict:
     got, head, profile = await self._compute(org, project_id, profile_id, book_id)

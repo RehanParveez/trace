@@ -1,0 +1,34 @@
+settings:
+  min_match_chars: 6
+  firm_pages: 1-3
+  scan_pages: 5
+  target_offices: 15
+offices:
+  A:
+    firms:
+      - ZAK Consulting Engineers
+    city: null
+    confirmed_by: before BX-3
+    date: null
+  B:
+    firms:
+      - Creative Associates (DHA Bahawalpur)
+    city: null
+    confirmed_by: before BX-3
+    date: null
+  C:
+    firms: []
+    city: null
+    confirmed_by: before BX-3
+    date: null
+  D:
+    firms: []
+    city: null
+    confirmed_by: before BX-3
+    date: null
+  E:
+    firms: []
+    city: null
+    confirmed_by: before BX-3
+    date: null
+set_log: {}

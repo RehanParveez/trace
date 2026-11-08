@@ -68,6 +68,7 @@ def problems(path: str = PATH) -> list:
       out.append(f"{cid}: unit {c['unit']} is not one of {', '.join(UNITS)}")
     src = c["source"] if isinstance(c["source"], dict) else {}
     kind = src.get("kind")
+    
     if kind == "PROJECT":
       out.append(f"{cid}: a convention is a market fact from a QS, never a value read from one project")
     elif kind not in SOURCE_KINDS:

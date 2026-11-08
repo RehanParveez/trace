@@ -1,0 +1,34 @@
+discipline: ELECTRICAL
+choices:
+  - key: LIGHT
+    about: "A light point: a ceiling, wall, recessed, surface, spot, flood, track, tube, bracket or step light"
+  - key: FAN
+    about: "A ceiling fan or a wall fan point"
+  - key: EXHAUST
+    about: "An exhaust fan or ventilation fan point"
+  - key: SOCKET_5A
+    about: "A 5 amp socket or light plug"
+  - key: SOCKET_15A
+    about: "A 15 amp socket or power plug"
+  - key: SOCKET
+    about: "A socket, plug or receptacle with no rating printed"
+  - key: SWITCH_PLATE
+    about: "A switch or a plate of switches"
+  - key: SWITCH_2WAY
+    about: "A two way switch"
+  - key: TEL
+    about: "A telephone or intercom point"
+  - key: TV
+    about: "A television or cable outlet"
+  - key: DATA
+    about: "A computer, data or network point"
+  - key: ALARM
+    about: "A smoke detector or an alarm point"
+  - key: BELL
+    about: "A door bell, a bell push or a buzzer point"
+  - key: CCTV
+    about: "A camera point"
+  - key: AUDIO
+    about: "A speaker point"
+  - key: BOARD
+    about: "A distribution board, a meter, an earth set, a generator or another supply point"

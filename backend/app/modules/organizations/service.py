@@ -10,7 +10,7 @@ from app.core.exceptions import TraceException
 from app.modules.identity.models import Organization, OrganizationInvitation, OrganizationMembership, Role, User
 from app.modules.identity.repository import IdentityRepository
 from app.modules.organizations.repository import OrganizationRepository
-from app.modules.organizations.schemas import ( AISettingsUpdateRequest, InvitationAcceptRequest, InvitationAcceptanceResponse, InvitationCreateRequest,
+from app.modules.organizations.schemas import ( AISettingsUpdateRequest, BillingProfileUpdateRequest, InvitationAcceptRequest, InvitationAcceptanceResponse, InvitationCreateRequest,
   OrganizationUpdateRequest, RoleCreateRequest, RoleUpdateRequest,
 )
 from app.core.config import settings
@@ -21,6 +21,7 @@ from app.modules.notifications.service import NotificationService
 from app.modules.notifications.models import NotificationType
 from app.modules.audit.service import AuditLogService
 from app.modules.budgets.repository import BudgetRepository
+from app.modules.drawings_boq.pricing.billing import profiles as BP
 
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -158,6 +159,48 @@ class OrganizationService:
       )
 
     return organization.ai_enabled
+
+  @staticmethod
+  def _billing(value: str | None) -> dict:
+    return {"billing_profile": value, "effective": BP.choose(None, value).id, "profiles": [{"id": p.id, "label": p.label} for p in BP.all_profiles().values()]}
+
+  async def get_billing_profile(self, organization_id: UUID) -> dict:
+    organization = await self.get_organization(organization_id)
+    return self._billing(organization.billing_profile)
+
+  async def update_billing_profile(
+    self,
+    organization_id: UUID,
+    payload: BillingProfileUpdateRequest,
+    actor_user_id: UUID | None = None,
+  ) -> dict:
+    if payload.billing_profile is not None and payload.billing_profile not in BP.all_profiles():
+      raise TraceException(
+        f"'{payload.billing_profile}' is not a billing profile.",
+        status_code=422,
+        code="PROFILE_UNKNOWN",
+      )
+    organization = await self.repository.get_organization_for_update(
+      organization_id
+    )
+    if organization is None:
+      raise TraceException(
+        "Organization not found.",
+        status_code=404,
+        code="ORGANIZATION_NOT_FOUND",
+      )
+
+    organization.billing_profile = payload.billing_profile
+    await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.ORGANIZATION,
+      organization_id,
+      AuditAction.UPDATE,
+      f"Billing profile set to {payload.billing_profile or 'the default'} for the organization",
+    )
+    return self._billing(organization.billing_profile)
 
   async def create_invitation(
     self,

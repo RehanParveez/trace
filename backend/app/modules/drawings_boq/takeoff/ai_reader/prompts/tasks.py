@@ -21,9 +21,9 @@ TASKS = {
   "SHEET": Task("SHEET", TITLE_BLOCK, AIRequestPurpose.SHEET_CLASSIFICATION, C.PROMPT_NAME, C.PROMPT_NAME, ("quote_printed", "value_in_quote", "scale_parses", "choice_offered", "box_on_page")),
   "NOTE_FACT": Task("NOTE_FACT", BOX, AIRequestPurpose.NOTE_FACT, "note.v1", "note.v1", ("quote_printed", "number_printed", "unit_parses", "value_in_range", "choice_offered")),
   "SCHEDULE_ROW": Task("SCHEDULE_ROW", BOX, AIRequestPurpose.SCHEDULE_ROW, "schedule.v1", "schedule.v1", ("quote_printed", "fields_given", "cells_in_quote", "mark_in_vocab", "floor_known", "size_parses", "size_in_range")),
-  "LEGEND_ENTRY": Task("LEGEND_ENTRY", BOX, AIRequestPurpose.LEGEND_ENTRY, None, None, ()),
+  "LEGEND_ENTRY": Task("LEGEND_ENTRY", BOX, AIRequestPurpose.LEGEND_ENTRY, "legend.v1", "legend.v1", ("quote_printed", "choice_offered", "meaning_given", "symbol_present", "meaning_not_contradicted")),
   "VOCAB": Task("VOCAB", TEXT, AIRequestPurpose.VOCAB, "vocab.v1", "vocab.v1", ("choice_offered",)),
-  "EXPLAIN": Task("EXPLAIN", PAGE, AIRequestPurpose.EXPLAIN, None, None, ()),
+  "EXPLAIN": Task("EXPLAIN", TEXT, AIRequestPurpose.EXPLAIN, "explain.v1", "explain.v1", ("cause_given", "cause_short", "evidence_exists", "evidence_named", "choice_offered", "numbers_in_facts")),
 }
 
 def get(name: str) -> Task:

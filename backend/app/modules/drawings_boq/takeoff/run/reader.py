@@ -85,14 +85,17 @@ def project_facts_on() -> bool:
   return RR.on(PROJECT_FACTS_RULE)
 
 def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, project: bool | None = None, storeys: list | None = None,
-  sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None) -> list:
+  sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None, legends: dict | None = None) -> list:
   if rules:
     with RR.using(rules):
-      return read_set(items, pages, budget_s=budget_s, scale_unverified=scale_unverified, project=project, storeys=storeys, sections=sections, runs=runs, structure=structure)
+      return read_set(items, pages, budget_s=budget_s, scale_unverified=scale_unverified, project=project, storeys=storeys, sections=sections, runs=runs, structure=structure, legends=legends)
     
   from types import SimpleNamespace
   use = project_facts_on() if project is None else project
   prepared = [analyse_pdf(data, (pages or {}).get(name)) for name, data in items]
+  if legends:
+    from app.modules.drawings_boq.takeoff.ai_reader import legend as LG
+    LG.attach(items, prepared, legends)
   scales = _outline_scales(prepared) if use else [dict() for _ in prepared]
   groups = [[SimpleNamespace(page_no=no, label=None, prep_meta=a.meta) for no, a in sorted(analysed.items())] for _doc, analysed, _p in prepared]
   out, every = [], []
@@ -154,8 +157,9 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     drawing["band_sections"] = BMEM.table_sections(sheets, drawing["beam_sections"])
   opening_heights = OHT.decide(merged["facts"]["opening_labels"] if merged is not None else OHT.gather(sheets))
   vocab = MV.build(sheets + [s for _name, group in ((project or {}).get("others") or []) for s in group])
-  legend = EL.project_rows(EL.gather_legend([{"page_no": no, "legend": a.meta.get("electrical_legend")} for no, a in analysed.items() if a.meta.get("electrical_legend")]),
-    [{"page_no": s.page_no, "legend": s.prep_meta.get("electrical_legend")} for _name, group in ((project or {}).get("others") or []) for s in group if (s.prep_meta or {}).get("electrical_legend")])
+  legend = EL.project_rows(EL.gather_legend([{"page_no": no, "legend": a.meta.get("electrical_legend"), "ai_legend": a.meta.get("ai_legend")} for no, a in analysed.items() if a.meta.get("electrical_legend")]),
+    [{"page_no": s.page_no, "legend": s.prep_meta.get("electrical_legend"), "ai_legend": s.prep_meta.get("ai_legend")} for _name, group in ((project or {}).get("others") or []) for s in group if (s.prep_meta or {}).get("electrical_legend")])
+  
   
   read, wall_rows = [], []
   order = sorted(analysed.items(), key=lambda kv: (bool(((kv[1].meta.get("title")) or {}).get("composite")), kv[0]))

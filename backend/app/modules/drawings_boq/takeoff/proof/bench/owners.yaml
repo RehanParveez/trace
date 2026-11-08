@@ -5,3 +5,23 @@ alias:
 follow_source:
   - DERIVED
 default: UNASSIGNED
+packs:
+  - BB-1
+  - BX-1
+  - CV-3
+  - CV-4
+  - CV-5
+  - CV-6
+  - CV-7
+  - CV-8
+  - CV-9
+  - CV-10
+  - CV-11
+  - CV-12
+  - CV-13
+  - PX-2
+  - UNASSIGNED
+about:
+  BX-1: the reading of the QS workbook into the answer file, which line is which catalogue item and in which unit
+  PX-2: the items that are priced and not read from drawings
+  UNASSIGNED: no pack builds this yet

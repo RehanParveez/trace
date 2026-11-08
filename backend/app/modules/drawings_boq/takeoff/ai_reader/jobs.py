@@ -36,3 +36,7 @@ def note_page(meta: dict | None) -> bool:
   m = meta or {}
   vote = (m.get("identity") or {}).get("role_vote") or {}
   return vote.get("role") == PRL.NOTES or bool((m.get("facts") or {}).get("items"))
+
+def legend_page(meta: dict | None) -> bool:
+  return any(r.get("block") and r.get("objects") for r in (meta or {}).get("electrical_legend") or [])
+

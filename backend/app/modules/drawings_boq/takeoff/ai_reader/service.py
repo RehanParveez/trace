@@ -13,6 +13,7 @@ from app.core.exceptions import TraceException
 from app.modules.drawings_boq.takeoff.ai_reader import jobs as JOBS
 from app.modules.drawings_boq.takeoff.ai_reader import notes as NT
 from app.modules.drawings_boq.takeoff.ai_reader import schedule as SCH
+from app.modules.drawings_boq.takeoff.ai_reader import legend as LG
 from app.modules.drawings_boq.takeoff.ai_reader import compare as CMP
 from app.modules.drawings_boq.takeoff.ai_reader import contract as C
 from app.modules.drawings_boq.takeoff.ai_reader import cache as CACHE
@@ -42,6 +43,10 @@ def note_enabled(org_id) -> bool:
 
 def schedule_enabled(org_id) -> bool:
   ids = {s.strip() for s in (settings.engine_ai_schedule_org_ids or "").split(",") if s.strip()}
+  return "*" in ids or str(org_id) in ids
+
+def legend_enabled(org_id) -> bool:
+  ids = {s.strip() for s in (settings.engine_ai_legend_org_ids or "").split(",") if s.strip()}
   return "*" in ids or str(org_id) in ids
 
 def apply_vote(sheet, ai_value: dict | None) -> bool:
@@ -78,8 +83,10 @@ class AiShadowService(ExtractService):
       return await self.run_notes(org, user_id, drawing_id, limit, force)
     if task == SCH.TASK:
       return await self.run_schedules(org, user_id, drawing_id, limit, force)
+    if task == LG.TASK:
+      return await self.run_legends(org, user_id, drawing_id, mode, limit, force)
     if task != TASK:
-      raise TraceException("The task is SHEET, NOTE_FACT or SCHEDULE_ROW.", status_code=422, code="AI_SHADOW_TASK")
+      raise TraceException("The task is SHEET, NOTE_FACT, SCHEDULE_ROW or LEGEND_ENTRY.", status_code=422, code="AI_SHADOW_TASK")
     if not shadow_enabled(org):
       raise TraceException("AI shadow reading is not switched on for this company.", status_code=403, code="AI_SHADOW_OFF")
     if not TASKS.is_on(TASK):
@@ -250,6 +257,65 @@ class AiShadowService(ExtractService):
       if again:
         await self.session.commit()
     return {"drawing_id": drawing.id, "mode": "ALL", "read": sum(1 for r in made if r.status != FAILED), "failed": sum(1 for r in made if r.status == FAILED),
+      "remaining": len(queue) - len(batch), "items": [_item(r) for r in made]}
+
+  async def run_legends(self, org: UUID, user_id: UUID, drawing_id: UUID, mode: str, limit: int, force: bool) -> dict:
+    """Reads the legend rows of the pages that carry a legend, a few pages a request, records every read beside the rule reader's, and, for a company listed in ENGINE_AI_LEGEND_ORG_IDS, keeps the symbol meanings that passed on the sheet."""
+    if not shadow_enabled(org):
+      raise TraceException("AI shadow reading is not switched on for this company.", status_code=403, code="AI_SHADOW_OFF")
+    if not TASKS.is_on(LG.TASK):
+      raise TraceException("The legend task is switched off.", status_code=403, code="AI_TASK_OFF")
+    if mode not in JOBS.MODES:
+      raise TraceException("The mode is WEAK or ALL.", status_code=422, code="AI_SHADOW_MODE")
+    orchestrator = AIOrchestratorService(self.session)
+    state = await orchestrator.state(org)
+    if not state.enabled or state.provider is None:
+      raise TraceException("AI is off for this company: switch AI on and choose where it may run (consent LOCAL or OUTSIDE).", status_code=403, code="AI_CONSENT_OFF")
+    drawing = await self.core._pdf_drawing(org, drawing_id)
+    sheets = await self.core.repo.sheets(org, drawing_id)
+    rows = await self._rows(org, drawing_id, LG.TASK)
+    done_keys = set() if force else {r.cache_key for r in rows if r.cache_key and r.status != FAILED}
+    wanted = [s for s in sheets if JOBS.legend_page(s.prep_meta)]
+    contents = await asyncio.to_thread(source.drawing_bytes, drawing.storage_key) if wanted else b""
+    sha = CACHE.pdf_sha256(contents) if wanted else ""
+    region = LG.region(mode)
+    keys = {s.id: CACHE.key(sha, s.page_no, region, LG.TASK, LG.PROMPT_VERSION, state.model) for s in wanted}
+    queue = [s for s in wanted if keys[s.id] not in done_keys]
+    batch = queue[:limit]
+
+    async def ask(prompt: str, png: bytes, images: list):
+      return await orchestrator.run(organization_id=org, purpose=AIRequestPurpose.LEGEND_ENTRY, entity_type=AIEntityType.DRAWING,
+        entity_id=drawing.id, requested_by=user_id, prompt=prompt, image_bytes=png, image_mime_type="image/png", images=images)
+
+    async def store_crop(png: bytes) -> str:
+      key = f"{org}/{drawing.project_id}/ai-shadow/{uuid4().hex}.png"
+      await asyncio.to_thread(upload_fileobj, key, io.BytesIO(png), "image/png")
+      return key
+
+    made: list[AiShadowRead] = []
+    for sheet in batch:
+      legend_rows = (sheet.prep_meta or {}).get("electrical_legend") or []
+      rec = await LG.read_legends(contents=contents, page_no=sheet.page_no, rows=legend_rows, mode=mode, ask=ask, store_crop=store_crop, cache_key=keys[sheet.id], model=state.model)
+      row = AiShadowRead(id=uuid4(), organization_id=org, project_id=drawing.project_id, drawing_id=drawing.id, sheet_id=sheet.id, page_no=sheet.page_no,
+        purpose=rec["purpose"], task=rec["task"], cache_key=rec["cache_key"], model=rec["model"], validators=rec["validators"], mode=mode, status=rec["status"],
+        prompt_version=rec["prompt_version"], schema_version=rec["schema_version"], crop_key=rec["crop_key"],
+        crop=rec["crop"], ai_request_id=rec["ai_request_id"], rule_value=rec["rule_value"], ai_value=rec["ai_value"], comparison=rec["comparison"], totals=rec["totals"],
+        problems=rec["problems"], error=rec["error"], created_by_user_id=user_id)
+      self.session.add(row)
+      
+      if rec["status"] == OK and legend_enabled(org):
+        sheet.prep_meta = {**(sheet.prep_meta or {}), "ai_legend": rec["items"]}
+      await self.session.commit()
+      made.append(row)
+      
+    if legend_enabled(org):
+      stored = {r.sheet_id: r for r in reversed(rows) if r.status == OK and r.cache_key}
+      again = [s for s in wanted if s.id not in {m.sheet_id for m in made} and stored.get(s.id) is not None and stored[s.id].cache_key == keys[s.id]]
+      for s in again:
+        s.prep_meta = {**(s.prep_meta or {}), "ai_legend": LG.accepted_from(stored[s.id].ai_value, (s.prep_meta or {}).get("electrical_legend") or [])}
+      if again:
+        await self.session.commit()
+    return {"drawing_id": drawing.id, "mode": mode, "read": sum(1 for r in made if r.status != FAILED), "failed": sum(1 for r in made if r.status == FAILED),
       "remaining": len(queue) - len(batch), "items": [_item(r) for r in made]}
 
   async def cost(self, org: UUID, rows: list[AiShadowRead]) -> dict:

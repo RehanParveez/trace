@@ -1,0 +1,22 @@
+events:
+  once: [queued, read_done, review_seen, boq_seen, first_export]
+segments:
+  - {name: waiting_to_start, from: upload, to: queued}
+  - {name: reading, from: queued, to: read_done}
+  - {name: reaching_review, from: read_done, to: review_seen}
+  - {name: review_to_boq, from: review_seen, to: boq_seen}
+  - {name: boq_to_export, from: boq_seen, to: first_export}
+  - {name: sitting, from: upload, to: first_export}
+line_states:
+  MEASURED: Measured from the drawings
+  ASSUMED: Assumed from a convention
+  PART_ASSUMED: Partly assumed
+limits:
+  open_rows_in_report: 40
+  assumptions_in_report: 60
+  unpriced_in_report: 40
+text:
+  draft_open: "DRAFT: {n} review row(s) are still open; the figures can change when they are decided."
+  draft_unpriced: "{n} line(s) have no rate and are not in the total."
+  draft_assumed: "{pct}% of the priced money rests on assumed inputs."
+  footer: "Prepared with Trace. Quantities are read from the drawings; figures marked assumed rest on the stated conventions."

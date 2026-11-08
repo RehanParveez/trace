@@ -62,6 +62,9 @@ class DecisionsService(ExtractService):
     from app.modules.drawings_boq.takeoff.extract.revisions_service import RevisionService
     return (await RevisionService(self.session).revisions(org, drawing_id))["groups"]
 
+  async def facts(self, org: UUID, drawing_id: UUID) -> list:
+    return await self._facts(org, drawing_id)
+
   async def _facts(self, org: UUID, drawing_id: UUID) -> list:
     from app.modules.drawings_boq.takeoff.extract.review_service import ReviewService
     got = await ReviewService(self.session).conflicts(org, drawing_id)

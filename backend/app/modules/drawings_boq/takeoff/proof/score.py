@@ -14,8 +14,8 @@ from app.modules.drawings_boq.takeoff.proof import offline_accept as OA
 from app.modules.drawings_boq.takeoff.proof import offline_run as OR
 from app.modules.drawings_boq.lab.aliases import KEY_LABEL, SOFTWARE_UNIT, bill_quantity, software_key
 from app.modules.drawings_boq.takeoff import stair_twins as ST
+from app.modules.drawings_boq.takeoff.ai_reader import legend as LEG
 from app.modules.drawings_boq.takeoff.run import reader as RDR
-from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.proof import levels as LV
 from app.modules.drawings_boq.takeoff.proof import convention_infer as CV
 from app.modules.drawings_boq.takeoff.proof import steel_coverage as SC
@@ -34,6 +34,7 @@ from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 from app.modules.drawings_boq.takeoff import register as RGS
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.proof.answers import answers as ANS
+from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 
 SIZE_TOL_PCT = 2.0
 MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH, ALLOWANCE = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH", "ALLOWANCE"
@@ -953,7 +954,7 @@ def robust_run(case: dict, files: dict, profile, rule_set, catalog, clean: dict,
   worst = max((v.get("worst_pct", 0.0) for v in out.values()), default=0.0)
   return {"move_pct": MOVE_PCT, "worst_pct": worst, "variants": out}
 
-def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only: bool = False, page_budget: float = RDR.PAGE_BUDGET_S, reader=None, both: bool = True, rules: dict | None = None, keep: dict | None = None) -> tuple:
+def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only: bool = False, page_budget: float = RDR.PAGE_BUDGET_S, reader=None, both: bool = True, rules: dict | None = None, keep: dict | None = None, legends: dict | None = None) -> tuple:
   t0 = time.monotonic()
   reads, problems, timings = [], [], {}
   whole = None
@@ -963,7 +964,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     for name in case["pdfs"]:
       with open(files[name], "rb") as fh:
         blobs.append((name, fh.read()))
-    whole = {n: (r, pr) for n, r, pr in RDR.read_set(blobs, budget_s=page_budget, storeys=case.get("storeys"), sections=case.get("sections"), rules=case.get("overrides"))}
+    whole = {n: (r, pr) for n, r, pr in RDR.read_set(blobs, budget_s=page_budget, storeys=case.get("storeys"), sections=case.get("sections"), rules=case.get("overrides"), legends=legends)}
     timings["read the set"] = round(time.monotonic() - t, 1)
   for name in case["pdfs"]:
     t = time.monotonic()
@@ -1370,6 +1371,7 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--rules", help="run every case named under this rules file (a company_rules file), whatever its case.yaml says")
   ap.add_argument("--pin-baseline", action="store_true", help="write the hash and engine output of each case run to baseline_scores.json where the case has no pin")
   ap.add_argument("--repin", action="store_true", help="write them even where the case already has a different pin")
+  ap.add_argument("--ai-legend", action="store_true", help="count the electrical symbols with the meanings the cached LEGEND_ENTRY answers of the case give the legend rows the rules could not place; the symbol dictionary is read from <case>/ai_cache and no model is asked")
   ap.add_argument("--product", action="store_true", help="read each case as the product does: the rules its proof_overrides.yaml forces on are left at the registry's defaults")
 
   args = ap.parse_args(argv)
@@ -1411,7 +1413,7 @@ def main(argv: list | None = None) -> int:
     note = {"file": rule_file, "count": len(rows), "keys": sorted({r["key"] for r in rows}), "note": CASE_RULES_NOTE} if rows else None
     with RB.using_case(rows):
       keep: dict = {}
-      doc, timings = run_case(case, files, profile, rule_set, catalog, ready_only=args.ready_only, page_budget=args.page_budget, both=not args.no_other, rules=note, keep=keep)
+      doc, timings = run_case(case, files, profile, rule_set, catalog, ready_only=args.ready_only, page_budget=args.page_budget, both=not args.no_other, rules=note, keep=keep, legends=LEG.cached(folder) if args.ai_legend else None)
       if args.robust:
         t = time.monotonic()
         doc["robust"] = robust_run(case, files, profile, rule_set, catalog, doc, ready_only=args.ready_only, page_budget=args.page_budget, rules=note, keep=keep)

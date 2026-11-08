@@ -79,6 +79,7 @@ class Settings(BaseSettings):
   engine_ai_role_vote_org_ids: str = ""
   engine_ai_note_org_ids: str = ""
   engine_ai_schedule_org_ids: str = ""
+  engine_ai_legend_org_ids: str = ""
   engine_spec_org_ids: str = ""
   engine_stage_org_ids: str = ""
   engine_layer_org_ids: str = ""

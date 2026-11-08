@@ -1,0 +1,25 @@
+required_gates: [14, 15, 16, 17, 18]
+top_groups: 20
+first_sight_floor_pct: 40
+failures_run: PRODUCT
+reading_splits: [dev, heldout]
+folders:
+  score: score_out
+  bench: bench_out
+  reading: reading_out
+  product_score: product_score_out
+result_file: H_RESULT.md
+seven_nov:
+  recorded: "7 Nov 2026, from the runbook, measured on a copy with two local repairs; a before_H folder you recorded replaces each value it holds"
+  checks: "precommit failed at the case-file and catalogue steps"
+  engine_digest:
+    plot1: 3ea05b74
+    191c: 813b9c0c
+  qs_within_10:
+    plot1: {within: 17, of: 24}
+    191c: {within: 13, of: 39}
+  reading:
+    dev: {recall_pct: 73.0, truth: 2089, hash: d7480816}
+  registry: "27 rules, all CANDIDATE, all off"
+  overrides: 28
+  gate17_exceptions: 11

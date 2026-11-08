@@ -1,0 +1,13 @@
+task: LEGEND_ENTRY
+version: "1"
+schema: legend.v1
+text: |-
+  You are shown one row of the legend of an electrical drawing: a symbol and the words printed with it. Read only what is printed in the picture. Do not guess, do not count anything, and do not use anything you cannot see.
+
+  Say what the symbol stands for, choosing only from the meanings listed below, or give null when none of them is what the row says or when the row is not a symbol.
+
+  The meanings you may choose from (key: what it is):
+  {choices}
+
+  Answer with strict JSON only, no markdown, in this exact shape:
+  {"meaning": "<one key from the list, or null>", "quote": "<the exact words printed in this row that tell the meaning>", "confidence": "high" | "medium" | "low"}

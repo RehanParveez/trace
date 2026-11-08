@@ -38,7 +38,7 @@ def _default_of(rule: str | None, on: list) -> dict | None:
     return None
   return {"value": c["value"], "unit": c["unit"], "range": list(c["range"]), "rule": c["id"], "source": c["source"]["label"], "switched_on": c["id"] in on}
 
-def _blocked_money(entries: list, rates: dict | None) -> float | None:
+def blocked_money(entries: list, rates: dict | None) -> float | None:
   if not rates:
     return None
   total = 0.0
@@ -110,7 +110,7 @@ def build(ledger: list, answers: dict | None = None, conventions: list | None = 
     unit, rule = _input_facts(g["about"], g["elements"]) if kind == QK.INPUT else (None, None)
     row = {"key": key, "kind": kind, "prompt": _prompt(kind, key, g, unit), "unit": unit, "default": g["default"] or _default_of(rule, on),
       "options": g["options"] or [dict(o) for o in OPTIONS.get(kind, [])], "blocks": sorted(g["elements"]), "floors": g["floors"], "members": len(g["members"]), "entries": len(g["entries"]),
-      "why": f"{len(g['elements'])} item(s) wait on this", "money": _blocked_money(g["entries"], rates)}
+      "why": f"{len(g['elements'])} item(s) wait on this", "money": blocked_money(g["entries"], rates)}
     
     if kind == QK.METHOD:
       row["options"] = g["options"]

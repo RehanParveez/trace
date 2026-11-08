@@ -3,6 +3,8 @@ import argparse
 import os
 import sys
 from app.engine.catalogue import conventions as CV
+from app.engine.catalogue import legend_choices as LC
+from app.engine.catalogue import vocabulary as VOC
 from app.engine.catalogue import loader as CL
 from app.modules.drawings_boq.lab import aliases as AL
 from app.modules.drawings_boq.takeoff.completeness import derived_rules as DR
@@ -39,7 +41,7 @@ def problems() -> list:
   out = list(CL.problems())
   if out:
     return out
-  out += CV.problems() + derived_problems()
+  out += CV.problems() + LC.problems() + VOC.problems() + derived_problems()
   if out:
     return out
   fams = ledger_families()
@@ -59,7 +61,7 @@ def gate() -> tuple:
   its = CL.items()
   fams = ledger_families()
   billed = sum(1 for i in its if i.billing.PRIVATE_QS)
-  return True, f"{len(its)} items load with 0 problems, each with an owner; {len(fams)} ledger keys map to {billed} items; {len(CV.conventions())} Pakistan conventions each with a source and a range, {len(CV.methods())} methods, {sum(1 for i in its if i.derived)} derived items with a known rule", []
+  return True, f"{len(its)} items load with 0 problems, each with an owner; {len(fams)} ledger keys map to {billed} items; {len(CV.conventions())} Pakistan conventions each with a source and a range, {len(CV.methods())} methods, {len(LC.choices())} legend meanings each a kind of electrical point, {len(VOC.entries())} vocabulary pairs each with a person who confirmed it, {sum(1 for i in its if i.derived)} derived items with a known rule", []
 
 def main(argv: list | None = None) -> int:
   ap = argparse.ArgumentParser(description="Validate the element catalogue and check that every current ledger key has a catalogue item.")

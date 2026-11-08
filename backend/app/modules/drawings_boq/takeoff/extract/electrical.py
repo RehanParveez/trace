@@ -5,6 +5,9 @@ from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
 from app.modules.drawings_boq.takeoff.extract import electrical_symbols as ES
 from app.modules.drawings_boq.takeoff.extract import electrical_ink as EI
 from app.modules.drawings_boq.takeoff.extract import electrical_rules as ER
+from app.modules.drawings_boq.takeoff.extract import symbol_dictionary as SD
+from app.engine.catalogue import loader as CL
+from app.engine.catalogue import vocabulary as V
 import collections
 from app.modules.drawings_boq.takeoff.extract import config as C
 import hashlib
@@ -53,7 +56,19 @@ ELECTRIC_WORD = re.compile(r"ELECTRIC", re.I)
 PLAN_WORD = re.compile(r"\bPLAN\b", re.I)
 CONFIDENCE_PICTURE, CONFIDENCE_TEXT, CONFIDENCE_SHAPE = 0.6, 0.7, 0.5
 
+def kind_of_item(item: str) -> str | None:
+  found = CL.get(item)
+  lines = {b.line for b in found.billing.PRIVATE_QS} if found else set()
+  return next((k for k in ER.GROUPS if k != ER.OTHER and ER.SEED_ITEM[k] in lines), None)
+
+def vocabulary_kind(name: str) -> str | None:
+  item = V.item_for(name)
+  return kind_of_item(item) if item else None
+
 def kind_of(name: str) -> str:
+  known = vocabulary_kind(name)
+  if known:
+    return known
   for kind, _family, rules in KIND_RULES:
     if _hit(rules, name):
       return kind
@@ -116,7 +131,7 @@ def gather_legend(sheets: list) -> dict:
         rows.append(seen[key])
       if r.get("block"):
         seen[key]["blocks"][str(sh["page_no"])] = r["block"]
-  return {"pages": pages, "rows": rows}
+  return {"pages": pages, "rows": SD.apply(rows, SD.found([sh.get("ai_legend") for sh in sheets]), lambda name: kind_of(name) != ER.OTHER)}
 
 def project_rows(own: dict, others: list) -> dict:
   if own.get("rows") or not others:
@@ -141,10 +156,11 @@ def count_page(doc, page_no: int, rows: list) -> dict:
   blocks = _unique_blocks(rows, page_no)
   share = sum(max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1]) for b in blocks) / max(W * H, 1.0)
   by = {s.name: s for s in legend}
+  kinds = SD.kinds_of(rows)
   index = {s.name: i for i, s in enumerate(legend)}
   meta = {k: {"index": i, "page": (rows[i] or {}).get("page_no"), "text": by[k].description, "ocr": bool(by[k].ocr), "source": "STRUCTURE" if by[k].table >= 100 else "TABLE"} for k, i in index.items()}
   table = [{"index": i, "name": s.name, "description": s.description, "objects": len(s.objects), "token": s.token, "by_text": s.by_text, "countable": s.countable,
-    "legend_page": (rows[i] or {}).get("page_no")} for i, s in enumerate(legend)]
+    "legend_page": (rows[i] or {}).get("page_no"), **({"kind": kinds[s.name]} if s.name in kinds else {})} for i, s in enumerate(legend)]
   if share >= LEGEND_SHEET_SHARE:
     return {"counts": {}, "points": {}, "aside": {}, "not_countable": [], "by_text": [], "by_shape": [], "description": {}, "height_mm": {}, "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": True,
       "legend_row": {}, "legend_table": []}
@@ -161,7 +177,11 @@ def count_page(doc, page_no: int, rows: list) -> dict:
   return {"counts": {k: int(v) for k, v in rep.counts.items()}, "points": dict(points), "aside": dict(collections.Counter(h.name for h in rep.set_aside)),
     "not_countable": list(rep.not_countable), "by_text": sorted({s.name for s in legend if s.by_text}), "by_shape": sorted(rep.by_shape),
     "description": {k: s.description for k, s in by.items()}, "height_mm": {k: s.mounting_height_mm for k, s in by.items() if s.mounting_height_mm},
-    "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": False, "legend_row": meta, "excluded_boxes": len(exclude), "legend_table": table}
+    "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": False, "legend_row": meta, "excluded_boxes": len(exclude), "legend_table": table, **({"kinds": kinds} if kinds else {})}
+
+def symbol_dictionary(rows: list) -> list:
+  """Gives the symbol dictionary of the legend rows: for each row its meaning, the work item that meaning bills to under the rules in force, how its symbol is counted and where the meaning came from."""
+  return SD.dictionary(rows, kind_of, ER.OTHER, lambda kind: ER.work_item(kind, record=False)[0], lambda name: vocabulary_kind(name) is not None)
 
 def count_page_bytes(contents: bytes, page_no: int, rows: list) -> dict:
   from app.modules.drawings_boq.takeoff.prep.extract import open_document
@@ -192,7 +212,7 @@ def candidates(read: dict | None, ctx: dict, cls, finish, floor: str | None = No
     if n <= 0 or len(pts) != n:
       continue
 
-    kind = kind_of(name)
+    kind = (read.get("kinds") or {}).get(name) or kind_of(name)
     group = FAMILY[kind]
     item, rule = ER.work_item(kind)
     by_text = name in (read.get("by_text") or [])
@@ -217,7 +237,8 @@ def candidates(read: dict | None, ctx: dict, cls, finish, floor: str | None = No
       
     facts = {"electrical": name, "electrical_group": group, "Fsymbol_text": (read.get("description") or {}).get(name), "counted_by": "TEXT" if by_text else "SHAPE" if by_shape else "PICTURE",
       "mounting_height_mm": height, "set_aside_other_size": aside, "foundation_item": group, "electrical_kind": kind, "work_item_rule": ER.evidence(kind, rule), "derived_from": "LEGEND", "electrical_floor": floor, "legend_row": row.get("index"),
-      "legend_page": row.get("page"), "legend_source": row.get("source"), "legend_ocr": bool(row.get("ocr"))}
+      "legend_page": row.get("page"), "legend_source": row.get("source"), "legend_ocr": bool(row.get("ocr")),
+      **({"kind_source": SD.AI_READ} if name in (read.get("kinds") or {}) else {"kind_source": SD.VOCABULARY} if vocabulary_kind(name) else {})}
     label = f"{GROUP_TEXT[group]} · {name} · {n} no{'s' if n != 1 else ''}" + (f" · {_ft_in(height)} above floor" if height else "") + where
     cand = cls(key=_key_of((name, round(pts[0][0], 1), round(pts[0][1], 1))), category="WALL", kind="COUNT", quantity_mode="DIRECT", label=label, tag=TAG[group],
       geometry={"points": pts}, params={"dims_basis": "SPECIFIED"}, missing=[], work_item=None if item == ER.NONE else item, status="VALID", confidence=0.0, facts=facts, notes=notes,
@@ -241,7 +262,7 @@ def coverage(rows: list) -> dict | None:
     per = {str(p): int(x["counts"].get(name, 0)) for p, x in reads}
     total = sum(per.values())
     reason = None if total else (NOT_COUNTABLE if not t["countable"] else TAG_NOT_ON_PLAN if t["by_text"] else NO_PLAN_HIT)
-    kind = kind_of(name)
+    kind = t.get("kind") or kind_of(name)
     shaped = any(name in (x.get("by_shape") or []) for _p, x in reads)
     out.append({"index": t["index"], "name": name, "description": t["description"], "kind": kind, "group": FAMILY[kind], "objects": t["objects"], "token": t["token"], "counted_by": "TEXT" if t["by_text"] else "SHAPE" if shaped else "PICTURE",
       "legend_page": t["legend_page"], "plan_counts": per, "total": total, "set_aside_other_size": sum(int(x["aside"].get(name, 0)) for _p, x in reads), "reason": reason, "work_item": ER.work_item(kind, record=False)[0]})

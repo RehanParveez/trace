@@ -66,6 +66,15 @@ class AISettingsUpdateRequest(BaseModel):
   ai_enabled: bool | None = None
   ai_consent: Literal["OFF", "LOCAL", "OUTSIDE"] | None = None
 
+class BillingProfileResponse(BaseModel):
+  billing_profile: str | None = None
+  effective: str
+  profiles: list[dict] = []
+
+class BillingProfileUpdateRequest(BaseModel):
+  billing_profile: str | None = None
+
+
 class PermissionResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
 

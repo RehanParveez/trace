@@ -7,7 +7,7 @@ from app.dependencies.auth import get_current_user
 from app.dependencies.permissions import require_permission
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
-from app.modules.organizations.schemas import (AISettingsResponse, AISettingsUpdateRequest, InvitationAcceptRequest, InvitationAcceptanceResponse, InvitationCreateRequest, InvitationResponse,
+from app.modules.organizations.schemas import (AISettingsResponse, AISettingsUpdateRequest, BillingProfileResponse, BillingProfileUpdateRequest, InvitationAcceptRequest, InvitationAcceptanceResponse, InvitationCreateRequest, InvitationResponse,
   MemberResponse, MemberRoleUpdateRequest, MemberStatusUpdateRequest, OrganizationResponse, OrganizationUpdateRequest, PermissionResponse, RoleCreateRequest, RoleResponse, RoleUpdateRequest,
 )
 from app.modules.organizations.service import OrganizationService
@@ -68,6 +68,29 @@ async def update_ai_settings(
     current_user.active_membership.organization_id, payload, actor_user_id=current_user.id
   )
   return AISettingsResponse(ai_enabled=enabled, ai_consent=await service.get_ai_consent(current_user.active_membership.organization_id))
+
+@router.get("/me/billing-profile", response_model=BillingProfileResponse)
+async def get_billing_profile(
+  current_user: User = Depends(
+    require_permission(PermissionKey.ORGANIZATION_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.get_billing_profile(current_user.active_membership.organization_id)
+
+@router.patch("/me/billing-profile", response_model=BillingProfileResponse)
+async def update_billing_profile(
+  payload: BillingProfileUpdateRequest,
+  current_user: User = Depends(
+    require_permission(PermissionKey.ORGANIZATION_MANAGE)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.update_billing_profile(
+    current_user.active_membership.organization_id, payload, actor_user_id=current_user.id
+  )
 
 @router.get("/me/members", response_model=list[MemberResponse])
 async def list_members(

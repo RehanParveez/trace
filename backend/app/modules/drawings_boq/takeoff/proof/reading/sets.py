@@ -7,7 +7,7 @@ from app.modules.drawings_boq.takeoff.proof import case as CASE
 from app.modules.drawings_boq.takeoff.proof.reading.formats import KEY_LEN
 
 READING = "reading"
-OFFICES = {"IsbP": "A", "bbs_156": "A", "2053c": "B", "350c": "B", "925b": "B", "959n": "B", "201cd": "B", "909a": "B", "191c": "C", "plot1": "D", "652d": "E"}
+SETS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bench", "sets.yaml")
 UNKNOWN_OFFICE = "?"
 
 class SetRef(NamedTuple):
@@ -20,8 +20,12 @@ class SetRef(NamedTuple):
   link: bool
   office: str = UNKNOWN_OFFICE
 
+def offices() -> dict:
+  with open(SETS_FILE, encoding="utf-8") as fh:
+    return {name: row["office"] for name, row in ((yaml.safe_load(fh) or {}).get("sets") or {}).items() if row.get("office")}
+
 def office_of(case: str) -> str:
-  return OFFICES.get(case, UNKNOWN_OFFICE)
+  return offices().get(case, UNKNOWN_OFFICE)
 
 def _raw_case(folder: str) -> dict:
   with open(os.path.join(folder, "case.yaml"), encoding="utf-8") as fh:

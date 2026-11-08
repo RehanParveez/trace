@@ -66,6 +66,11 @@ class Organization(TimestampMixin, Base):
     server_default="OFF",
   )
 
+  billing_profile: Mapped[str | None] = mapped_column(
+    String(24),
+    nullable=True,
+  )
+
   users: Mapped[list["User"]] = relationship(
     back_populates="organization",
     cascade="all, delete-orphan",

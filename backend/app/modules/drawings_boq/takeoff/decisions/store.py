@@ -33,3 +33,27 @@ def put(meta: dict | None, key: str, value: str | None, user_id) -> dict:
   else:
     m[key] = {"value": value, "by": str(user_id), "at": datetime.now(timezone.utc).isoformat()}
   return {**(meta or {}), "takeoff_decisions": m}
+
+META_REVIEW = "takeoff_review"
+REVIEW_ACTIONS = ("accept", "correct", "reject")
+
+def review_held(meta: dict | None) -> dict:
+  raw = (meta or {}).get(META_REVIEW) or {}
+  return {k: dict(v) for k, v in raw.items() if isinstance(v, dict) and v.get("action") in REVIEW_ACTIONS}
+
+def review_merge(metas: list) -> dict:
+  out: dict = {}
+  for meta in metas:
+    for k, v in review_held(meta).items():
+      if k not in out or str(v.get("at") or "") >= str(out[k].get("at") or ""):
+        out[k] = v
+  return out
+
+def review_put(meta: dict | None, key: str, action: str | None, value: str | None, user_id) -> dict:
+  held = dict((meta or {}).get(META_REVIEW) or {})
+  if action is None:
+    held.pop(key, None)
+  else:
+    held[key] = {"action": action, "value": value, "by": str(user_id), "at": datetime.now(timezone.utc).isoformat()}
+  return {**(meta or {}), META_REVIEW: held}
+

@@ -12,6 +12,7 @@ from app.modules.drawings_boq.takeoff.ai_reader import cache as CACHE
 from app.modules.drawings_boq.takeoff.ai_reader import compare as CMP
 from app.modules.drawings_boq.takeoff.ai_reader import contract as C
 from app.modules.drawings_boq.takeoff.ai_reader import cost as COST
+from app.modules.drawings_boq.takeoff.ai_reader import legend as LG
 from app.modules.drawings_boq.takeoff.ai_reader import notes as NT
 from app.modules.drawings_boq.takeoff.ai_reader import schedule as SCH
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
@@ -158,6 +159,20 @@ def schedule_report(entries: list, refs: dict) -> dict:
         found.setdefault(cls, {"truth": 0, "read": 0, "ids": set()})["truth"] += n
   return {"proposed": proposed, "accepted": accepted, "held": dict(sorted(held.items())), "kinds": dict(sorted(kept.items())), "truth": {c: [v["read"], v["truth"]] for c, v in sorted(found.items())}}
 
+def legend_report(entries: list) -> dict:
+  held, kinds, agreement = Counter(), Counter(), Counter()
+  proposed = accepted = 0
+  for e in entries:
+    checks = e.get("validators") or []
+    proposed += sum(1 for v in checks if v["name"].startswith("quote_printed"))
+    value = e.get("answer") or {}
+    accepted += len(value.get("rows") or [])
+    kinds.update(r["meaning"] for r in value.get("rows") or [])
+    for h in value.get("held") or []:
+      held.update(h["reasons"])
+    agreement.update(c["agreement"] for c in value.get("compared") or [])
+  return {"proposed": proposed, "accepted": accepted, "held": dict(sorted(held.items())), "kinds": dict(sorted(kinds.items())), "agreement": {k: agreement.get(k, 0) for k in CMP.AGREEMENTS}}
+
 def truth_rows(folder: str) -> dict:
   path = os.path.join(folder, "register.yaml")
   if not os.path.isfile(path):
@@ -184,6 +199,10 @@ def evaluate(cases_dir: str | None = None, root: str = CIO.HERE, reading_score: 
     entries = slot["entries"]
     if task == SCH.TASK:
       report[f"{case}/{task}"] = {"schedules": schedule_report(entries, refs), "entries": len(entries), "status": {"OK": sum(1 for e in entries if e["status"] == "OK")},
+        "cost": COST.summarise(entries), "models": sorted({e["model"] for e in entries})}
+      continue
+    if task == LG.TASK:
+      report[f"{case}/{task}"] = {"legends": legend_report(entries), "entries": len(entries), "status": {"OK": sum(1 for e in entries if e["status"] == "OK")},
         "cost": COST.summarise(entries), "models": sorted({e["model"] for e in entries})}
       continue
     if task == NT.TASK:
@@ -241,6 +260,13 @@ def lines(report: dict) -> list:
       out.append(f"{key}: {r['entries']} cached answer(s), models {', '.join(r['models'])}; {n['proposed']} row(s) proposed, {n['accepted']} passed every page check; held because: "
         + (", ".join(f"{k} {v}" for k, v in n["held"].items()) or "nothing") + "; kept: " + (", ".join(f"{k} {v}" for k, v in n["kinds"].items()) or "none"))
       out.extend(f"    {cls}: {read} of {truth} truth row(s) read by an accepted row" for cls, (read, truth) in n["truth"].items())
+      out.append(f"    cost: {c['input_tokens']} input and {c['output_tokens']} output tokens, {c['seconds']} s, {c['usd']} USD, {c['pkr']} PKR")
+      continue
+    if "legends" in r:
+      n, c, a = r["legends"], r["cost"], r["legends"]["agreement"]
+      out.append(f"{key}: {r['entries']} cached answer(s), models {', '.join(r['models'])}; {n['proposed']} legend row(s) asked, {n['accepted']} passed every check; held because: "
+        + (", ".join(f"{k} {v}" for k, v in n["held"].items()) or "nothing") + "; meanings kept: " + (", ".join(f"{k} {v}" for k, v in n["kinds"].items()) or "none"))
+      out.append(f"    against the rules' reading of the words: {a['AGREE']} agree, {a['DISAGREE']} differ, {a['AI_ONLY']} placed by the AI alone, {a['RULE_ONLY']} placed by the rules alone")
       out.append(f"    cost: {c['input_tokens']} input and {c['output_tokens']} output tokens, {c['seconds']} s, {c['usd']} USD, {c['pkr']} PKR")
       continue
     if "notes" in r:

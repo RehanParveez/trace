@@ -18,6 +18,8 @@ from app.modules.drawings_boq.takeoff.ai_reader import cost as COST
 from app.modules.drawings_boq.takeoff.completeness import facts as F
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.proof import parity as PA
+from app.modules.drawings_boq.takeoff.proof.bench import explained as EXD
+from app.modules.drawings_boq.takeoff.proof import offices as OFC
 from app.modules.drawings_boq.takeoff.proof.bench import failures as FL
 from app.modules.drawings_boq.takeoff.proof.bench import reads as RD
 from app.modules.drawings_boq.takeoff.proof.bench import rows as RW
@@ -173,7 +175,7 @@ def render(ctx: dict) -> str:
   L += [f"{len(ctx['failures'])} groups in all; the full list with items and example pages is in failures.json. Money is the answer-file quantity times a rate from `rates.yaml`; items with no rate are counted as unpriced, never guessed.", ""]
   L += ["## Checks", "", f"- Silent entries over all sets: product {ctx['silent_total'][PRODUCT]}, proof {ctx['silent_total'][PROOF]} (must be 0).",
     f"- Stages failed: {ctx['failed_stages'] or 'none'}.", f"- Answers whose element has no ledger entry: {ctx['lost_answers'] or 'none'}.",
-    f"- {PA.bench_line()}"]
+    f"- {PA.bench_line()}", f"- {EXD.hit_line(EXD.load())}", f"- {OFC.first_sight_line()}"]
   for name, a in ctx["agreement"].items():
     L.append(f"- {name}: {a['compared']} answers-pass line(s) compared with the bench rows, {a['identical']} identical, {a['not_compared']} not compared (several elements or lines per element; {a['no_floor_row']} on a floor the ledger holds no row for)" + (f"; differences: {'; '.join(a['differences'][:5])}" if a["differences"] else "") + ".")
   L += ["", ctx["notes"], ""]
@@ -229,7 +231,7 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
       return 1
     
     office = meta["office"]
-    splits = {g: ST.split_of(office, g, splits_doc) for g in groups}
+    splits = {g: ST.split_of(office, g, splits_doc, meta) for g in groups}
     answers_doc = ANS.load(folder)
     decisions = AN.split_case(CIO.load_decisions(folder))[1]
     product_plain, proof_plain = RD.both(case, found, reads_cache)
@@ -283,4 +285,5 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
     append_history(history, [[today, commit, c["name"], run_label, fmt(c["stats"][run_label]["all"]["coverage"]), c["stats"][run_label]["all"]["within_10"], c["stats"][run_label]["all"]["compared"], c["silent"][run_label], c["ai"]["pkr"], rows_sha[:16]]
       for c in cases for run_label in (PRODUCT, PROOF)])
   print(f"{len(all_rows)} rows, rows.jsonl sha256 {rows_sha[:16]}, silent {silent_total[PRODUCT]}/{silent_total[PROOF]}, {len(failure_list)} failure groups; written to {out_dir}")
+  print(EXD.hit_line(EXD.load()))
   return 1 if (silent_total[PRODUCT] or silent_total[PROOF] or failed or lost_answers) else 0

@@ -9,6 +9,7 @@ from app.modules.ai_requests.service import AIOrchestratorService, AIRunResult, 
 from app.modules.drawings_boq.takeoff.ai_reader import cache as CACHE
 from app.modules.drawings_boq.takeoff.ai_reader import candidate as CAND
 from app.modules.drawings_boq.takeoff.ai_reader import contract as C
+from app.modules.drawings_boq.takeoff.ai_reader import legend as LG
 from app.modules.drawings_boq.takeoff.ai_reader import notes as NT
 from app.modules.drawings_boq.takeoff.ai_reader import reader as RD
 from app.modules.drawings_boq.takeoff.ai_reader import regions as RG
@@ -29,7 +30,7 @@ def entry_of(*, record: dict, sha: str, page: int, provider: AIProvider, region:
   boxes = record["crop"].get("boxes") or []
   union = [min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)] if boxes else None
   value = record["ai_value"]
-  quotes = list((value or {}).get("quotes", {}).values()) or [f["quote"] for f in (value or {}).get("facts", [])] or [r["quote"] for s in (value or {}).get("schedules", []) for r in s["rows"]]
+  quotes = list((value or {}).get("quotes", {}).values()) or [f["quote"] for f in (value or {}).get("facts", [])] or [r["quote"] for s in (value or {}).get("schedules", []) for r in s["rows"]] or [r["quote"] for r in (value or {}).get("rows", [])]
   candidate = CAND.build(task=record["task"], page=page, value=value or {}, quotes=quotes, bbox=union, confidence=(value or {}).get("confidence"), model=record["model"],
     prompt=record["prompt"], prompt_version=record["prompt_version"], cache_key=record["cache_key"], validators=record["validators"], shadow=True,
     input_tokens=record["input_tokens"], output_tokens=record["output_tokens"])
@@ -37,7 +38,7 @@ def entry_of(*, record: dict, sha: str, page: int, provider: AIProvider, region:
     "model": record["model"], "provider": provider.value, "seconds": record["seconds"], "input_tokens": record["input_tokens"], "output_tokens": record["output_tokens"],
     "status": record["status"], "problems": record["problems"], "error": record["error"], "answer": value, "validators": record["validators"], "candidate": candidate}
 
-async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: str | None, force: bool, max_tokens: int, timeout_s: float | None, task: str = RD.TASK) -> dict:
+async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: str | None, force: bool, max_tokens: int, timeout_s: float | None, task: str = RD.TASK, mode: str = LG.WEAK) -> dict:
   with open(pdf, "rb") as fh:
     contents = fh.read()
   sha = CACHE.pdf_sha256(contents)
@@ -45,7 +46,7 @@ async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: s
   total = len(doc)
   doc.close()
   region, version, reading = {RD.TASK: (RG.sheet_region(), C.PROMPT_VERSION, RD.read_sheet), NT.TASK: (RG.note_region(), NT.PROMPT_VERSION, NT.read_notes),
-    SCH.TASK: (RG.schedule_region(), SCH.PROMPT_VERSION, SCH.read_schedules)}[task]
+    SCH.TASK: (RG.schedule_region(), SCH.PROMPT_VERSION, SCH.read_schedules), LG.TASK: (LG.region(mode), LG.PROMPT_VERSION, None)}[task]
   stats = {"pages": 0, "asked": 0, "cached": 0, "failed": 0, "seconds": 0.0, "input_tokens": 0, "output_tokens": 0}
 
   async def ask(prompt: str, png: bytes, images: list):
@@ -63,7 +64,10 @@ async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: s
     if not force and CACHE.read(out, key) is not None:
       stats["cached"] += 1
       continue
-    record = await reading(contents=contents, page_no=page, ask=ask, cache_key=key, model=model)
+    if task == LG.TASK:
+      record = await LG.read_legends(contents=contents, page_no=page, rows=LG.page_rows(contents, page), mode=mode, ask=ask, cache_key=key, model=model)
+    else:
+      record = await reading(contents=contents, page_no=page, ask=ask, cache_key=key, model=model)
     stats["asked"] += 1
     stats["seconds"] += record["seconds"] or 0.0
     stats["input_tokens"] += record["input_tokens"] or 0
@@ -77,23 +81,27 @@ async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: s
   return stats
 
 def main(argv: list | None = None) -> int:
-  ap = argparse.ArgumentParser(description="Ask a model for the SHEET, NOTE_FACT or SCHEDULE_ROW task on the pages of one PDF and write each answer to a case's ai_cache folder. The proof reads those files and never asks a model.")
-  ap.add_argument("--pdf", required=True)  
+  ap = argparse.ArgumentParser(description="Ask a model for the SHEET, NOTE_FACT, SCHEDULE_ROW or LEGEND_ENTRY task on the pages of one PDF and write each answer to a case's ai_cache folder. The proof reads those files and never asks a model.")
+  ap.add_argument("--pdf", required=True)
   ap.add_argument("--out", required=True, help="the case folder; answers go to <out>/ai_cache/<key>.json")
   ap.add_argument("--task", default=RD.TASK)
   ap.add_argument("--where", choices=("local", "outside"), required=True, help="local uses Ollama; outside uses the Anthropic API with AI_API_KEY")
   ap.add_argument("--model", default=None)
   ap.add_argument("--pages", default=None, help="for example 1-5,9; all pages when omitted")
+  ap.add_argument("--mode", choices=(LG.WEAK, LG.ALL), default=LG.WEAK, help="for LEGEND_ENTRY: WEAK reads only the legend rows the rules could not place; ALL reads every row, to measure the AI against the rules. Name the legend pages with --pages.")
   ap.add_argument("--force", action="store_true")
   ap.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
   ap.add_argument("--timeout", type=float, default=None)
   args = ap.parse_args(argv)
-  if args.task not in (RD.TASK, NT.TASK, SCH.TASK) or not TASKS.get(args.task).prompt:
-    print(f"The task {args.task} has no prompt yet; only {RD.TASK}, {NT.TASK} and {SCH.TASK} can be read.", file=sys.stderr)
+  if args.task not in (RD.TASK, NT.TASK, SCH.TASK, LG.TASK) or not TASKS.get(args.task).prompt:
+    print(f"The task {args.task} has no prompt yet; only {RD.TASK}, {NT.TASK}, {SCH.TASK} and {LG.TASK} can be read.", file=sys.stderr)
+    return 2
+  if args.task == LG.TASK and not args.pages:
+    print(f"{LG.TASK} needs --pages: name the pages that print a legend.", file=sys.stderr)
     return 2
   provider = CONSENT_PROVIDER["LOCAL" if args.where == "local" else "OUTSIDE"]
   model = args.model or model_of(provider)
-  stats = asyncio.run(fill(pdf=args.pdf, out=args.out, provider=provider, model=model, pages=args.pages, force=args.force, max_tokens=args.max_tokens, timeout_s=args.timeout, task=args.task))
+  stats = asyncio.run(fill(pdf=args.pdf, out=args.out, provider=provider, model=model, pages=args.pages, force=args.force, max_tokens=args.max_tokens, timeout_s=args.timeout, task=args.task, mode=args.mode))
   print(f"{provider.value} {model}: {stats['pages']} page(s), {stats['asked']} asked, {stats['cached']} already cached, {stats['failed']} failed, {stats['seconds']} s, {stats['input_tokens']} input and {stats['output_tokens']} output tokens")
   return 0 if not stats["failed"] else 1
 

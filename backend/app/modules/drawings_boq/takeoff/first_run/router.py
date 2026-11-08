@@ -25,5 +25,7 @@ async def start_first_run(project_id: UUID, current_user: User = Depends(require
   from app.modules.drawings_boq.tasks import first_run_task
   org = _org(current_user)
   drawings = await FirstRunService(session)._drawings(org, project_id)
+  from app.modules.drawings_boq.takeoff.flow.service import FlowService
+  await FlowService(session).record(org, project_id, "queued")
   first_run_task.apply_async(args=[str(org), str(project_id), str(current_user.id)], queue="bim_parsing")
   return {"project_id": project_id, "queued": True, "drawings": len(drawings)}
