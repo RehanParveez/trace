@@ -2,7 +2,7 @@ from __future__ import annotations
 import time
 from app.modules.drawings_boq.takeoff.completeness import ledger as LG
 
-STAGES = ("register", "profile", "scale", "read", "members", "ledger", "quantities", "boq", "questions")
+STAGES = ("register", "profile", "scale", "read", "members", "ledger", "quantities", "self_check", "boq", "questions")
 RERUN_STAGES = ("ledger", "quantities", "boq", "questions")
 DONE, FAILED, SKIPPED = "DONE", "FAILED", "SKIPPED"
 STAGE_FAILED = "STAGE_FAILED"

@@ -1,0 +1,82 @@
+placeholder_marks: "^(UNMARKED|DRAWN-|LABEL-|OPEN$)"
+units:
+  kg: {kg: 1.0, kgs: 1.0, ton: 1000.0, tons: 1000.0, tonne: 1000.0}
+  m3: {m3: 1.0, cum: 1.0, cft: 0.0283168, cuft: 0.0283168}
+checks:
+  - id: MARKS_HAVE_ROWS
+    compares: {kind: marks_in, left: {classes: [COLUMN]}, right: {classes: [COLUMN_SCHEDULE_CELL]}}
+    classes: [COLUMN, COLUMN_SCHEDULE_CELL]
+    tolerance: 0.0
+    needs: [COLUMN, COLUMN_SCHEDULE_CELL]
+    say:
+      pass: "Every column mark on the plans ({total}) has a row in the column schedule."
+      fail: "{n} of {total} column marks on the plans have no row in the column schedule: {list}."
+  - id: ROWS_HAVE_MARKS
+    compares: {kind: marks_in, left: {classes: [COLUMN_SCHEDULE_CELL]}, right: {classes: [COLUMN]}}
+    classes: [COLUMN, COLUMN_SCHEDULE_CELL]
+    tolerance: 0.0
+    needs: [COLUMN, COLUMN_SCHEDULE_CELL]
+    say:
+      pass: "Every row of the column schedule ({total}) is a column mark found on the plans."
+      fail: "{n} of {total} rows of the column schedule are not a column mark found on the plans: {list}."
+  - id: OPENINGS_MATCH_SCHEDULE
+    compares:
+      kind: marks_agree
+      left: {classes: [DOOR, WINDOW, VENTILATOR]}
+      right: {classes: [LINTEL_TYPE], strip_prefix: ["L-"]}
+    classes: [DOOR, WINDOW, VENTILATOR, LINTEL_TYPE]
+    tolerance: 0.0
+    needs: [LINTEL_TYPE]
+    say:
+      pass: "The opening types on the plans and the types in the lintel schedule are the same set ({total})."
+      fail: "{n} of {total} opening types are in only one of the plans and the lintel schedule: {list}."
+  - id: ROOMS_FILL_FLOOR
+    compares:
+      kind: area_fill
+      left: {classes: [ROOM], field: area_m2}
+      right: {classes: [SLAB_PANEL], field: area_m2}
+     
+      band: [0.70, 1.00]
+    classes: [ROOM, SLAB_PANEL]
+    tolerance: 0.0
+    needs: [ROOM, SLAB_PANEL]
+    say:
+      pass: "The rooms of every floor ({total}) fill between 70% and 100% of its slab."
+      fail: "{n} of {total} floors have rooms that do not fill their slab as a floor should: {list}."
+  - id: STOREYS_AGREE
+    compares:
+      kind: values_agree
+      left: {classes: [LEVEL], roles: [SECTION], field: value_in}
+      right: {classes: [LEVEL], roles: [ELEVATION], field: value_in}
+    
+      within: 3.0
+    classes: [LEVEL]
+    tolerance: 0.25
+    needs: [LEVEL]
+    say:
+      pass: "The levels on the sections and the levels on the elevations agree ({total} compared)."
+      fail: "{n} of {total} levels are on the sections or the elevations but not on the other: {list}."
+  - id: STEEL_RATIO
+    compares:
+      kind: ratio_band
+      top: {family: STEEL, to: kg}
+      bottom: {families: [RCC_FOOTINGS, RCC_PLINTH_BEAM, RCC_COLUMNS, RCC_BEAMS, RCC_ROOF_BEAMS, RCC_BEAMS_SLABS, RCC_SLABS, RCC_WALLS, RCC_LINTELS, RCC_STAIR, TANKS], to: m3}
+      
+      band: [60.0, 200.0]
+    classes: []
+    tolerance: 0.0
+    needs: ["lines:STEEL"]
+    say:
+      pass: "Steel is {ratio:.0f} kg per m3 of concrete, inside the usual {lo:g} to {hi:g}."
+      fail: "Steel is {ratio:.0f} kg per m3 of concrete, outside the usual {lo:g} to {hi:g}."
+  - id: BBS_MATCHES
+    compares:
+      kind: totals_agree
+      left: {family: STEEL, to: kg}
+      right: {evidence: bbs_kg}
+    classes: []
+    tolerance: 0.10
+    needs: ["lines:STEEL", bbs]
+    say:
+      pass: "The steel of the quantities ({left:,.0f} kg) is within {pct:.0f}% of the bar bending schedule ({right:,.0f} kg)."
+      fail: "The steel of the quantities ({left:,.0f} kg) is {off:.0f}% away from the bar bending schedule ({right:,.0f} kg)."

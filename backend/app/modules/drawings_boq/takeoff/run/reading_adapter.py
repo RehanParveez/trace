@@ -54,6 +54,7 @@ class ReadItem:
   source: V.ReadSource
   confidence: float | None = None
   join: dict | None = None
+  region: list | None = None
 
 @dataclass
 class PageInfo:

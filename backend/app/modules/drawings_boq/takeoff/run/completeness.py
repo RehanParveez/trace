@@ -50,6 +50,9 @@ def _floor_of(plain_floor, join) -> str | None:
 def evidence_of(plain: dict, lines: list | None = None) -> dict:
   ev = LG.empty_evidence()
   floor_of_page = {int(k): (p.get("register") or {}).get("floor") for k, p in plain["pages"].items()}
+  role_of_page = {int(k): (p.get("register") or {}).get("role") for k, p in plain["pages"].items()}
+  watched, fields = SCK.read_classes(), SCK.read_fields()
+
   seen: dict = {}
   
   for i in plain["items"]:
@@ -58,6 +61,11 @@ def evidence_of(plain: dict, lines: list | None = None) -> dict:
     reasons = list(i.get("reasons") or [])
     missing = list(dict.fromkeys(LG.REASON_INPUT[r] for r in reasons if r in LG.REASON_INPUT))
     ev["members"].append({"id": f"{base}#{seen[base]}", "cls": i["cls"], "mark": i.get("mark"), "floor": _floor_of(floor_of_page.get(i["sheet"]), i.get("join")), "status": i["status"], "reasons": reasons, "missing": missing})
+    if i["cls"] in watched:
+      got = i.get("attrs") or {}
+      ev["observed"].append({"id": f"{base}#{seen[base]}", "sheet": i["sheet"], "cls": i["cls"], "mark": i.get("mark"), "floor": ev["members"][-1]["floor"], "role": role_of_page.get(i["sheet"]),
+        "attrs": {k: got[k] for k in sorted(fields) if isinstance(got.get(k), (int, float)) and not isinstance(got.get(k), bool)}})
+
   rows = page_rows(plain)
   
   ev["sheets"] = sorted({k for k in (sheet_key(r) for r in rows) if k})

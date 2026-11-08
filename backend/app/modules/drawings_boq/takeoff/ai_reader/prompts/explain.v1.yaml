@@ -1,0 +1,16 @@
+task: EXPLAIN_GAP
+version: "1"
+schema: explain.v1
+text: |-
+  You are shown the facts about one line of a quantity take-off where Trace's figure differs from the quantity surveyor's. Each fact begins with an id (E1, E2, and so on), then the fact. Use only these facts. Do not use anything else, do not guess, and do not work out new numbers.
+
+  The facts:
+  {pack}
+
+  The packs that can own a cause (name: what it builds):
+  {packs}
+
+  Answer with strict JSON only, no markdown, in this exact shape:
+  {"cause": ..., "evidence": [...], "owner": ...}
+
+  "cause" is at most two plain sentences saying why the two figures differ, using only numbers that are printed in the facts. "evidence" lists the ids of the facts the cause rests on. "owner" is the name of one pack from the list above whose work would close the gap, or null when none fits. If the facts do not show the cause, say so in "cause", give an empty "evidence" list and null for "owner".

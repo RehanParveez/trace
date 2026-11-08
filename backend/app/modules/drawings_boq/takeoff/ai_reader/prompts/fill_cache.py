@@ -1,7 +1,6 @@
 from __future__ import annotations
 import argparse
 import asyncio
-import os
 import sys
 import time
 from app.modules.ai_requests.models import AIProvider

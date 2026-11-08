@@ -1,0 +1,120 @@
+- sheet: 8
+  kind: VIEW
+  box:
+  - 430.9
+  - 715.2
+  - 670.0
+  - 908.4
+  title: p8 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 3 truth item(s) of FOOTING_PAD that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 10
+  kind: VIEW
+  box:
+  - 187.7
+  - 109.1
+  - 733.8
+  - 914.3
+  title: p10 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 53 truth item(s) of COLUMN, GRID that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 11
+  kind: SCHEDULE
+  box:
+  - 149.6
+  - 304.0
+  - 566.3
+  - 564.0
+  title: p11 SCHEDULE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 10 truth item(s) of COLUMN_SCHEDULE_CELL that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 11
+  kind: SCHEDULE
+  box:
+  - 147.9
+  - 685.7
+  - 560.2
+  - 947.4
+  title: p11 SCHEDULE 2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 7 truth item(s) of COLUMN_SCHEDULE_CELL that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 12
+  kind: SECTION_PICTURE
+  box:
+  - 60.8
+  - 218.8
+  - 119.2
+  - 1090.2
+  title: p12 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 9 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 12
+  kind: VIEW
+  box:
+  - 192.4
+  - 214.2
+  - 631.1
+  - 895.4
+  title: p12 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 87 truth item(s) of COLUMN, SLAB_BAR_CALLOUT that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth
+      item is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 13
+  kind: VIEW
+  box:
+  - 208.7
+  - 253.6
+  - 627.0
+  - 962.2
+  title: p13 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 52 truth item(s) of COLUMN, SLAB_BAR_CALLOUT that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth
+      item is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 14
+  kind: VIEW
+  box:
+  - 353.8
+  - 613.1
+  - 555.1
+  - 854.8
+  title: p14 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 11 truth item(s) of SLAB_BAR_CALLOUT that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`

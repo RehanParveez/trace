@@ -189,7 +189,9 @@ def cmd_intake(args) -> int:
 
 def _unmatched_reads(key: str, ts: F.TruthSet, read: AD.SetRead) -> list:
   from app.modules.drawings_boq.takeoff.proof.reading import match as M
+  from app.modules.drawings_boq.takeoff.proof.reading import sample as SMP
   from app.modules.drawings_boq.takeoff.proof.reading import score as SCR
+
   outcomes = SCR.element_outcomes(key, ts, read, {})
   open_ids = {o["id"] for o in outcomes if o["side"] == "read" and o["outcome"] != SCR.TRUE}
   with_truth = {(r.sheet, r.cls.value) for r in ts.elements}

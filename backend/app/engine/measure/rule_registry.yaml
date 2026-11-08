@@ -171,7 +171,7 @@
   evidence:
     - {office: C, sets: 1, metric: "reading: beam sections whose top and bottom bars and ring are read by place (4 of 4 on the section sheet, all equal to the truth)", value: 4, pack: CV-5, met: true}
     - {office: D, sets: 1, metric: "reading: beam sections the callouts give (0; the section sheet's callouts are not one to a picture, and the two the reader found had no bars and were dropped)", value: 0, pack: CV-5, met: false}
-     - {office: A, sets: 1, metric: "reading: beam sections the callouts give (0; the sheet already has its sections from the schedule reader)", value: 0, pack: CV-5, met: false}
+    - {office: A, sets: 1, metric: "reading: beam sections the callouts give (0; the sheet already has its sections from the schedule reader)", value: 0, pack: CV-5, met: false}
     - {office: A, sets: 1, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 27 of 27 (right value 27), true 27 of 27 read; off: matched 27 of 27", value: 27, pack: GX-2, met: true}
     - {office: B, sets: 2, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 0 of 54 (right value 0), true 0 of 0 read; off: matched 0 of 54", value: 0, pack: GX-2, met: false}
     - {office: C, sets: 1, metric: "reading score, class BEAM_SECTION, every reading rule on: matched 4 of 5 (right value 4), true 4 of 4 read; off: matched 0 of 5", value: 4, pack: GX-2, met: true}

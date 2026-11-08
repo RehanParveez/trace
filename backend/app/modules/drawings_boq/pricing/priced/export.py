@@ -10,6 +10,13 @@ FILL = PatternFill("solid", fgColor="2F4F6F")
 HEADERS = ("Item", "Description", "Unit", "Quantity", "Rate", "Amount", "Spec", "Floor", "Not priced because")
 MARK_HEADERS = ("State", "Measured amount", "Assumed amount", "Range low %", "Range high %", "Open review rows")
 MARK_KEYS = ("label", "measured_amount", "assumed_amount", "low_pct", "high_pct", "open_rows")
+CONF_HEADERS = ("Confidence", "Why this confidence")
+CONF_KEYS = ("confidence", "confidence_why")
+
+def _mark_columns(marks: list | None) -> tuple:
+  if marks and any(m.get("confidence") for m in marks):
+    return MARK_HEADERS + CONF_HEADERS, MARK_KEYS + CONF_KEYS
+  return MARK_HEADERS, MARK_KEYS
 
 def _f(x):
   return None if x is None else float(x)
@@ -24,20 +31,21 @@ def build_xlsx(project: str, profile_id: str, lines: list, totals: dict, materia
   wb = Workbook()
   ws = wb.active
   ws.title = "BOQ"
-  _header(ws, HEADERS + (MARK_HEADERS if marks else ()))
+  mark_headers, mark_keys = _mark_columns(marks)
+  _header(ws, HEADERS + (mark_headers if marks else ()))
   
   for n, l in enumerate(lines):
     qty = G.convert(l.qty, l.unit, l.rate_unit) if l.rate_unit and l.amount is not None else l.qty
     unit = l.rate_unit if l.amount is not None else l.unit
     per_unit = None if l.rate is None or not l.basis else l.rate / l.basis
-    extra = [marks[n][k] for k in MARK_KEYS] if marks else []
+    extra = [marks[n][k] for k in mark_keys] if marks else []
     ws.append([l.code, l.description, unit, _f(qty), _f(per_unit), _f(l.amount), " ".join(str(v) for v in l.spec[:2]) if l.spec else None, l.floor, l.unpriced_why, *extra])
   last = ws.max_row
   ws.append(["TOTAL", None, None, None, None, f"=SUM(F2:F{last})" if last >= 2 else 0])
   
   for c in ws[ws.max_row]:
     c.font = Font(bold=True)
-  for col, w in zip("ABCDEFGHIJKLMNO", (14, 46, 8, 14, 12, 16, 22, 12, 52, 26, 16, 16, 12, 12, 12)):
+  for col, w in zip("ABCDEFGHIJKLMNOPQ", (14, 46, 8, 14, 12, 16, 22, 12, 52, 26, 16, 16, 12, 12, 12, 12, 44)):
     ws.column_dimensions[col].width = w
   for row in ws.iter_rows(min_row=2, min_col=4, max_col=6):
     for c in row:

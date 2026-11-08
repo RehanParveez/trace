@@ -19,6 +19,8 @@ class FirstRunReport(BaseModel):
   entries: int = 0
   boq: dict = {}
   questions: dict = {}
+  checks: list = []
+  checks_summary: dict = {}
   stages: list = []
   failed: list = []
   unread: list = []

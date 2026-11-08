@@ -27,6 +27,8 @@ class TruthStamp:
   source: str
   date: str
   note: str | None = None
+  checked_by: str | None = None
+  checked_date: str | None = None
 
 @dataclass
 class DocumentProfile:
@@ -52,6 +54,7 @@ class RegisterRow:
   discipline: str | None = None
   scale_ratio: float | None = None
   scale_basis: str | None = None
+  was: dict | None = None
 
 @dataclass
 class ElementRow:
@@ -64,6 +67,7 @@ class ElementRow:
   attrs: dict = field(default_factory=dict)
   conflict: dict | None = None
   mark_kind: str | None = None
+  was: dict | None = None
 
 @dataclass
 class JoinRow:
@@ -71,6 +75,7 @@ class JoinRow:
   src: dict
   dst: dict
   truth: TruthStamp | None = None
+  was: dict | None = None
 
 @dataclass
 class ParamRow:
@@ -125,6 +130,13 @@ def _only(entry: dict, allowed: tuple, file: str, row, problems: _Problems) -> N
     if key not in allowed:
       problems.add(file, row, key, f"unknown field; allowed: {', '.join(allowed)}")
 
+def _was(entry: dict, file: str, row, problems: _Problems):
+  was = entry.get("was")
+  if was is not None and not isinstance(was, dict):
+    problems.add(file, row, "was", "must be a mapping of field name to the value it had before a person corrected it")
+    return None
+  return was
+
 def _stamp(entry, file: str, row, problems: _Problems, required: bool) -> TruthStamp | None:
   if entry is None:
     if required:
@@ -133,7 +145,7 @@ def _stamp(entry, file: str, row, problems: _Problems, required: bool) -> TruthS
   if not isinstance(entry, dict):
     problems.add(file, row, "truth", "must be a mapping")
     return None
-  _only(entry, ("by", "checked", "source", "date", "note"), file, row, problems)
+  _only(entry, ("by", "checked", "source", "date", "note", "checked_by", "checked_date"), file, row, problems)
   by = _enum(V.TruthSource, entry.get("by"), file, row, "truth.by", problems)
   checked = entry.get("checked")
 
@@ -149,7 +161,15 @@ def _stamp(entry, file: str, row, problems: _Problems, required: bool) -> TruthS
     problems.add(file, row, "truth.date", "must be a date written YYYY-MM-DD")
   if by is None:
     return None
-  return TruthStamp(by=by, checked=checked, source=source, date=date, note=entry.get("note"))
+  checked_by, checked_date = entry.get("checked_by"), entry.get("checked_date")
+  if checked_by is not None and (not isinstance(checked_by, str) or not checked_by.strip()):
+    problems.add(file, row, "truth.checked_by", "must be the name of the person who checked")
+    checked_by = None
+  if checked_date is not None and not DATE.match(str(checked_date)):
+    problems.add(file, row, "truth.checked_date", "must be a date written YYYY-MM-DD")
+  if checked is True and (not checked_by or not checked_date):
+    problems.add(file, row, "truth.checked", "a checked row needs checked_by and checked_date, so every check has a name and a day")
+  return TruthStamp(by=by, checked=checked, source=source, date=date, note=entry.get("note"), checked_by=checked_by, checked_date=None if checked_date is None else str(checked_date))
 
 def _page(value, pages: int, file: str, row, name: str, problems: _Problems) -> int | None:
   if isinstance(value, bool) or not isinstance(value, int):
@@ -191,7 +211,7 @@ def _register(rows: list, pages: int, problems: _Problems) -> list:
       problems.add(f, i, "-", "must be a mapping")
       continue
 
-    _only(e, ("sheet", "sheet_no", "title", "role", "plan_kind", "floor", "discipline", "scale_ratio", "scale_basis", "text_type", "truth"), f, i, problems)
+    _only(e, ("sheet", "sheet_no", "title", "role", "plan_kind", "floor", "discipline", "scale_ratio", "scale_basis", "text_type", "truth", "was"), f, i, problems)
     sheet = _page(e.get("sheet"), pages, f, i, "sheet", problems)
     if sheet in seen:
       problems.add(f, i, "sheet", f"page {sheet} has two rows")
@@ -206,7 +226,7 @@ def _register(rows: list, pages: int, problems: _Problems) -> list:
     stamp = _stamp(e.get("truth"), f, i, problems, True)
     if None not in (sheet, role, ttype, stamp):
       out.append(RegisterRow(sheet=sheet, role=role, text_type=ttype, truth=stamp, sheet_no=e.get("sheet_no"), title=e.get("title"), plan_kind=kind, floor=e.get("floor"), discipline=e.get("discipline"),
-        scale_ratio=ratio if isinstance(ratio, (int, float)) and not isinstance(ratio, bool) else None, scale_basis=e.get("scale_basis")))
+        scale_ratio=ratio if isinstance(ratio, (int, float)) and not isinstance(ratio, bool) else None, scale_basis=e.get("scale_basis"), was=_was(e, f, i, problems)))
   return out
 
 def _at(at, f: str, i, problems: _Problems) -> None:
@@ -242,7 +262,7 @@ def _elements(rows: list, pages: int, problems: _Problems) -> list:
       problems.add(f, i, "-", "must be a mapping")
       continue
   
-    _only(e, ("sheet", "class", "mark", "mark_kind", "at", "geom", "attrs", "conflict", "truth"), f, i, problems)
+    _only(e, ("sheet", "class", "mark", "mark_kind", "at", "geom", "attrs", "conflict", "truth", "was"), f, i, problems)
     sheet = _page(e.get("sheet"), pages, f, i, "sheet", problems)
     cls = _enum(V.ElementClass, e.get("class"), f, i, "class", problems)
     mark_kind = e.get("mark_kind")
@@ -264,7 +284,8 @@ def _elements(rows: list, pages: int, problems: _Problems) -> list:
       
     stamp = _stamp(e.get("truth"), f, i, problems, True)
     if None not in (sheet, cls, stamp):
-      out.append(ElementRow(sheet=sheet, cls=cls, truth=stamp, mark=None if e.get("mark") is None else str(e["mark"]), at=e.get("at"), geom=e.get("geom"), attrs=attrs, conflict=e.get("conflict"), mark_kind=mark_kind))
+      out.append(ElementRow(sheet=sheet, cls=cls, truth=stamp, mark=None if e.get("mark") is None else str(e["mark"]), at=e.get("at"), geom=e.get("geom"), attrs=attrs, 
+       conflict=e.get("conflict"), mark_kind=mark_kind, was=_was(e, f, i, problems)))
   return out
 
 def _ref(ref, f: str, i, name: str, pages: int, problems: _Problems) -> dict | None:
@@ -288,13 +309,13 @@ def _joins(rows: list, pages: int, problems: _Problems) -> list:
       problems.add(f, i, "-", "must be a mapping")
       continue
   
-    _only(e, ("kind", "from", "to", "truth"), f, i, problems)
+    _only(e, ("kind", "from", "to", "truth", "was"), f, i, problems)
     kind = _enum(V.JoinKind, e.get("kind"), f, i, "kind", problems)
     src = _ref(e.get("from"), f, i, "from", pages, problems)
     dst = _ref(e.get("to"), f, i, "to", pages, problems)
     stamp = _stamp(e.get("truth"), f, i, problems, False)
     if None not in (kind, src, dst):
-      out.append(JoinRow(kind=kind, src=src, dst=dst, truth=stamp))
+      out.append(JoinRow(kind=kind, src=src, dst=dst, truth=stamp, was=_was(e, f, i, problems)))
   return out
 
 def _params(rows: list, pages: int, problems: _Problems) -> list:

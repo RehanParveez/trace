@@ -7,6 +7,8 @@ from app.engine.catalogue import loader as CL
 HERE = os.path.dirname(os.path.abspath(__file__))
 WRONG, MISSING = "WRONG", "MISSING"
 OUT_OF_10, NO_REASON = "OUTSIDE_10_PERCENT", "NO_REASON_GIVEN"
+FIND, READ, JOIN, MEASURE, BILL = "FIND", "READ", "JOIN", "MEASURE", "BILL"
+STAGES = (FIND, READ, JOIN, MEASURE, BILL)
 SKIP = tuple(LG.INFO_REASONS)
 
 def read_yaml(name: str) -> dict:
@@ -30,6 +32,25 @@ def failure_of(row: dict) -> tuple | None:
   if state in (LG.ASKED, LG.NOT_APPLICABLE) and has_answer:
     return MISSING, first_reason(row["reasons"]) or NO_REASON
   return None
+
+def stage_of(state: str, reason: str, table: dict | None = None) -> tuple:
+  table = read_yaml("stages.yaml") if table is None else table
+  got, basis = (table.get("by_reason") or {}).get(reason), "reason"
+  if got is None:
+    got, basis = (table.get("by_state") or {}).get(state), "state"
+  if got not in STAGES:
+    raise ValueError(f"stages.yaml gives no stage for {state} / {reason}")
+  return got, basis
+
+def class_of(element: str) -> str:
+  item = CL.get(element)
+  return item.member_class if item is not None and item.member_class else "UNKNOWN"
+
+def key_of(row: dict) -> str | None:
+  f = failure_of(row)
+  if f is None:
+    return None
+  return f"{stage_of(f[0], f[1])[0]} / {class_of(row['element'])} / {f[1]}"
 
 def rate_of(element: str, rates: dict) -> float | None:
   v = (rates.get("per_item_unit") or {}).get(element)
@@ -80,27 +101,33 @@ def owner_of(rows: list, owners: dict, reason: str) -> str:
 def groups(rows: list, rates: dict | None = None, owners: dict | None = None) -> list:
   rates = read_yaml("rates.yaml") if rates is None else rates
   owners = read_yaml("owners.yaml") if owners is None else owners
+  table = read_yaml("stages.yaml")
   names = {it.id: it.name for it in CL.items()}
   by: dict = {}
   for r in rows:
     f = failure_of(r)
     if f is None:
       continue
-    by.setdefault((f[0], f[1], r["section"]), []).append(r)
     
+    stage, basis = stage_of(f[0], f[1], table)
+    by.setdefault((stage, class_of(r["element"]), f[1]), []).append((r, f[0], basis))
   out = []
-  for (state, reason, section), rs in by.items():
+  for (stage, cls, reason), found in by.items():
+    rs = [x[0] for x in found]
     offices = sorted({r["office"] for r in rs if r["office"] != "?"})
     sets = sorted({r["set"] for r in rs})
     items = sorted({r["element"] for r in rs})
     money, priced, unpriced = money_of(rs, rates)
+    
     pages = []
     for r in sorted(rs, key=lambda x: (x["set"], x["element"], x["floor"])):
       if any(p["set"] == r["set"] for p in pages) or len(pages) >= 5:
         continue
+      
       for p in (r.get("pages") or [])[:1]:
         pages.append({"set": r["set"], "pdf": p["pdf"], "page": p["page"]})
-    out.append({"key": f"{state} / {reason} / {section}", "state": state, "reason": reason, "section": section, "sets": len(sets), "offices": len(offices), "office_letters": offices,
+    out.append({"key": f"{stage} / {cls} / {reason}", "stage": stage, "class": cls, "reason": reason, "states": sorted({x[1] for x in found}), "stage_basis": {b: sum(1 for x in found if x[2] == b) for b in ("reason", "state")},
+      "sections": sorted({r["section"] for r in rs}), "sets": len(sets), "offices": len(offices), "office_letters": offices,
       "set_names": sets, "items": items, "item_names": [names.get(i, i) for i in items], "rows": len(rs), "money_at_risk": money, "priced_items": priced, "unpriced_items": unpriced,
       "money": "unpriced" if money is None else ("partly priced" if unpriced else "priced"), "example_pages": pages,
       "by_office": {o: {"sets": len({r["set"] for r in rs if r["office"] == o}), "items": len({r["element"] for r in rs if r["office"] == o})} for o in offices},

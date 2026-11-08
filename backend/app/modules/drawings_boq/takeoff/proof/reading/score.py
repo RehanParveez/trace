@@ -11,6 +11,8 @@ from app.modules.drawings_boq.takeoff.proof.reading import sets as S
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
 from app.modules.drawings_boq.takeoff.run import reading_adapter as AD
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from app.modules.drawings_boq.takeoff.proof.reading import regions as RG
+from app.modules.drawings_boq.takeoff.proof.reading import sample as SMP
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASELINE = os.path.join(HERE, "baseline.json")
@@ -49,8 +51,8 @@ def truth_fingerprint(root: str = CIO.HERE) -> str:
     paths.append(os.path.join(root, ref.case, "facts.yaml"))
   return _digest(sorted(set(paths)))
 
-def _outcome(oid: str, ts, cls: str, sheet, side: str, outcome: str, mark=None, detail=None) -> dict:
-  return {"id": oid, "set": ts.document.alias, "split": ts.document.split.value.lower(), "class": cls, "sheet": sheet, "side": side, "outcome": outcome, "mark": mark, "detail": detail}
+def _outcome(oid: str, ts, cls: str, sheet, side: str, outcome: str, mark=None, detail=None, **extra) -> dict:
+  return {"id": oid, "set": ts.document.alias, "split": ts.document.split.value.lower(), "class": cls, "sheet": sheet, "side": side, "outcome": outcome, "mark": mark, "detail": detail, **extra}
 
 def _flagged(read_items: list, page=None, cls: str | None = None) -> bool:
   if page is not None and (page.coverage or {}).get(cls) in (V.Status.NOT_READ.value, V.Status.UNSURE.value):
@@ -95,7 +97,7 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | 
         if F.is_draft(t.truth):
           drafted.update(pool)
         else:
-          out.append(_outcome(oid, ts, cls, sheet, "truth", verdict, t.mark, f"count truth {t.attrs['count']}, read {total}"))
+          out.append(_outcome(oid, ts, cls, sheet, "truth", verdict, t.mark, f"count truth {t.attrs['count']}, read {total}", at=RG.point_of(t.at, t.geom)))
         used.update(pool)
         pool = []
         
@@ -117,9 +119,9 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | 
             paired[id(t)] = r
           wrong, unread = M.compare_attrs(t.attrs, r.attrs)
           
-          out.append(_outcome(oid, ts, cls, sheet, "truth", WRONG if wrong else OK, t.mark, ("wrong: " + ", ".join(wrong) if wrong else None) or ("not read: " + ", ".join(unread) if unread else None)))
+          out.append(_outcome(oid, ts, cls, sheet, "truth", WRONG if wrong else OK, t.mark, ("wrong: " + ", ".join(wrong) if wrong else None) or ("not read: " + ", ".join(unread) if unread else None), at=RG.point_of(t.at, t.geom)))
         elif not F.is_draft(t.truth):
-          out.append(_outcome(oid, ts, cls, sheet, "truth", MISSED_R if _flagged(reads, page, cls) else MISSED_S, t.mark))
+          out.append(_outcome(oid, ts, cls, sheet, "truth", MISSED_R if _flagged(reads, page, cls) else MISSED_S, t.mark, at=RG.point_of(t.at, t.geom)))
     for j, r in enumerate(reads):
       n = j + 1
       oid = f"{key}:RD:{sheet}:{cls}:{M.group_key(r.mark) or '-'}:{n}"
@@ -165,7 +167,7 @@ def join_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict) -> l
       verdict, detail = WRONG, f"{name}: truth {want}, joined to {(jr.get('to') or {}).get('key')}"
     else:
       verdict, detail = MISSED_R, f"{name}: truth {want}; {jr.get('status')}: {jr.get('reason')}"
-    out.append(_outcome(oid, ts, "JOIN", src["sheet"], "truth", verdict, name, detail))
+    out.append(_outcome(oid, ts, "JOIN", src["sheet"], "truth", verdict, name, detail, src_class=src["class"]))
     
   return out
 
@@ -252,6 +254,7 @@ def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: s
   want = {"dev": ("DEV",), "heldout": ("HELDOUT",), "all": ("DEV", "HELDOUT")}[split]
   files_dir = CIO.cases_dir(cases_dir)
   outcomes, sets_out, unmapped, notes = [], [], {}, []
+  regions_out: dict = {}
   reads_by_case: dict = {}
   for ref in S.find_sets(cases_dir, root):
     if ref.link:
@@ -301,10 +304,14 @@ def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: s
     out = element_outcomes(ref.pdf_key, ts, read, paired) + register_outcomes(ref.pdf_key, ts, read) + join_outcomes(ref.pdf_key, ts, read, paired)
     if facts:
       out += fact_outcomes(ref.pdf_key, ts, case_facts, results_all, ref.pdf)
+    regions = RG.load(ref.truth_folder, ts.document.pages)
+    region_score = RG.score_regions(regions, read)
+    stages = RG.apply_stages(regions, region_score["rows"], read, out)
+    regions_out[ts.document.alias] = region_score
     outcomes += out
-    sets_out.append({"alias": ts.document.alias, "key": ref.pdf_key, "split": ts.document.split.value.lower(), "pages": ts.document.pages, "consultant": ts.document.consultant, "producer": ts.document.producer, "outcomes": len(out), "params": {**param_completeness(ts), "supply": ledger_supply(ts, read, paired)}})
+    sets_out.append({"alias": ts.document.alias, "key": ref.pdf_key, "split": ts.document.split.value.lower(), "pages": ts.document.pages, "consultant": ts.document.consultant, "producer": ts.document.producer, "outcomes": len(out), "params": {**param_completeness(ts), "supply": ledger_supply(ts, read, paired)}, "truth_quality": SMP.quality(ts), "stages": stages})
   digest = hashlib.sha256("\n".join(sorted(f"{o['id']}|{o['outcome']}" for o in outcomes)).encode()).hexdigest()
-  return {"split": split, "hash": digest, "truth_fingerprint": truth_fingerprint(root), "sets": sets_out, "outcomes": outcomes, "unmapped": dict(sorted(unmapped.items())), "metrics": metrics(outcomes, sets_out), "notes": notes}
+  return {"split": split, "hash": digest, "truth_fingerprint": truth_fingerprint(root), "sets": sets_out, "outcomes": outcomes, "unmapped": dict(sorted(unmapped.items())), "metrics": metrics(outcomes, sets_out), "regions": regions_out, "notes": notes}
 
 def _tally(rows: list) -> dict:
   c = {k: 0 for k in (*TRUTH_SIDE, TRUE, INV_S, INV_F)}

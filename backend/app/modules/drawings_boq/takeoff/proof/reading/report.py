@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.proof.reading import score as SCR
+from app.modules.drawings_boq.takeoff.proof.reading import settings as ST
 
 def _pct(v) -> str:
   return "-" if v is None else f"{v * 100:.1f}%"
@@ -20,6 +21,90 @@ def worst_sheets(outcomes: list, n: int = 20) -> list:
       k = (o["set"], o["sheet"])
       score[k] = score.get(k, 0) + 1
   return sorted(score.items(), key=lambda kv: (-kv[1], kv[0][0], str(kv[0][1])))[:n]
+
+def by_set_lines(doc: dict) -> list:
+  rows: dict = {}
+  for o in doc["outcomes"]:
+    rows.setdefault(o["set"], []).append(o)
+  out = [f"  {'PDF':<30} {'truth':>6} {'matched':>8} {'recall':>8} {'silent-wrong':>13}"]
+  for s in sorted(doc["sets"], key=lambda s: s["alias"]):
+    rs = rows.get(s["alias"])
+    if not rs:
+      out.append(f"  {s['alias']:<30} {'no truth written':>38}")
+      continue
+    t = SCR._tally(rs)
+    out.append(f"  {s['alias']:<30} {t['truth']:>6} {t['matched']:>8} {_pct(t['recall']):>8} {t['silent_wrong']:>13}")
+  return out
+
+def quality_lines(doc: dict) -> list:
+  rows = [s for s in doc["sets"] if s.get("truth_quality")]
+  if not rows:
+    return []
+  out = ["## Truth quality (how much of each set's truth a person has checked)", "", "| PDF | Truth rows | Draft rows | Checked | Checked share | Sample round | Judged | Wrong | Wrong share | Cannot tell | Status |", "|---|---|---|---|---|---|---|---|---|---|---|"]
+  for s in rows:
+    q = s["truth_quality"]
+    out.append(f"| {s['alias']} | {q['truth_rows']} | {q['draft_rows']} | {q['checked_rows']} | {_pct(q['checked_share'])} | {q['round'] or '-'} | {q['judged']} | {q['wrong']} | {_pct(q['wrong_share'])} | {q['cannot_tell']} | {q['status']} |")
+  out += ["", f"A set whose latest sample has more than {ST.wrong_share_limit() * 100:g}% wrong is REDRAFT and is left out of rule evidence until it is re-drafted and sampled again. UNCHECKED: no sample has been judged. PARTIAL: fewer than {ST.sample_min()} rows (or the whole set, if smaller) judged. Draw one with `proof.reading sample`.", ""]
+  return out
+
+STAGES = ("FIND", "READ", "JOIN", "MEASURE")
+
+def miss_rows(doc: dict) -> list:
+  return [o for o in doc["outcomes"] if o["side"] == "truth" and o["outcome"] != SCR.OK and o["class"] != "BBS_FINDING"]
+
+def stage_summary(doc: dict) -> str:
+  misses = miss_rows(doc)
+  by = {s: sum(1 for o in misses if o.get("stage") == s) for s in STAGES}
+  return f"  misses by stage: {len(misses)} truth items not MATCHED_OK; " + ", ".join(f"{s} {n}" for s, n in by.items()) + f"; no stage {len(misses) - sum(by.values())}"
+
+def stage_lines(doc: dict) -> list:
+  misses = miss_rows(doc)
+
+  if not misses:
+    return []
+  by_set: dict = {}
+
+  for o in misses:
+    slot = by_set.setdefault(o["set"], {"misses": 0, **{s: 0 for s in STAGES}, "none": 0})
+    slot["misses"] += 1
+    slot[o.get("stage") or "none"] += 1
+  out = ["## Misses by stage (every truth item that is not MATCHED_OK)", "", "| PDF | Misses | FIND | READ | JOIN | MEASURE | No stage |", "|---|---|---|---|---|---|---|"]
+  for name in sorted(by_set):
+    r = by_set[name]
+    out.append(f"| {name} | {r['misses']} | {r['FIND']} | {r['READ']} | {r['JOIN']} | {r['MEASURE']} | {r['none']} |")
+  tot = {k: sum(r[k] for r in by_set.values()) for k in ("misses", *STAGES, "none")}
+  out.append(f"| all | {tot['misses']} | {tot['FIND']} | {tot['READ']} | {tot['JOIN']} | {tot['MEASURE']} | {tot['none']} |")
+  basis: dict = {}
+  for o in misses:
+    basis[o.get("stage_basis") or "none"] = basis.get(o.get("stage_basis") or "none", 0) + 1
+  out += ["", "How each stage was decided: " + ", ".join(f"{k} {v}" for k, v in sorted(basis.items())) + ". `region`: the truth item lies in a region of regions.yaml and Trace did or did not read anything of that kind there; `class`: no region truth covers it, so FIND means nothing of its class was read on that sheet; `matched`: Trace matched it but with a wrong value; `join`, `join_source`, `register`, `fact`: by the kind of truth row.", ""]
+  by_cs: dict = {}
+  for o in misses:
+    k = (o["class"], o.get("stage") or "none")
+    by_cs[k] = by_cs.get(k, 0) + 1
+
+  out += ["The 20 largest groups of misses, by class and stage:", "", "| Class | Stage | Misses |", "|---|---|---|"]
+  out += [f"| {c} | {s} | {n} |" for (c, s), n in sorted(by_cs.items(), key=lambda kv: (-kv[1], kv[0]))[:20]]
+  out.append("")
+  return out
+
+def region_lines(doc: dict) -> list:
+  regions = doc.get("regions") or {}
+  
+  if not any(r["rows"] for r in regions.values()):
+    return ["## Region score", "", "No set has a regions.yaml yet; draft them with `proof.reading regions-draft --write`.", ""]
+  out = ["## Region score (truth regions against what Trace read in them)", "", "| PDF | Kind | Truth regions | Found | Missed | Split | Merged |", "|---|---|---|---|---|---|---|"]
+  for name in sorted(regions):
+    for kind, r in sorted(regions[name]["by_kind"].items()):
+      out.append(f"| {name} | {kind} | {r['truth']} | {r['FOUND']} | {r['MISSED']} | {r['SPLIT']} | {r['MERGED']} |")
+
+  basis: dict = {}
+  for r in regions.values():
+    for row in r["rows"]:
+      basis[row["basis"]] = basis.get(row["basis"], 0) + 1
+  reported = sum(r["reported_regions"] for r in regions.values())
+  out += ["", "Found by: " + ", ".join(f"{k} {v}" for k, v in sorted(basis.items())) + f". Trace reports no region of its own yet ({reported} reported), so a region is FOUND when a read item of the right kind lies inside it (`inside`), or, for items with no position, when it is the only region of its kind on the sheet and one is read (`class`). SPLIT and MERGED can only be judged from reported regions and stay 0 until the readers report `source.region`. The regions are drafted from truth item positions and are not yet checked by a person.", ""]
+  return out
 
 REGISTER_ORDER = ("role", "plan_kind", "floor", "discipline", "scale_basis", "scale_ratio", "sheet_no", "title", "text_type")
 
@@ -73,6 +158,9 @@ def render(doc: dict, cmp: dict | None = None) -> str:
   if bf:
     out += ["## Bar schedule audit (class BBS_FINDING)", "", f"Finding recall {_pct(bf['recall'])} ({bf['raised']} of {bf['expected']} expected raises); class accuracy {_pct(bf['class_accuracy'])}; false-error rate {_pct(bf['false_error_rate'])} "
       f"({bf['errors_outside_items']} of {bf['errors_raised']} ERRORs raised are named by no item; {bf['errors_silent']} of them are not even held in accepted_errors).", ""]
+  out += quality_lines(doc)
+  out += stage_lines(doc)
+  out += region_lines(doc)
   params = [s for s in doc["sets"] if s["params"]["inputs"]]
   if params:
     out += ["## Input completeness (parameter ledger)", "", "| PDF | Inputs | PRINTED | DERIVED | DEFAULTED | MISSING | Share printed or derived | Supplied by what Trace read |", "|---|---|---|---|---|---|---|---|"]

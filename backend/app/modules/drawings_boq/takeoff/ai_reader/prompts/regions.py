@@ -146,4 +146,3 @@ def note_tiles(page_pt, words: int) -> list:
   cols, rows = note_grid(words)
   dx, dy = width * NOTE_TILE_OVERLAP, height * NOTE_TILE_OVERLAP
   return [[max(0.0, c * width / cols - dx), max(0.0, r * height / rows - dy), min(width, (c + 1) * width / cols + dx), min(height, (r + 1) * height / rows + dy)] for r in range(rows) for c in range(cols)]
-

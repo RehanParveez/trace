@@ -369,7 +369,7 @@ def run_fold(case_name: str, cases_dir: str | None, map_path: str = MAP_PATH) ->
   added = skipped = bad = 0
   for m in review.get("mappings") or []:
     if m.get("skip") and m.get("confirmed"):
-      mp[m["key"]] = {"skip": True, "note": str(m.get("note") or "")}
+      mp[m["key"]] = {"skip": True, "note": str(m.get("note") or ""), **{k: m[k] for k in ("confirmed_by", "confirmed_date") if m.get(k)}}
       added += 1
       continue
     if not m.get("confirmed"):
@@ -379,7 +379,7 @@ def run_fold(case_name: str, cases_dir: str | None, map_path: str = MAP_PATH) ->
       bad += 1
       print(f"{m['key']}: confirmed but {m.get('element')!r} is not a catalogue item; left out.", file=sys.stderr)
       continue
-    mp[m["key"]] = {"element": m["element"]}
+    mp[m["key"]] = {"element": m["element"], **{k: m[k] for k in ("floor", "confirmed_by", "confirmed_date") if m.get(k)}}
     added += 1
   save_map(data, map_path)
   return {"added": added, "left": skipped, "bad": bad, "qs": review["qs"], "size": len(mp)}
@@ -410,9 +410,24 @@ def main(argv: list | None = None) -> int:
   f = sub.add_parser("fold")
   f.add_argument("case")
   f.add_argument("--cases-dir", default=None)
+  ex = sub.add_parser("export", help="write the mappings still to confirm as an xlsx (line, quantity, proposed item, five candidate items, floor) for the QS")
+  ex.add_argument("case")
+  ex.add_argument("--out", default="mapping_out")
+  im = sub.add_parser("import", help="read the QS's decisions back; with --write they go to answers_review.yaml and, folded, to qs_map.yaml under the QS's name")
+  im.add_argument("case")
+  im.add_argument("workbook")
+  im.add_argument("--by", required=True, help="the person who confirmed; the AI cannot")
+  im.add_argument("--write", action="store_true")
+  rj = sub.add_parser("rejected", help="the proposals the QS changed, with what the mapper proposed and who proposed it")
+  rj.add_argument("case")
+
   args = ap.parse_args(argv)
   
+  if args.cmd in ("export", "import", "rejected"):
+    from app.modules.drawings_boq.takeoff.proof.answers import sheet as SH
+    return {"export": SH.cmd_export, "import": SH.cmd_import, "rejected": SH.cmd_rejected}[args.cmd](args)
   if args.cmd == "fold":
+
     r = run_fold(args.case, args.cases_dir)
     print(f"QS {r['qs']}: {r['added']} mapping(s) folded into qs_map.yaml, {r['left']} not confirmed yet, {r['bad']} refused; the map now holds {r['size']}.")
     return 0 if not r["bad"] else 1

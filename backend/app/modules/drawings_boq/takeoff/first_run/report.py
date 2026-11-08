@@ -1,6 +1,7 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.completeness import facts as F
 from app.modules.drawings_boq.takeoff.completeness import ledger as LG
+from app.modules.drawings_boq.takeoff.completeness import self_check as SC
 from app.modules.drawings_boq.takeoff.questions import engine as QE
 
 TOP = 5
@@ -15,6 +16,8 @@ def build(state: dict, run: dict) -> dict:
     "items": summary["by_state"], "entries": summary["entries"], "by_reason": summary["by_reason"],
     "boq": {"lines": len(boq["rows"]), "totals": boq["totals"], "money": boq["money"], "rates_loaded": boq["rates_loaded"]},
     "questions": {"open": len(open_q), "top": [{"key": q["key"], "kind": q["kind"], "prompt": q["prompt"], "blocks": q["blocks"]} for q in open_q[:TOP]]},
+    "checks": [{"check": c["check"], "result": c["result"], "detail": c["detail"], "items": len(c["items"])} for c in state.get("checks") or []],
+    "checks_summary": SC.summary(state.get("checks") or []),
     "stages": [{"name": s["name"], "status": s["status"], "seconds": s["seconds"], "error": s["error"]} for s in run["stages"]],
     "convention": {k: {"value": v["value"], "confidence": v["confidence"]} for k, v in (state.get("convention") or {}).get("points", {}).items()} or None,
     "failed": list(run["failed"]), "unread": list(state.get("unread") or []), "seconds": run["seconds"]}
@@ -28,6 +31,9 @@ def render(rep: dict, name: str = "") -> str:
     f"  questions open: {rep['questions']['open']}" + (" (" + "; ".join(q["key"] for q in rep["questions"]["top"]) + ")" if rep["questions"]["top"] else ""),
     "  convention: " + ", ".join(f"{k} {v['value'] or '-'}" for k, v in rep["convention"].items()) if rep.get("convention") else "  convention: not profiled (no PDF given)",
     "  stages: " + ", ".join(f"{s['name']} {s['seconds']:.1f}s{'' if s['status'] == 'DONE' else ' ' + s['status']}" for s in rep["stages"]) + f"; total {rep['seconds']:.1f}s"]
+  if rep.get("checks"):
+    s = rep["checks_summary"]
+    lines.append(f"  self-checks: {s[SC.PASS]} pass, {s[SC.FAIL]} fail, {s[SC.NOT_CHECKABLE]} cannot be checked" + "".join(f"\n    {c['check']}: {c['detail']}" for c in rep["checks"] if c["result"] == SC.FAIL))
   if rep.get("unread"):
     lines.append("  NOT READ: " + "; ".join(f"{u['file']} ({u['error']})" for u in rep["unread"]))
   if rep["failed"]:

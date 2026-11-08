@@ -58,11 +58,14 @@ def totals_rows(totals: dict) -> list:
 def priced_pdf(title: str, meta: list, warnings: list, lines: list, totals: dict, footer: str) -> bytes:
   s = styles()
   story = head_block(s, title, meta, warnings)
-  rows = [["Item", "Description", "Floor", "Unit", "Qty", "Rate", "Amount", "State", "Range", "Open"]]
+  with_conf = any(ln.get("confidence") for ln in lines)
+  rows = [["Item", "Description", "Floor", "Unit", "Qty", "Rate", "Amount", "State", "Range", "Open"] + (["Conf."] if with_conf else [])]
+
   for ln in lines:
     why = f"<br/><font color='#b45309'>{ln['unpriced_why']}</font>" if ln.get("unpriced_why") else ""
-    rows.append([Paragraph(ln["code"], s["cell"]), Paragraph(f"{ln.get('description') or ''}{why}", s["cell"]), ln.get("floor") or "", ln["unit"], qty(ln.get("qty")), money(ln.get("rate")), money(ln.get("amount")), Paragraph(ln["label"], s["cell"]), pct_span(ln), ln["open_rows"] or ""])
-  story.append(table(rows, [28 * mm, 64 * mm, 18 * mm, 12 * mm, 22 * mm, 20 * mm, 26 * mm, 30 * mm, 28 * mm, 12 * mm], right=(4, 5, 6)))
+    rows.append([Paragraph(ln["code"], s["cell"]), Paragraph(f"{ln.get('description') or ''}{why}", s["cell"]), ln.get("floor") or "", ln["unit"], qty(ln.get("qty")), money(ln.get("rate")), money(ln.get("amount")), Paragraph(ln["label"], s["cell"]), pct_span(ln), ln["open_rows"] or ""] + ([ln.get("confidence") or ""] if with_conf else []))
+
+  story.append(table(rows, [28 * mm, 64 * mm, 18 * mm, 12 * mm, 22 * mm, 20 * mm, 26 * mm, 30 * mm, 28 * mm, 12 * mm] + ([14 * mm] if with_conf else []), right=(4, 5, 6)))
   
   story += [Spacer(1, 8), Paragraph("Totals", s["h2"]), table(totals_rows(totals), [90 * mm, 110 * mm], right=(1,))]
   if totals.get("by_section"):

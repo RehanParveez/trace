@@ -14,6 +14,8 @@ class FlowLineOut(PricedLineOut):
   high_pct: float | None = None
   elements: list[str] = []
   open_rows: int = 0
+  confidence: str | None = None
+  confidence_why: str | None = None
 
 class CoverageRow(BaseModel):
   section: str
@@ -41,6 +43,8 @@ class FlowBoqResponse(PricedResponse):
   open_rows: int = 0
   coverage: list[CoverageRow] = []
   assumptions: list[AssumptionRow] = []
+  confidence: dict = {}
+  checks: list[dict] = []
 
 class FlowStep(BaseModel):
   key: str

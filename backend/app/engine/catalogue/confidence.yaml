@@ -1,0 +1,76 @@
+
+thresholds: {high: 0.9, low: 0.7}
+show_when: {high_right: 0.9, min_items: 30}
+kill: {high_right: 0.85}
+min_cell: 5
+shown: false
+calibrated: {sets: 8, items: 2205, reading_hash: ce12b90ead5f1003, high_items: 24, high_right_out_of_sample: 1.0, high_right_in_sample: 1.0, medium_right_out_of_sample: 0.8194, low_right_out_of_sample: 0.3581}
+classes:
+  BEAM_SECTION:
+    no_check: {items: 117, right: 39, sets: 6}
+  BOUNDARY_WALL:
+    no_check: {items: 24, right: 0, sets: 6}
+  COLUMN:
+    checks_pass: {items: 53, right: 53, sets: 2}
+    no_check: {items: 44, right: 37, sets: 3}
+  COLUMN_SCHEDULE_CELL:
+    check_fails: {items: 4, right: 4, sets: 1}
+    checks_pass: {items: 22, right: 22, sets: 3}
+    no_check: {items: 11, right: 7, sets: 4}
+  DISTRIBUTION_BOARD:
+    no_check: {items: 4, right: 0, sets: 1}
+  DOOR:
+    checks_pass: {items: 30, right: 30, sets: 1}
+    no_check: {items: 42, right: 38, sets: 3}
+  DRAIN_POINT:
+    no_check: {items: 42, right: 42, sets: 1}
+  ELECTRICAL_POINT:
+    no_check: {items: 245, right: 187, sets: 1}
+  FINISH_LAYER:
+    no_check: {items: 43, right: 27, sets: 2}
+  FOOTING_PAD:
+    no_check: {items: 16, right: 3, sets: 6}
+  FOOTING_SECTION:
+    no_check: {items: 45, right: 8, sets: 7}
+  GATE:
+    no_check: {items: 2, right: 0, sets: 1}
+  GRID:
+    no_check: {items: 20, right: 0, sets: 1}
+  LEVEL:
+    check_fails: {items: 2, right: 2, sets: 1}
+    checks_pass: {items: 20, right: 20, sets: 1}
+    no_check: {items: 77, right: 58, sets: 3}
+  LINTEL_TYPE:
+    check_fails: {items: 5, right: 5, sets: 1}
+  NOTE_FACT:
+    no_check: {items: 291, right: 24, sets: 5}
+  PARAPET:
+    no_check: {items: 23, right: 0, sets: 2}
+  PIPE_RUN:
+    no_check: {items: 19, right: 0, sets: 1}
+  PLINTH_BEAM:
+    no_check: {items: 1, right: 0, sets: 1}
+  PLUMBING_FIXTURE:
+    no_check: {items: 29, right: 0, sets: 1}
+  RCC_WALL:
+    no_check: {items: 8, right: 0, sets: 2}
+  ROOM:
+    no_check: {items: 98, right: 76, sets: 3}
+  SLAB_BAR_CALLOUT:
+    no_check: {items: 558, right: 557, sets: 5}
+  SLAB_PANEL:
+    no_check: {items: 1, right: 0, sets: 1}
+  STAIR:
+    no_check: {items: 10, right: 1, sets: 5}
+  TANK:
+    no_check: {items: 23, right: 13, sets: 7}
+  VENTILATOR:
+    check_fails: {items: 2, right: 2, sets: 1}
+    checks_pass: {items: 12, right: 12, sets: 1}
+    no_check: {items: 10, right: 0, sets: 2}
+  WALL:
+    no_check: {items: 196, right: 78, sets: 3}
+  WINDOW:
+    checks_pass: {items: 17, right: 17, sets: 1}
+    no_check: {items: 39, right: 33, sets: 3}
+text: {High: 'Read from the drawings, and every check on it passes.', Medium: Read from the drawings; the checks that touch it do not settle it., Low: 'Read from the drawings, but this kind of reading has often been wrong.', assumed: 'Rests on an assumed input, not on a reading.', unread: Not read from the drawings., check_failed: A check on this reading failed., few: Too few measured readings of this kind to say., line_assumed: Part of this line rests on an assumed input.}

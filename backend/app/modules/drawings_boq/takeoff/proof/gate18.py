@@ -10,6 +10,10 @@ from app.modules.drawings_boq.takeoff.run import completeness as RC
 from app.modules.drawings_boq.takeoff.run import first_run_bindings as FR
 from app.modules.drawings_boq.takeoff.proof import gate16 as G16
 from app.modules.drawings_boq.takeoff.questions import engine as QE
+from app.engine.catalogue import confidence as CFG
+from app.engine.catalogue import self_checks as SCK
+from app.modules.drawings_boq.takeoff.completeness import confidence as CONF
+from app.modules.drawings_boq.takeoff.completeness import self_check as SC
 
 def _boom(state: dict) -> None:
   raise RuntimeError("injected failure")
@@ -82,8 +86,51 @@ def run_problems(plain: dict, storeys, lines) -> list:
     bad.append("the rendered report does not list the stages")
   return bad
 
+def check_problems(plain: dict, storeys, lines, tally: dict) -> list:
+  """Every self-check reports once, a failure says what disagrees, the checks are the same in the stored snapshot and when the quantities arrive, and every measured item gets a confidence band with no truth folder."""
+  bad = []
+  state, out, rep, _ = FR.run_project(plains=[plain], lines=lines, storeys=storeys)
+  got = state.get("checks") or []
+  if [r["check"] for r in got] != [c["id"] for c in SCK.checks()]:
+    bad.append("the self-checks that ran are not the checks of self_checks.yaml, in order")
+  for r in got:
+    tally[r["result"]] = tally.get(r["result"], 0) + 1
+    if r["result"] not in SC.RESULTS:
+      bad.append(f"{r['check']} gave {r['result']}")
+    if r["result"] == SC.FAIL and (not r["detail"] or not (r["items"] or r.get("elements"))):
+      bad.append(f"{r['check']} failed without saying what disagrees")
+    if r["result"] == SC.NOT_CHECKABLE and not r["detail"]:
+      bad.append(f"{r['check']} cannot be checked and does not say why")
+  if SC.current(state["ledger"], state["evidence"], got) != got:
+    bad.append("the checks stored with the reading differ from the checks when the quantities arrive")
+  bands = CONF.of_entries(state["ledger"], state["evidence"], got)
+  measured = {e["element"] for e in state["ledger"] if e["state"] == LG.MEASURED}
+  if measured - set(bands):
+    bad.append(f"{len(measured - set(bands))} measured item(s) have no confidence band, first {sorted(measured - set(bands))[0]}")
+  if any(b["band"] not in CFG.ORDER for b in bands.values()):
+    bad.append("a confidence band is not High, Medium or Low")
+  if not CFG.shown() and CFG.problems():
+    bad.append("confidence.yaml: " + CFG.problems()[0])
+  return bad
+
+def refusal_problems() -> list:
+  base = SCK.checks()[0]
+  same = {**base, "id": "SELF", "compares": {**base["compares"], "right": base["compares"]["left"]}}
+  missing = {k: v for k, v in base.items() if k != "tolerance"}
+  bad = []
+  
+  if not any("itself" in p for p in SCK.check_problems(same)):
+    bad.append("a check that compares a reading with itself was not refused")
+  if not any("tolerance" in p for p in SCK.check_problems(missing)):
+    bad.append("a check with no tolerance was not refused")
+  shown_early = {**CFG.doc(), "shown": True, "calibrated": None}
+  if not any("not shown before" in p or "no calibration" in p for p in CFG.problems(shown_early)):
+    bad.append("confidence marked shown before any calibration was not refused")
+  if SC.kinds_without_code():
+    bad.append(f"self-check kinds with no code: {', '.join(SC.kinds_without_code())}")
+  return bad
+
 def source_problems() -> list:
-  """The job knows no case: nothing under first_run reads a case folder or names one."""
   bad = []
   for mod in (JB, ST, RP, SV):
     src = inspect.getsource(mod)
@@ -96,12 +143,15 @@ def gate(collector: G16.Collector, score_dir: str | None = None) -> tuple:
   if not collector.sets:
     return False, "no set was read: gate 18 runs the job on the reading gate 14 collects", []
   merged = G16.projects(collector)
-  problems = source_problems()
+  problems = source_problems() + refusal_problems()
   ran = reran = touched = 0
+  tally: dict = {}
+  
   for case, plain in sorted(merged.items()):
     lines = CR.lines_of(score_dir, case)
     storeys = CR.storeys_of(case)
     problems += [f"{case}: {p}" for p in run_problems(plain, storeys, lines)]
+    problems += [f"{case}: {p}" for p in check_problems(plain, storeys, lines, tally)]
     bad, n_items, n_answers = rerun_problems(plain, storeys, lines)
     problems += [f"{case}: {p}" for p in bad]
     reran += bool(n_answers)
@@ -111,4 +161,4 @@ def gate(collector: G16.Collector, score_dir: str | None = None) -> tuple:
   problems += [f"{first}: {p}" for p in failure_problems(merged[first], CR.storeys_of(first), CR.lines_of(score_dir, first))]
   if problems:
     return False, f"{len(problems)} first-upload job problem(s) over {ran} project(s)", problems
-  return True, f"{ran} projects run through all {len(JB.STAGES)} stages with no case folder; a failure in each of the {len(JB.UPSTREAM)} reading stages leaves every applicable item NOT_READ and naming it; {reran} re-run(s) after answers touched {touched} items and moved none outside them, and matched a whole run", []
+  return True, f"{ran} projects run through all {len(JB.STAGES)} stages with no case folder; a failure in each of the {len(JB.UPSTREAM)} reading stages leaves every applicable item NOT_READ and naming it; {reran} re-run(s) after answers touched {touched} items and moved none outside them, and matched a whole run; the {len(SCK.checks())} self-checks ran on every project ({tally.get(SC.PASS, 0)} pass, {tally.get(SC.FAIL, 0)} fail, {tally.get(SC.NOT_CHECKABLE, 0)} cannot be checked) and every measured item has a confidence band with no truth folder", []

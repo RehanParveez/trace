@@ -34,8 +34,7 @@ def key_of(row: dict) -> str:
   return f"{row['set']}|{row['element']}|{row['floor']}"
 
 def group_key(row: dict) -> str | None:
-  f = FL.failure_of(row)
-  return None if f is None else f"{f[0]} / {f[1]} / {row['section']}"
+  return FL.key_of(row)
 
 def has_answer(row: dict) -> bool:
   return row["answer_qty"] not in (None, 0)

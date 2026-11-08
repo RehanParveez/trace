@@ -14,6 +14,8 @@ from app.modules.drawings_boq.takeoff.proof.reading import sets as S
 from app.modules.drawings_boq.takeoff.proof import case as CASE
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.run import vocab as V
+from app.modules.drawings_boq.takeoff.proof.reading import regions as RG
+from app.modules.drawings_boq.takeoff.proof.reading import sample as SMP
 
 def _pdf_facts(path: str) -> tuple:
   import pypdfium2 as pdfium
@@ -80,6 +82,10 @@ def cmd_validate(args) -> int:
       problems.extend(f"{where}: {p['file']}, {p['row']}, {p['field']}: {p['message']}" for p in exc.problems)
       continue
   
+    try:
+      RG.load(ref.truth_folder, ts.document.pages)
+    except F.TruthFormatError as exc:
+      problems.extend(f"{where}: {p['file']}, {p['row']}, {p['field']}: {p['message']}" for p in exc.problems)
     raw = S._raw_case(os.path.join(args.root, ref.case))
     want = (raw.get("sha256") or {}).get(ref.pdf)
     if want and ts.document.sha256 != want:
@@ -145,6 +151,11 @@ def cmd_score(args) -> int:
     print(f"  {sp}: truth {row['truth']}, matched {row['matched']}, silent-wrong {row['silent_wrong']}")
     if row["truth"]:
       print(f"      recall {row['recall']:.1%}, Wilson 95% interval {row['recall_ci'][0]:.1%} to {row['recall_ci'][1]:.1%}")
+  print(RP.stage_summary(doc))
+  if getattr(args, "by_set", False):
+
+    for line in RP.by_set_lines(doc):
+      print(line)
   if args.write_baseline:
     with open(SCR.BASELINE, "w", encoding="utf-8", newline="\n") as fh:
       json.dump(SCR.to_baseline(doc), fh, indent=1, sort_keys=True)
@@ -305,10 +316,12 @@ def main(argv: list | None = None) -> int:
   sp.add_argument("--out", default="reading_out")
   sp.add_argument("--score-dir", help="a folder with <case>/score.json from proof.score, to take the fact results from instead of reading the case again")
   sp.add_argument("--write-baseline", action="store_true")
+  sp.add_argument("--by-set", action="store_true", help="also print one line per PDF over all classes, so a loss in one set is not hidden by the total")
   ep = sub.add_parser("evidence", help="score every set with every reading rule off and on, fill the rule registry's evidence from the reading score, and with --write turn the rules that meet their metric on two offices GENERAL and on")
   ep.add_argument("--out", default="reading_out")
   ep.add_argument("--score-dir")
   ep.add_argument("--write", action="store_true")
+  ep.add_argument("--demote", action="store_true", help="with --write: send the GENERAL rules that have no unseen set meeting their metric back to CANDIDATE and off, evidence kept; this moves engine hashes")
   dp = sub.add_parser("diff", help="the outcomes that changed since the baseline")
   dp.add_argument("--out", default="reading_out")
   pf = sub.add_parser("profile", help="measure every page of a PDF (words, paths, images, fonts, decode gain, text type); --draft-register fills register.yaml from Trace's own identity")
@@ -332,6 +345,17 @@ def main(argv: list | None = None) -> int:
   ip.add_argument("--companions")
   ip.add_argument("--type", dest="building_type", help="the kind of building, for the intake checklist")
   ip.add_argument("--boq", help="the path of the QS bill that came with the set, for the intake checklist; leave it out when there is none")
+  smp = sub.add_parser("sample", help="draw a seeded random sample of each set's unchecked truth rows (10%, at least 20) and write a workbook with the crop of each row for a person to judge")
+  smp.add_argument("--set", help="one set: the PDF key (or its first characters) or the alias")
+  smp.add_argument("--out", default="sample_out")
+  sa = sub.add_parser("sample-apply", help="read a judged sample workbook back; with --write the truth files get checked: true, checked_by and checked_date (or the corrected value, with was) and truth_log.yaml the result")
+  sa.add_argument("workbook")
+  sa.add_argument("--by", required=True, help="the name of the person who judged the rows")
+  sa.add_argument("--write", action="store_true")
+  rg = sub.add_parser("regions-draft", help="draft regions.yaml of each set from the positions of its truth items (VIEW, SCHEDULE, SECTION_PICTURE, NOTES); Trace's own reading is not used; a person checks them with `sample`")
+  rg.add_argument("--set", help="one set: the PDF key (or its first characters) or the alias")
+  rg.add_argument("--write", action="store_true")
+  rg.add_argument("--force", action="store_true", help="replace a regions.yaml that exists")
   rd = sub.add_parser("redraft", help="add a draft row (truth.by DRAFT, source draft, never scored) for every item Trace read that no truth row covers; prints the 10% sample to check")
   rd.add_argument("set", help="the PDF key (or its first characters) or the alias of one set")
   rd.add_argument("--write", action="store_true", help="write the rows; without it nothing changes")
@@ -340,7 +364,7 @@ def main(argv: list | None = None) -> int:
   cp.add_argument("--score-json", help="reading_score.json from a score run, for the first-sight scores (default reading_out/reading_score.json)")
   args = ap.parse_args(argv)
   return {"list": cmd_list, "validate": cmd_validate, "init": cmd_init, "score": cmd_score, "diff": cmd_diff, "parity": cmd_parity, "set-join": cmd_set_join, "gate": cmd_gate, "profile": cmd_profile,
-    "evidence": EVD.cmd_evidence, "intake": IN.cmd_intake, "redraft": IN.cmd_redraft, "first-sight-check": IN.cmd_first_sight_check, "corpus": IN.cmd_corpus}[args.command](args)
+    "evidence": EVD.cmd_evidence, "intake": IN.cmd_intake, "regions-draft": RG.cmd_regions_draft, "sample": SMP.cmd_sample, "sample-apply": SMP.cmd_sample_apply, "redraft": IN.cmd_redraft, "first-sight-check": IN.cmd_first_sight_check, "corpus": IN.cmd_corpus}[args.command](args)
 
 if __name__ == "__main__":
   sys.exit(main())

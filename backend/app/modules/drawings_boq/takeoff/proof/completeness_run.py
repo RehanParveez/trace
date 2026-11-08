@@ -4,6 +4,7 @@ import os
 import yaml
 from app.engine.catalogue import conventions as CV
 from app.modules.drawings_boq.takeoff.completeness import facts as F
+from app.engine.catalogue import self_checks as SCK
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.run import completeness as RC
 

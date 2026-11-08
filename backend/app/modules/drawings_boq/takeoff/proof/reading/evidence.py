@@ -6,6 +6,7 @@ from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.proof.bench import sets as BS
 from app.modules.drawings_boq.takeoff.proof.reading import sets as S
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
+from app.modules.drawings_boq.takeoff.proof.reading import settings as ST
 import re
 import json
 
@@ -73,6 +74,18 @@ def rows_of(rule: dict, on_tally: dict, off_tally: dict) -> list:
     rows.append({"office": office, "sets": on["sets"], "metric": metric, "value": on["right"], "pack": PACK, "met": meets(rule, on)})
   return rows
 
+def unseen_rows(rule: dict, held_on: dict, offices: dict, min_truth: int) -> list:
+  rows = []
+  for (name, cls), slot in sorted(held_on.items()):
+    if cls != rule["class"]:
+      continue
+    on = rates(slot)
+    if on["truth"] < min_truth:
+      continue
+    metric = f"unseen set {name}, reading score, class {cls}, every reading rule on: matched {on['matched']} of {on['truth']} (right value {on['right']}), true {on['true']} of {on['judged']} read"
+    rows.append({"office": offices.get(name, "?"), "sets": 1, "unseen": True, "metric": metric, "value": on["right"], "pack": PACK, "met": meets(rule, on)})
+  return rows
+
 def run(cases_dir: str | None, root: str, score_dir: str | None = None) -> dict:
   ids = [r["id"] for r in RR.rules() if r["kind"] == "READING"]
   offices = office_of_alias(cases_dir, root)
@@ -80,21 +93,25 @@ def run(cases_dir: str | None, root: str, score_dir: str | None = None) -> dict:
   
   off = SCR.run("all", cases_dir, score_dir, root, overrides={i: False for i in ids})
   on = SCR.run("all", cases_dir, score_dir, root, overrides={i: True for i in ids})
+  redraft = sorted(s["alias"] for s in on["sets"] if (s.get("truth_quality") or {}).get("status") == "REDRAFT")
+  off["outcomes"] = [o for o in off["outcomes"] if o["set"] not in redraft]
+  on["outcomes"] = [o for o in on["outcomes"] if o["set"] not in redraft]
   off_t, on_t = tally(off["outcomes"], offices, held_out), tally(on["outcomes"], offices, held_out)
   rules = reading_rules()
-  evidence = {r["id"]: rows_of(r, on_t["evidence"], off_t["evidence"]) for r in rules}
+  evidence = {r["id"]: rows_of(r, on_t["evidence"], off_t["evidence"]) + unseen_rows(r, on_t["held_out"], offices, ST.unseen_min_truth()) for r in rules}
   held = []
   for (name, cls), slot in sorted(on_t["held_out"].items()):
     a, b = rates(slot), rates(off_t["held_out"].get((name, cls)) or {"counts": {}, "sets": set()})
     if a["truth"]:
       held.append({"set": name, "class": cls, "truth": a["truth"], "matched_on": a["matched"], "right_on": a["right"], "judged_on": a["judged"], "true_on": a["true"], "matched_off": b["matched"]})
-  return {"evidence": evidence, "held_out": held, "hash_on": on["hash"], "hash_off": off["hash"]}
+  return {"evidence": evidence, "held_out": held, "redraft": redraft, "hash_on": on["hash"], "hash_off": off["hash"]}
 
 def verdicts(rules: list, evidence: dict) -> dict:
   out = {}
   for r in rules:
-    met = sorted({row["office"] for row in evidence.get(r["id"], []) if row["met"]})
-    out[r["id"]] = {"offices": met, "general": len(met) >= RR.MIN_OFFICES}
+    met = sorted({row["office"] for row in evidence.get(r["id"], []) if row["met"] and not row.get("unseen")})
+    unseen = any(row["met"] and row.get("unseen") for row in evidence.get(r["id"], []))
+    out[r["id"]] = {"offices": met, "unseen": unseen, "general": len(met) >= RR.MIN_OFFICES and unseen}
   return out
 
 def block_bounds(lines: list, rule_id: str) -> tuple:
@@ -103,7 +120,7 @@ def block_bounds(lines: list, rule_id: str) -> tuple:
   return start, end
 
 def row_text(row: dict) -> str:
-  return f"    - {{office: {row['office']}, sets: {row['sets']}, metric: \"{row['metric']}\", value: {row['value']}, pack: {row['pack']}, met: {'true' if row['met'] else 'false'}}}"
+  return f"    - {{office: {row['office']}, sets: {row['sets']}, {'unseen: true, ' if row.get('unseen') else ''}metric: \"{row['metric']}\", value: {row['value']}, pack: {row['pack']}, met: {'true' if row['met'] else 'false'}}}"
 
 def write_registry(path: str, evidence: dict, verdict: dict) -> list:
   with open(path, encoding="utf-8", newline="") as fh:
@@ -130,6 +147,23 @@ def write_registry(path: str, evidence: dict, verdict: dict) -> list:
   RR.reload()
   return promoted
 
+def demote_registry(path: str, ids: list) -> list:
+  with open(path, encoding="utf-8", newline="") as fh:
+    raw = fh.read()
+  newline = "\r\n" if "\r\n" in raw else "\n"
+  lines = raw.replace("\r\n", "\n").split("\n")
+  done = []
+  for rule_id in ids:
+    start, end = block_bounds(lines, rule_id)
+    block = lines[start:end]
+    if any(ln == "  status: GENERAL" for ln in block):
+      lines[start:end] = ["  status: CANDIDATE" if ln == "  status: GENERAL" else ("  default: off" if ln == "  default: on" else ln) for ln in block]
+      done.append(rule_id)
+  with open(path, "w", encoding="utf-8", newline="") as fh:
+    fh.write(newline.join(lines))
+  RR.reload()
+  return done
+
 def render(result: dict, rules: list, verdict: dict) -> str:
   L = ["# Rule evidence from the reading score", "", "A row is one office. A rule meets its metric on an office when recall, precision and value accuracy are all at or above its thresholds, scored with every reading rule on.", ""]
   L += ["| Rule | Class | Office | Sets | Matched | Truth | Right value | Judged | True | Met |", "|---|---|---|---|---|---|---|---|---|---|"]
@@ -137,13 +171,16 @@ def render(result: dict, rules: list, verdict: dict) -> str:
     for row in result["evidence"][r["id"]]:
       m = re.search(r"matched (\d+) of (\d+) \(right value (\d+)\), true (\d+) of (\d+)", row["metric"])
       L.append(f"| {r['id']} | {r['class']} | {row['office']} | {row['sets']} | {m.group(1)} | {m.group(2)} | {m.group(3)} | {m.group(5)} | {m.group(4)} | {'yes' if row['met'] else 'no'} |")
-  L += ["", "## Verdicts", "", "| Rule | Offices that meet | Status |", "|---|---|---|"]
+  L += ["", "## Verdicts", "", "A rule is GENERAL when two offices meet its metric and a held-out set, which no pack opened, meets it too.", "", "| Rule | Offices that meet | Unseen set meets | Status |", "|---|---|---|---|"]
   for r in rules:
     v = verdict[r["id"]]
-    L.append(f"| {r['id']} | {', '.join(v['offices']) or 'none'} | {'GENERAL, on by default' if v['general'] else 'stays CANDIDATE'} |")
-  L += ["", "## Held-out sets (reported, never counted)", "", "| Set | Class | Truth | Matched on | Right value | Judged | True | Matched off |", "|---|---|---|---|---|---|---|---|"]
+    L.append(f"| {r['id']} | {', '.join(v['offices']) or 'none'} | {'yes' if v['unseen'] else 'no'} | {'GENERAL, on by default' if v['general'] else 'stays CANDIDATE'} |")
+  gap = [r["id"] for r in rules if r["status"] == "GENERAL" and not verdict[r["id"]]["unseen"]]
+  L += ["", "## GENERAL rules that fail the unseen-set test", "", "A GENERAL rule needs a held-out set whose class meets the rule's thresholds. These have none, so `reading evidence --write --demote` would send them back to CANDIDATE and off, evidence kept: " + (", ".join(gap) or "none") + "."]
+  L += ["", "## Held-out sets (reported, never counted)","", "| Set | Class | Truth | Matched on | Right value | Judged | True | Matched off |", "|---|---|---|---|---|---|---|---|"]
   for h in result["held_out"]:
     L.append(f"| {h['set']} | {h['class']} | {h['truth']} | {h['matched_on']} | {h['right_on']} | {h['judged_on']} | {h['true_on']} | {h['matched_off']} |")
+  L += ["", "Left out of the evidence because their truth sample was more than the allowed share wrong (REDRAFT): " + (", ".join(result.get("redraft") or []) or "none") + "."]
   L += ["", f"Reading hash with every rule on `{result['hash_on'][:16]}`, with every rule off `{result['hash_off'][:16]}`.", ""]
   return "\n".join(L)
 
@@ -160,9 +197,15 @@ def cmd_evidence(args) -> int:
     v = verdict[r["id"]]
     
     print(f"{r['id']}: meets on {', '.join(v['offices']) or 'no office'}{' -> GENERAL' if v['general'] else ''}")
+  gap = [r["id"] for r in rules if r["status"] == "GENERAL" and not verdict[r["id"]]["unseen"]]
+  print(f"{len(gap)} GENERAL rule(s) have no unseen set that meets their metric: {', '.join(gap) or 'none'}")
   if args.write:
     promoted = write_registry(RR.PATH, result["evidence"], verdict)
     print(f"registry updated; {len(promoted)} rule(s) now GENERAL and on: {', '.join(promoted) or 'none'}")
+    if getattr(args, "demote", False) and gap:
+      sent = demote_registry(RR.PATH, gap)
+      print(f"{len(sent)} rule(s) sent back to CANDIDATE and off, evidence kept: {', '.join(sent)}. Engine hashes of the cases that used them move; read the new score before you re-pin anything.")
+
     bad = RR.problems(RR.load())
     for b in bad:
       print(b)

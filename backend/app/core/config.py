@@ -73,6 +73,10 @@ class Settings(BaseSettings):
   ai_provider: str = "ollama"
   ai_api_key: str = ""
   ai_model: str = "claude-haiku-4-5-20251001"
+  ai_price_usd_per_million: str = '{"claude-haiku-4-5-20251001": [1.0, 5.0]}'
+  ai_usd_to_pkr: float = 280.0
+  ai_anthropic_url: str = "https://api.anthropic.com/v1/messages"
+  ai_tasks_enabled: str = "SHEET"
   
   engine_v2_org_ids: str = ""
   engine_ai_shadow_org_ids: str = ""

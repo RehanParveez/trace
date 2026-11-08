@@ -98,9 +98,12 @@ class FlowService(PricedService):
     
     body, lines, totals, mats = priced_view(prepared["billed"], prepared["parts"], prepared["parts"]["measured"], profile, prepared["items"], prepared["rows"])
     review = await ReviewService(self.session).review(org, project_id)
-    marks = MK.line_marks(prepared["billed"].lines, lines, review["rows"])
-    body["lines"] = [{**ln, **{k: m[k] for k in ("state", "label", "priced", "measured_amount", "assumed_amount", "low_pct", "high_pct", "elements", "open_rows")}} for ln, m in zip(body["lines"], marks)]
-    body.update({"profile_source": source, "banner": MK.banner(body["totals"], review["open"]), "open_rows": review["open"], "coverage": MK.coverage(prepared["entries"]), "assumptions": MK.assumptions(prepared["entries"])})
+    conf = (head.get("source") or {}).get("confidence")
+    marks = MK.line_marks(prepared["billed"].lines, lines, review["rows"], conf)
+    block = MK.confidence_block(marks, conf)
+    body["lines"] = [{**ln, **{k: m[k] for k in ("state", "label", "priced", "measured_amount", "assumed_amount", "low_pct", "high_pct", "elements", "open_rows", "confidence", "confidence_why")}} for ln, m in zip(body["lines"], marks)]
+    body.update({"profile_source": source, "banner": MK.banner(body["totals"], review["open"], block["high_pct"]), "open_rows": review["open"], "coverage": MK.coverage(prepared["entries"]), "assumptions": MK.assumptions(prepared["entries"]),
+      "confidence": block, "checks": (head.get("source") or {}).get("checks") or []})
     return {"head": head, "body": body, "lines": lines, "totals": totals, "mats": mats, "marks": marks, "profile": profile, "rows": review["rows"], "books": prepared["rows"]}
 
   async def boq(self, org: UUID, project_id: UUID, requested: str | None = None, book_id: UUID | None = None) -> dict:
@@ -108,7 +111,7 @@ class FlowService(PricedService):
     if got is None:
       profile, source = await self._profile(org, requested)
       empty = await self.priced(org, project_id, profile.id, book_id)
-      return {**empty, "profile_source": source, "banner": [], "open_rows": 0, "coverage": [], "assumptions": []}
+      return {**empty, "profile_source": source, "banner": [], "open_rows": 0, "coverage": [], "assumptions": [], "confidence": dict(MK.NO_CONFIDENCE), "checks": []}
     return {**got["head"], "has_ledger": True, **got["body"]}
 
   async def _title(self, org: UUID, project_id: UUID) -> list:

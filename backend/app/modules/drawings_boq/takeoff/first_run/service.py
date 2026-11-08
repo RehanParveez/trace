@@ -21,7 +21,7 @@ META_REPORT = "first_run"
 
 def snapshot_of(state: dict, now: datetime | None = None) -> dict:
   """What the questions service rebuilds the ledger from: the facts and evidence the reading left, the methods and the conventions in force, and when."""
-  return {"facts": state["facts"], "evidence": state["evidence"], "methods": state.get("methods") or {}, "conventions": list(state.get("conventions") or []),
+  return {"facts": state["facts"], "evidence": state["evidence"], "methods": state.get("methods") or {}, "conventions": list(state.get("conventions") or []), "checks": state.get("checks") or [],
     "at": (now or datetime.now(timezone.utc)).isoformat()}
 
 def read_plains(files: list) -> tuple:
@@ -80,7 +80,7 @@ class FirstRunService(TakeoffService):
     home = max(held, key=lambda d: str(d.ingestion_meta[AN.META_LEDGER].get("at") or ""))
     snap, stored = home.ingestion_meta[AN.META_LEDGER], home.ingestion_meta.get(META_REPORT) or {}
     state = {"facts": snap["facts"], "evidence": snap["evidence"], "methods": snap.get("methods") or {}, "conventions": await self._conventions(org),
-      "answers": AN.merge([d.ingestion_meta for d in drawings]), "failed": [], "unread": stored.get("unread") or []}
+      "answers": AN.merge([d.ingestion_meta for d in drawings]), "failed": [], "unread": stored.get("unread") or [], "checks": snap.get("checks") or []}
     out = JB.run({"ledger": ST.ledger_stage, "boq": ST.boq_stage, "questions": ST.questions_stage}, state, stages=JB.RERUN_STAGES)
     out["stages"] = [s for s in out["stages"] if s["name"] != "quantities"]
     return {"project_id": project_id, "has_ledger": True, "snapshot_at": snap.get("at"), "ran_at": stored.get("at"), **RP.build(state, out)}

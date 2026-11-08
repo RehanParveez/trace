@@ -168,25 +168,31 @@ def render(ctx: dict) -> str:
       
       body.append([sec, run, s["applicable"], fmt(s["coverage"]), fmt(s["assumed_pct"]), s["asked"], f"{s['within_10']} of {s['compared']}"])
   L += table(["Section", "Run", "Applicable", "Coverage %", "Assumed %", "Asked", "Within 10%"], body) + [""]
-  L += [f"## Failure groups ({ctx['failures_run'].lower()} run), ranked by offices, then money at risk, then sets, then items", ""]
+  L += [f"## Failure groups ({ctx['failures_run'].lower()} run), ranked by offices, then money at risk, then sets, then items. A group is a stage (find, read, join, measure or bill), a class and a reason; its offices are listed inside it", ""]
   top = ctx["failures"][:ctx["top"]]
   L += table(["#", "Group", "Offices", "Sets", "Items", "Rows", "Money at risk", "Owner pack"],
     [[n, g["key"], f"{g['offices']} ({','.join(g['office_letters'])})", g["sets"], len(g["items"]), g["rows"], g["money"] if g["money_at_risk"] is None else f"{g['money_at_risk']:,.0f} ({g['money']})", g["suggested_owner"]] for n, g in enumerate(top, 1)]) + [""]
+  basis = {b: sum(g["stage_basis"][b] for g in ctx["failures"]) for b in ("reason", "state")}
+  L += [f"Stage of each failed row: decided by its first reason for {basis['reason']} rows, by its state alone for {basis['state']} (the reason was missing from `stages.yaml`).", ""]
   L += [f"{len(ctx['failures'])} groups in all; the full list with items and example pages is in failures.json. Money is the answer-file quantity times a rate from `rates.yaml`; items with no rate are counted as unpriced, never guessed.", ""]
   L += ["## Checks", "", f"- Silent entries over all sets: product {ctx['silent_total'][PRODUCT]}, proof {ctx['silent_total'][PROOF]} (must be 0).",
-    f"- Stages failed: {ctx['failed_stages'] or 'none'}.", f"- Answers whose element has no ledger entry: {ctx['lost_answers'] or 'none'}.",
+    f"- Stages failed: {ctx['failed_stages'] or 'none'}.", f"- Answers whose element has no ledger entry: {ctx['lost_answers'] or 'none'}.", f"- Answer items left out of the rows because no person has confirmed their mapping: {', '.join(f'{k} {v}' for k, v in ctx['unconfirmed'].items() if v) or 'none'}.",
     f"- {PA.bench_line()}", f"- {EXD.hit_line(EXD.load())}", f"- {OFC.first_sight_line()}"]
   for name, a in ctx["agreement"].items():
     L.append(f"- {name}: {a['compared']} answers-pass line(s) compared with the bench rows, {a['identical']} identical, {a['not_compared']} not compared (several elements or lines per element; {a['no_floor_row']} on a floor the ledger holds no row for)" + (f"; differences: {'; '.join(a['differences'][:5])}" if a["differences"] else "") + ".")
   L += ["", ctx["notes"], ""]
   return "\n".join(L)
 
+SECOND_COLUMN = ("tol_pct", "tol_basis", "within_tol")
+
 def write_rows(path: str, rows: list) -> str:
   rows = sorted(rows, key=lambda r: (r["set"], r["run"], r["element"], r["floor"]))
-  body = "".join(json.dumps(r, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n" for r in rows)
+  def line(r: dict, skip: tuple = ()) -> str:
+    return json.dumps({k: v for k, v in r.items() if k not in skip}, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
+  body = "".join(line(r) for r in rows)
   with open(path, "w", encoding="utf-8", newline="\n") as fh:
     fh.write(body)
-  return hashlib.sha256(body.encode("utf-8")).hexdigest()
+  return hashlib.sha256("".join(line(r, SECOND_COLUMN) for r in rows).encode("utf-8")).hexdigest()
 
 def append_history(path: str, lines: list) -> None:
   new = not os.path.isfile(path) or os.path.getsize(path) == 0
@@ -214,6 +220,7 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
   cases, all_rows, audit, failed, lost_answers = [], [], [], [], []
   silent_total = {PRODUCT: 0, PROOF: 0}
   agreements, pdfs = {}, 0
+  unconfirmed: dict = {}
   for name in sorted(doc["sets"]):
     if only and name not in only:
       continue
@@ -242,6 +249,7 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
       failed += [f"{name} {label}: {s}" for s in r["failed"]]
       rows, info = RW.rows_of(name, office, splits, group_of_section, label, r["state"]["ledger"], answers_doc, plain, r["state"]["evidence"], case["pdfs"])
       lost_answers += [f"{name}: {e}" for e in info["answers_not_in_ledger"]]
+      unconfirmed[name] = info["answers_unconfirmed_items"]
       rows_by_run[label] = rows
       all_rows += rows
       per = {"all": stats(rows)}
@@ -276,7 +284,7 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
     "Sets with no answer file have no within-10% count. Scoring needs the answer file of BX-1; only the sets that have one can show accuracy.")
   commit = commit_id()
   ctx = {"commit": commit, "rows_sha": rows_sha, "pdfs": pdfs, "cases": cases, "audit": audit, "groups": groups, "by_section": by_section, "failures": failure_list, "failures_run": failures_run, "top": top,
-    "silent_total": silent_total, "failed_stages": failed, "lost_answers": lost_answers, "agreement": agreements, "notes": notes}
+    "silent_total": silent_total, "failed_stages": failed, "lost_answers": lost_answers, "unconfirmed": unconfirmed, "agreement": agreements, "notes": notes}
   with open(os.path.join(out_dir, "bench.md"), "w", encoding="utf-8", newline="\n") as fh:
     fh.write(render(ctx))
     

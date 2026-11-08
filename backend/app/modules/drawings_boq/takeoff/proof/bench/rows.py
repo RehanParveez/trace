@@ -5,6 +5,7 @@ from app.modules.drawings_boq.takeoff.proof import score as SC
 from app.modules.drawings_boq.takeoff.completeness import ledger as LG
 from app.engine.catalogue import loader as CL
 from app.modules.drawings_boq.takeoff.run import completeness as RC
+from app.engine.catalogue import tolerances as TOL
 
 PRINTED, JOINED, AI_READ, DECISION, DEFAULT_RULE, DERIVED = "PRINTED", "JOINED", "AI_READ", "DECISION", "DEFAULT_RULE", "DERIVED"
 WITHIN_PCT = 10.0
@@ -12,6 +13,8 @@ WITHIN_PCT = 10.0
 def answer_table(doc: dict | None) -> dict:
   out: dict = {}
   for it in (doc or {}).get("items") or []:
+    if not it.get("confirmed"):
+      continue
     q = float(it["quantity"])
     _q, si_unit, si_q = bill_quantity("", str(it.get("unit") or ""), q)
     slot = out.setdefault(it["element"], {"unit": it.get("unit"), "si_unit": si_unit, "floors": {}, "items": 0})
@@ -94,10 +97,12 @@ def row_of(name: str, office: str, split_by_group: dict, group_of_section: dict,
     ans, why = answer_in(answers, entry["element"], entry["floor"], floors, unit)
   d = diff_pct(trace, ans)
   group = group_of_section.get(entry["section"])
+  tol, tol_basis = TOL.pct_for(entry["element"])
+  
   return {"set": name, "office": office, "split": split_by_group.get(group, "UNSPLIT"), "run": run, "group": group, "section": entry["section"], "owner_pack": entry["owner_pack"],
     "element": entry["element"], "floor": entry["floor"], "state": entry["state"], "unit": unit,
     "trace_qty": None if trace is None else round(trace, 3), "answer_qty": None if ans is None else round(ans, 3),
-    "within_10": d is not None and abs(d) <= WITHIN_PCT, "diff_pct": None if d is None else round(d, 2),
+    "within_10": d is not None and abs(d) <= WITHIN_PCT, "tol_pct": tol, "tol_basis": tol_basis, "within_tol": d is not None and abs(d) <= tol, "diff_pct": None if d is None else round(d, 2),
     "reasons": list(entry["reasons"]) + ([why] if why else []), "sources": sources_of(entry, joins), "pages": pages_of(entry, evidence, pdfs, kinds)}
 
 def rows_of(name: str, office: str, split_by_group: dict, group_of_section: dict, run: str, ledger: list, answers_doc: dict | None, plain: dict, evidence: dict, pdfs: list) -> tuple:
@@ -109,4 +114,5 @@ def rows_of(name: str, office: str, split_by_group: dict, group_of_section: dict
   placed = {(r["element"]) for r in rows}
   lost = [el for el in answers if el not in placed]
   off_floor = sum(1 for el, slot in answers.items() for fl in slot["floors"] if fl is not None and fl not in floors)
-  return rows, {"answers_elements": len(answers), "answers_not_in_ledger": lost, "answer_floors_not_in_project": off_floor}
+  unconfirmed = sum(1 for it in (answers_doc or {}).get("items") or [] if not it.get("confirmed"))
+  return rows, {"answers_elements": len(answers), "answers_not_in_ledger": lost, "answer_floors_not_in_project": off_floor, "answers_unconfirmed_items": unconfirmed}

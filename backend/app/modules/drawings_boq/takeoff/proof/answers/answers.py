@@ -92,17 +92,20 @@ def entries_of(doc: dict) -> tuple:
   entries = []
   for (line, floor, unit), g in sorted(groups.items(), key=lambda kv: (kv[0][0], str(kv[0][1]), str(kv[0][2]))):
     entries.append({"key": f"{line}/{floor or 'ALL'}", "item": f"{line} {floor or 'all floors'}", "unit": unit, "qs": g["qs"], "drawing": g["qs"], "class": "DRAWING", "tolerance_pct": WITHIN_PCT,
-      "note": "", "family": line, "floor": floor, "kind": "MEASURED", "_items": len(g["items"])})
+      "note": "", "family": line, "floor": floor, "kind": "MEASURED", "_items": len(g["items"]), "_confirmed": sum(1 for i in g["items"] if i.get("confirmed"))})
   return entries, no_number
 
 def view(doc: dict, scored_lines: list, entries: list, no_number: list) -> dict:
   by_key = {s["key"]: s for s in scored_lines}
   items = len(doc.get("items") or [])
   within = not_read = unit_bad = 0
+  split = {True: {"items": 0, "within_10": 0, "not_read": 0}, False: {"items": 0, "within_10": 0, "not_read": 0}}
   rows = []
   for e in entries:
     s = by_key.get(e["key"])
     n = e["_items"]
+    sure = e.get("_confirmed", 0) == n
+    split[sure]["items"] += n
     if s is None:
       continue
     if s["trace"] is None:
@@ -110,13 +113,18 @@ def view(doc: dict, scored_lines: list, entries: list, no_number: list) -> dict:
         unit_bad += n
       else:
         not_read += n
+        split[sure]["not_read"] += n
+
     elif s["diff_pct_qs"] is not None and abs(s["diff_pct_qs"]) <= WITHIN_PCT:
       within += n
+      split[sure]["within_10"] += n
     rows.append({"key": e["key"], "unit": e["unit"], "qs": round(s["qs"], 3) if s["qs"] is not None else None, "trace": None if s["trace"] is None else round(s["trace"], 3),
-      "diff_pct": None if s["diff_pct_qs"] is None else round(s["diff_pct_qs"], 2), "status": s["status"], "items": n})
+      "diff_pct": None if s["diff_pct_qs"] is None else round(s["diff_pct_qs"], 2), "status": s["status"], "items": n, "confirmed": sure})
   scored = sum(1 for r in rows if r["trace"] is not None)
-  return {"items": items, "lines": len(entries), "lines_with_a_number": scored, "items_within_10": within, "items_not_read": not_read, "items_no_trace_number": len(no_number) + unit_bad,
+  return {"items": items, "confirmed": split[True], "unconfirmed": split[False], "lines": len(entries), "lines_with_a_number": scored, "items_within_10": within, "items_not_read": not_read, "items_no_trace_number": len(no_number) + unit_bad,
     "items_unmapped_lines": len(doc.get("unmapped_lines") or []), "table": rows}
 
 def line_of(v: dict) -> str:
-  return f"answers: {v['items']} items in {v['lines']} lines; {v['items_within_10']} items within 10%, {v['items_not_read']} NOT_READ, {v['items_no_trace_number']} with no Trace number; {v['items_unmapped_lines']} workbook lines unmapped"
+  c, u = v["confirmed"], v["unconfirmed"]
+  return (f"answers: {v['items']} items in {v['lines']} lines; confirmed {c['items']} items ({c['within_10']} within 10%, {c['not_read']} NOT_READ), unconfirmed {u['items']} items ({u['within_10']} within 10%, {u['not_read']} NOT_READ); "
+    f"{v['items_no_trace_number']} with no Trace number; {v['items_unmapped_lines']} workbook lines unmapped")

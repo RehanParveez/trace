@@ -7,7 +7,7 @@ from app.modules.drawings_boq.takeoff.review.schemas import ReviewResponse, Revi
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies.permissions import require_permission
 from app.core.database import get_db
-from app.modules.drawings_boq.takeoff.review.service import ReviewSersvice
+from app.modules.drawings_boq.takeoff.review.service import ReviewService
 
 router = APIRouter()
 _READ = PermissionKey.DRAWING_READ

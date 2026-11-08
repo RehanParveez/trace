@@ -31,7 +31,7 @@ REASON_INPUT = {"NEEDS_STOREY_HEIGHT": "height"}
 ENTRY_KEYS = ("element", "name", "section", "owner_pack", "floor", "state", "quantity", "members", "assumptions", "questions", "reasons")
 
 def empty_evidence() -> dict:
-  return {"members": [], "gaps": [], "sheets": [], "lines": [], "assumptions": [], "no_reader": []}
+  return {"members": [], "gaps": [], "sheets": [], "lines": [], "assumptions": [], "no_reader": [], "observed": []}
 
 def _ask(about: str | None, text: str, key: str | None = None, kind: str = QK.INPUT, **more) -> dict:
   return {"about": about, "ask": text, "key": key, "kind": kind, **more}

@@ -9,6 +9,9 @@ from app.engine.catalogue import loader as CL
 from app.modules.drawings_boq.lab import aliases as AL
 from app.modules.drawings_boq.takeoff.completeness import derived_rules as DR
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from app.engine.catalogue import tolerances as TOL
+from app.engine.catalogue import self_checks as SCK
+from app.engine.catalogue import confidence as CFG
 
 def ledger_families() -> dict:
   fams: dict = {}
@@ -54,14 +57,31 @@ def problems() -> list:
       out.append(f"{', '.join(ids)}: line {line} is not a ledger key")
   return out
 
+def check_class_problems() -> list:
+  from app.modules.drawings_boq.takeoff.run import vocab as V
+  if SCK.problems():
+    return []
+  known = {c.value for c in V.ElementClass}
+  out = []
+  
+  for c in SCK.checks():
+    names = set(c["classes"])
+    for side in ("left", "right"):
+      names |= set(((c["compares"].get(side) or {}).get("classes")) or [])
+    for n in sorted(names - known):
+      out.append(f"self_checks.yaml: {c['id']} names {n}, which is not a reading class")
+  return out
+
 def gate() -> tuple:
-  bad = problems()
+  bad = problems() + TOL.problems() + SCK.problems() + check_class_problems() + CFG.problems()
+
+
   if bad:
     return False, f"{len(bad)} problem(s)", bad
   its = CL.items()
   fams = ledger_families()
   billed = sum(1 for i in its if i.billing.PRIVATE_QS)
-  return True, f"{len(its)} items load with 0 problems, each with an owner; {len(fams)} ledger keys map to {billed} items; {len(CV.conventions())} Pakistan conventions each with a source and a range, {len(CV.methods())} methods, {len(LC.choices())} legend meanings each a kind of electrical point, {len(VOC.entries())} vocabulary pairs each with a person who confirmed it, {sum(1 for i in its if i.derived)} derived items with a known rule", []
+  return True, f"{len(its)} items load with 0 problems, each with an owner; {len(fams)} ledger keys map to {billed} items; {len(CV.conventions())} Pakistan conventions each with a source and a range, {len(CV.methods())} methods, {len(LC.choices())} legend meanings each a kind of electrical point, {len(VOC.entries())} vocabulary pairs each with a person who confirmed it, {sum(1 for i in its if i.derived)} derived items with a known rule, {len(SCK.checks())} self-checks that each compare two different readings, a confidence table of {len(CFG.doc()["classes"])} classes that is shown only when calibrated", []
 
 def main(argv: list | None = None) -> int:
   ap = argparse.ArgumentParser(description="Validate the element catalogue and check that every current ledger key has a catalogue item.")

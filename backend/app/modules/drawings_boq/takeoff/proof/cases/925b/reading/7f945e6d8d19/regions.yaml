@@ -1,0 +1,855 @@
+- sheet: 3
+  kind: VIEW
+  box:
+  - 460.5
+  - 428.4
+  - 501.7
+  - 469.6
+  title: p3 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of TANK that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not drafted
+      and a box may be tighter than the region; check it with `reading sample`
+- sheet: 4
+  kind: SECTION_PICTURE
+  box:
+  - 418.8
+  - 320.4
+  - 460.0
+  - 361.6
+  title: p4 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 4
+  kind: VIEW
+  box:
+  - 153.4
+  - 363.9
+  - 194.6
+  - 405.1
+  title: p4 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of RCC_WALL that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not drafted
+      and a box may be tighter than the region; check it with `reading sample`
+- sheet: 5
+  kind: SECTION_PICTURE
+  box:
+  - 417.2
+  - 477.9
+  - 458.4
+  - 519.1
+  title: p5 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 5
+  kind: VIEW
+  box:
+  - 153.4
+  - 423.6
+  - 194.6
+  - 464.8
+  title: p5 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of RCC_WALL that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not drafted
+      and a box may be tighter than the region; check it with `reading sample`
+- sheet: 6
+  kind: SECTION_PICTURE
+  box:
+  - 418.8
+  - 406.2
+  - 460.0
+  - 447.4
+  title: p6 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 7
+  kind: VIEW
+  box:
+  - 68.0
+  - 239.9
+  - 458.9
+  - 634.3
+  title: p7 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 38 truth item(s) of SLAB_BAR_CALLOUT that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 8
+  kind: SECTION_PICTURE
+  box:
+  - 82.6
+  - 143.3
+  - 123.8
+  - 184.5
+  title: p8 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 8
+  kind: SECTION_PICTURE
+  box:
+  - 252.1
+  - 143.3
+  - 293.3
+  - 184.5
+  title: p8 SECTION_PICTURE 2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 8
+  kind: SECTION_PICTURE
+  box:
+  - 252.1
+  - 290.4
+  - 293.3
+  - 331.6
+  title: p8 SECTION_PICTURE 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 8
+  kind: SECTION_PICTURE
+  box:
+  - 82.6
+  - 290.5
+  - 123.8
+  - 331.7
+  title: p8 SECTION_PICTURE 4
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 8
+  kind: SECTION_PICTURE
+  box:
+  - 82.6
+  - 484.5
+  - 123.8
+  - 525.7
+  title: p8 SECTION_PICTURE 5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 8
+  kind: SECTION_PICTURE
+  box:
+  - 272.3
+  - 576.4
+  - 313.5
+  - 617.6
+  title: p8 SECTION_PICTURE 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 8
+  kind: SECTION_PICTURE
+  box:
+  - 82.6
+  - 631.5
+  - 123.8
+  - 672.7
+  title: p8 SECTION_PICTURE 7
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 9
+  kind: SCHEDULE
+  box:
+  - 357.5
+  - 139.7
+  - 398.7
+  - 180.9
+  title: p9 SCHEDULE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of COLUMN_SCHEDULE_CELL that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 9
+  kind: SECTION_PICTURE
+  box:
+  - 298.6
+  - 495.7
+  - 339.8
+  - 536.9
+  title: p9 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 9
+  kind: VIEW
+  box:
+  - 299.4
+  - 730.1
+  - 340.6
+  - 771.3
+  title: p9 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_PAD that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 10
+  kind: SCHEDULE
+  box:
+  - 305.5
+  - 125.5
+  - 346.7
+  - 166.7
+  title: p10 SCHEDULE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of COLUMN_SCHEDULE_CELL that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 10
+  kind: SECTION_PICTURE
+  box:
+  - 304.8
+  - 476.1
+  - 346.0
+  - 517.3
+  title: p10 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 10
+  kind: VIEW
+  box:
+  - 305.0
+  - 700.6
+  - 346.2
+  - 741.8
+  title: p10 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_PAD that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 11
+  kind: SCHEDULE
+  box:
+  - 155.0
+  - 102.9
+  - 196.2
+  - 144.1
+  title: p11 SCHEDULE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of COLUMN_SCHEDULE_CELL that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 11
+  kind: SCHEDULE
+  box:
+  - 423.0
+  - 102.9
+  - 464.2
+  - 144.1
+  title: p11 SCHEDULE 2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of COLUMN_SCHEDULE_CELL that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 11
+  kind: SECTION_PICTURE
+  box:
+  - 140.1
+  - 458.9
+  - 181.3
+  - 500.1
+  title: p11 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 11
+  kind: SECTION_PICTURE
+  box:
+  - 366.0
+  - 458.9
+  - 407.2
+  - 500.1
+  title: p11 SECTION_PICTURE 2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 13
+  kind: SECTION_PICTURE
+  box:
+  - 93.1
+  - 402.5
+  - 231.2
+  - 444.6
+  title: p13 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 2 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 13
+  kind: SECTION_PICTURE
+  box:
+  - 306.5
+  - 403.1
+  - 347.7
+  - 444.3
+  title: p13 SECTION_PICTURE 2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 13
+  kind: SECTION_PICTURE
+  box:
+  - 435.9
+  - 403.4
+  - 477.1
+  - 444.6
+  title: p13 SECTION_PICTURE 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of FOOTING_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is
+      not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 13
+  kind: VIEW
+  box:
+  - 199.9
+  - 605.8
+  - 439.6
+  - 652.3
+  title: p13 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 2 truth item(s) of BOUNDARY_WALL that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 14
+  kind: VIEW
+  box:
+  - 260.7
+  - 211.2
+  - 514.1
+  - 260.2
+  title: p14 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 2 truth item(s) of STAIR, TANK that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 14
+  kind: VIEW
+  box:
+  - 233.5
+  - 538.1
+  - 521.5
+  - 582.9
+  title: p14 VIEW 2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 2 truth item(s) of TANK that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not drafted
+      and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 357.5
+  - 37.8
+  - 398.7
+  - 79.0
+  title: p16 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 466.2
+  - 37.8
+  - 507.4
+  - 79.0
+  title: p16 SECTION_PICTURE 2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 106.7
+  - 47.9
+  - 147.9
+  - 89.1
+  title: p16 SECTION_PICTURE 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 214.2
+  - 47.9
+  - 255.4
+  - 89.1
+  title: p16 SECTION_PICTURE 4
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 108.0
+  - 180.5
+  - 149.2
+  - 221.7
+  title: p16 SECTION_PICTURE 5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 216.8
+  - 180.5
+  - 258.0
+  - 221.7
+  title: p16 SECTION_PICTURE 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 358.7
+  - 180.5
+  - 399.9
+  - 221.7
+  title: p16 SECTION_PICTURE 7
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 466.2
+  - 180.5
+  - 507.4
+  - 221.7
+  title: p16 SECTION_PICTURE 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 356.1
+  - 303.5
+  - 397.3
+  - 344.7
+  title: p16 SECTION_PICTURE 9
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 466.5
+  - 303.5
+  - 507.7
+  - 344.7
+  title: p16 SECTION_PICTURE 10
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 105.9
+  - 326.9
+  - 147.1
+  - 368.1
+  title: p16 SECTION_PICTURE 11
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 214.2
+  - 326.9
+  - 255.4
+  - 368.1
+  title: p16 SECTION_PICTURE 12
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 108.0
+  - 459.6
+  - 149.2
+  - 500.8
+  title: p16 SECTION_PICTURE 13
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 216.8
+  - 459.6
+  - 258.0
+  - 500.8
+  title: p16 SECTION_PICTURE 14
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 356.4
+  - 466.4
+  - 397.6
+  - 507.6
+  title: p16 SECTION_PICTURE 15
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 464.0
+  - 466.4
+  - 505.2
+  - 507.6
+  title: p16 SECTION_PICTURE 16
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 16
+  kind: SECTION_PICTURE
+  box:
+  - 274.3
+  - 599.2
+  - 315.5
+  - 640.4
+  title: p16 SECTION_PICTURE 17
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 17
+  kind: VIEW
+  box:
+  - 40.9
+  - 72.7
+  - 480.2
+  - 781.4
+  title: p17 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 118 truth item(s) of SLAB_BAR_CALLOUT that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 19
+  kind: SECTION_PICTURE
+  box:
+  - 261.2
+  - 131.9
+  - 302.4
+  - 173.1
+  title: p19 SECTION_PICTURE 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 19
+  kind: SECTION_PICTURE
+  box:
+  - 65.6
+  - 135.2
+  - 106.8
+  - 176.4
+  title: p19 SECTION_PICTURE 2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 19
+  kind: SECTION_PICTURE
+  box:
+  - 261.2
+  - 282.7
+  - 302.4
+  - 323.9
+  title: p19 SECTION_PICTURE 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 19
+  kind: SECTION_PICTURE
+  box:
+  - 65.6
+  - 287.7
+  - 106.8
+  - 328.9
+  title: p19 SECTION_PICTURE 4
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 19
+  kind: SECTION_PICTURE
+  box:
+  - 261.2
+  - 481.2
+  - 302.4
+  - 522.4
+  title: p19 SECTION_PICTURE 5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 19
+  kind: SECTION_PICTURE
+  box:
+  - 75.3
+  - 488.1
+  - 116.5
+  - 529.3
+  title: p19 SECTION_PICTURE 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 19
+  kind: SECTION_PICTURE
+  box:
+  - 261.2
+  - 632.0
+  - 302.4
+  - 673.2
+  title: p19 SECTION_PICTURE 7
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 19
+  kind: SECTION_PICTURE
+  box:
+  - 75.3
+  - 638.8
+  - 116.5
+  - 680.0
+  title: p19 SECTION_PICTURE 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 1 truth item(s) of BEAM_SECTION that lie within 0.1 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item is not
+      drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 20
+  kind: VIEW
+  box:
+  - 42.9
+  - 103.0
+  - 470.5
+  - 771.2
+  title: p20 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 90 truth item(s) of SLAB_BAR_CALLOUT that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`

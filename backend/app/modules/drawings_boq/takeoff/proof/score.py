@@ -1275,8 +1275,10 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     out += [""]
   if doc.get("answers"):
     a = doc["answers"]
-    out += [f"**Answers from the QS workbook** ({a['items']} items in {a['lines']} lines; {a['items_within_10']} items within 10%, {a['items_not_read']} NOT_READ, {a['items_no_trace_number']} with no Trace number; {a['items_unmapped_lines']} workbook lines unmapped; not part of the hash)", "", "| Line | Unit | QS workbook | Trace | Diff % | Status | Items |", "|---|---|---|---|---|---|---|"]
-    out += [f"| {l['key']} | {l['unit']} | {_fmt(l['qs'])} | {_fmt(l['trace'])} | {_fmt(l['diff_pct'])} | {l['status']} | {l['items']} |" for l in a["table"]]
+    out += [f"**Answers from the QS workbook** ({a['items']} items in {a['lines']} lines; {a['items_within_10']} items within 10%, {a['items_not_read']} NOT_READ, {a['items_no_trace_number']} with no Trace number; {a['items_unmapped_lines']} workbook lines unmapped; not part of the hash)", "",
+      f"Confirmed by a person: {a['confirmed']['items']} items, {a['confirmed']['within_10']} within 10%, {a['confirmed']['not_read']} NOT_READ. Not confirmed (a line counts as confirmed only when every item in it is): {a['unconfirmed']['items']} items, {a['unconfirmed']['within_10']} within 10%, {a['unconfirmed']['not_read']} NOT_READ. Only confirmed items count in the bench.", "",
+      "| Line | Unit | QS workbook | Trace | Diff % | Status | Items | Confirmed |", "|---|---|---|---|---|---|---|---|"]
+    out += [f"| {l['key']} | {l['unit']} | {_fmt(l['qs'])} | {_fmt(l['trace'])} | {_fmt(l['diff_pct'])} | {l['status']} | {l['items']} | {'yes' if l['confirmed'] else 'no'} |" for l in a["table"]]
     out += [f"Problems in answers.yaml: {'; '.join(a['problems'])}" if a["problems"] else "", ""]
   if doc.get("other_policy") and doc["other_policy"]["summary"]:
     o = doc["other_policy"]["summary"]

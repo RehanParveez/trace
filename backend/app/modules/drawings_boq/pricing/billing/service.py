@@ -8,6 +8,9 @@ from app.modules.drawings_boq.takeoff.questions.service import QuestionsService
 from app.modules.drawings_boq.models import CalculationRun, BuildingLevel, QuantityLedger
 from app.core.exceptions import TraceException
 from app.engine.catalogue import conventions as CV
+from app.engine.catalogue import confidence as CFG
+from app.modules.drawings_boq.takeoff.completeness import confidence as CONF
+from app.modules.drawings_boq.takeoff.completeness import self_check as SC
 from app.modules.drawings_boq import company_conventions as CCV
 from sqlalchemy import select
 
@@ -127,7 +130,10 @@ class BillingService(QuestionsService):
     evidence = {**snapshot["evidence"], "lines": given["lines"]}
     on = CV.on_ids(await CCV.in_force(self.session, org))
     entries = LG.build(CAT.items(), snapshot["facts"], evidence, on, snapshot.get("methods") or {}, answers)
-    return entries, {"run": None if run is None else {"id": run.id, "completed_at": run.completed_at}, "lines": len(given["lines"]), "no_family": given["no_family"], "no_unit": given["no_unit"]}
+    checks = SC.current(entries, evidence, snapshot.get("checks"))
+    confidence = {"shown": CFG.shown(), "calibrated": CFG.doc().get("calibrated"), "elements": CONF.of_entries(entries, evidence, checks)}
+    return entries, {"run": None if run is None else {"id": run.id, "completed_at": run.completed_at}, "lines": len(given["lines"]), "no_family": given["no_family"], "no_unit": given["no_unit"],
+      "checks": [{"check": c["check"], "result": c["result"], "detail": c["detail"]} for c in checks], "confidence": confidence}
 
   async def billed(self, org: UUID, project_id: UUID, profile_id: str | None = None, decisions: dict | None = None) -> dict:
     try:

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from app.core.exceptions import TraceException
 from app.dependencies.permissions import require_permission
 from app.engine.catalogue import loader as CL
+from app.engine.catalogue import tolerances as TOL
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
 

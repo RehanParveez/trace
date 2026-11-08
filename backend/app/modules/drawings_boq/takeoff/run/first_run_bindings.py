@@ -47,7 +47,7 @@ def offline_bindings(pdfs: list | None = None, plains: list | None = None, lines
       state["evidence"]["lines"] = [dict(ln) for ln in lines if ln.get("family") and ln.get("value") is not None]
       ST.ledger_stage(state)
 
-  return {"register": register, "profile": profile, "scale": scale, "read": read, "members": members, "ledger": ST.ledger_stage, "quantities": quantities, "boq": ST.boq_stage, "questions": ST.questions_stage}
+  return {"register": register, "profile": profile, "scale": scale, "read": read, "members": members, "ledger": ST.ledger_stage, "quantities": quantities, "self_check": ST.self_check_stage, "boq": ST.boq_stage, "questions": ST.questions_stage}
 
 def run_project(pdfs: list | None = None, plains: list | None = None, lines: list | None = None, storeys: list | None = None, conventions: list | None = None,
   answers: dict | None = None, methods: dict | None = None, progress=None, bindings: dict | None = None) -> tuple:

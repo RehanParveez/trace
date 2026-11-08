@@ -28,7 +28,13 @@ def load(path: str = PATH) -> list:
   return _CACHE[path]
 
 def offices_met(rule: dict) -> set:
-  return {str(e.get("office")) for e in rule.get("evidence") or [] if e.get("met") is True and e.get("value") is not None}
+  return {str(e.get("office")) for e in rule.get("evidence") or [] if e.get("met") is True and e.get("value") is not None and not e.get("unseen")}
+
+def unseen_met(rule: dict) -> bool:
+  return any(e.get("unseen") is True and e.get("met") is True and e.get("value") is not None for e in rule.get("evidence") or [])
+
+def unseen_gap(rules: list) -> list:
+  return [r["id"] for r in rules if r.get("status") == "GENERAL" and not unseen_met(r)]
 
 def problems(rules: list) -> list:
   """What is wrong with the registry: a missing field, an unknown kind or status, a rule on by default without status GENERAL, or GENERAL without evidence from two offices inside the target."""

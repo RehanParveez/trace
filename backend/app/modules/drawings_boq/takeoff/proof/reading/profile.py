@@ -206,4 +206,7 @@ def draft_rows(profile: dict, registers: dict, date: str) -> list:
 
 def write_register(folder: str, rows: list) -> None:
   from app.modules.drawings_boq.takeoff.proof.reading import formats as F
+  from app.modules.drawings_boq.takeoff.proof.reading import regions as RG
+  from app.modules.drawings_boq.takeoff.proof.reading import sample as SMP
+
   F.write_truth_files(folder, {"register.yaml": rows}, check=False)

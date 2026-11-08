@@ -1,0 +1,60 @@
+- sheet: 3
+  kind: VIEW
+  box:
+  - 240.0
+  - 773.8
+  - 413.6
+  - 834.3
+  title: p3 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 4 truth item(s) of COLUMN, FOOTING_PAD that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 4
+  kind: VIEW
+  box:
+  - 240.0
+  - 773.8
+  - 413.6
+  - 855.1
+  title: p4 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 5 truth item(s) of COLUMN, FOOTING_PAD that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 9
+  kind: VIEW
+  box:
+  - 117.1
+  - 413.4
+  - 803.2
+  - 928.3
+  title: p9 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 18 truth item(s) of SLAB_BAR_CALLOUT that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
+- sheet: 10
+  kind: VIEW
+  box:
+  - 148.2
+  - 413.4
+  - 803.2
+  - 854.0
+  title: p10 VIEW 1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: truth_item_positions
+    date: '2026-11-08'
+    note: bounding box of the 13 truth item(s) of SLAB_BAR_CALLOUT that lie within 0.25 of the page diagonal of one another, padded by 0.02 of it; no page image was used, so a region with no truth item
+      is not drafted and a box may be tighter than the region; check it with `reading sample`
