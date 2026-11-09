@@ -51,12 +51,60 @@ class TraceScale(BaseModel):
   gate: str | None = None
   decided_by: str
 
+class TraceRegion(BaseModel):
+  kind: str = Field(description="VIEW, SCHEDULE, LEGEND, NOTES, SECTION_PICTURE or TITLE_BLOCK.")
+  box: list[float] = Field(description="x0, y0, x1, y1 in page points of the PDF page.")
+  title: str = ""
+  confidence: float = 1.0
+  source: str = Field(default="", description="The finder that made it.")
+  words: int = 0
+  text_type: str = Field(default="NONE", description="What the words in it came from: TEXT, OUTLINED, RASTER, MIXED, or NONE when it holds no word.")
+
+class TraceNotRead(BaseModel):
+  reason: str = Field(description="OCR_BUDGET (the time for reading ran out) or REGION_LIMIT (more outlined clusters than the page may read).")
+  left: int = Field(default=0, description="How many regions were left unread.")
+  what: str = ""
+
+class TraceText(BaseModel):
+  by_source: dict[str, int] = Field(default_factory=dict, description="Words per source: NATIVE (text layer), OUTLINED_OCR, IMAGE_OCR.")
+  low: int = Field(default=0, description="Words whose confidence is below the low-confidence setting.")
+  mean_confidence: dict[str, float] = Field(default_factory=dict)
+  turned: int = Field(default=0, description="Words read after turning the picture of their letters.")
+  stroked: int = Field(default=0, description="Words read from lettering drawn as pen strokes, which has no outline and no text layer.")
+  not_read: list[TraceNotRead] = Field(default_factory=list)
+
+class TraceAiTask(BaseModel):
+  accepted: int = 0
+  review: int = Field(default=0, description="Answers kept for a person to look at: the two readings disagreed, or a check failed.")
+  escalated: int = Field(default=0, description="Answers that went once to the stronger model.")
+  examples: int = Field(default=0, description="Checked answers from other drawings shown to the model on this sheet.")
+  support: dict[str, int] = Field(default_factory=dict, description="Accepted answers by what backed them: TEXT_LAYER, or OCR_AND_GLYPHS (an OCR reading agrees and the ink clusters fit).")
+
+class TraceProposedRefusal(BaseModel):
+  kind: str
+  why: str
+
+class TraceProposed(BaseModel):
+  given: int = 0
+  accepted: int = 0
+  refused: list[TraceProposedRefusal] = Field(default_factory=list)
+
+class TraceAi(BaseModel):
+  tasks: dict[str, TraceAiTask] = Field(default_factory=dict)
+  proposed: TraceProposed | None = Field(default=None, description="Boxes a model proposed for schedules and section pictures, and what the page model made of them.")
+
 class TraceSheet(BaseModel):
   sheet_id: UUID
   page_no: int
   scale: TraceScale
   rules: list[TraceRule]
   silent: list[str] = Field(default_factory=list)
+  regions: list[TraceRegion] = Field(default_factory=list)
+  regions_by_kind: dict[str, int] = Field(default_factory=dict, description="How many regions of each kind were found, callouts included.")
+  regions_state: str = Field(default="NOT_READ", description="READ, FAILED or NOT_READ (the sheet was read before regions were found).")
+  regions_ms: float | None = None
+  text: TraceText | None = Field(default=None, description="Where the sheet's words came from; None for a sheet read before the words layer existed.")
+  ai: TraceAi | None = Field(default=None, description="What the AI readers did on the sheet; None when none read it.")
 
 class TraceSummary(BaseModel):
   sheets: int = 0

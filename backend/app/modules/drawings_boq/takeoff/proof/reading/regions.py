@@ -9,6 +9,7 @@ from app.modules.drawings_boq.takeoff.proof.reading import formats as F
 from app.modules.drawings_boq.takeoff.proof.reading import settings as ST
 from app.modules.drawings_boq.takeoff.proof.reading import sets as S
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from app.modules.drawings_boq.takeoff.prep import words as WD
 
 FILE = "regions.yaml"
 KINDS = ("VIEW", "SCHEDULE", "LEGEND", "NOTES", "SECTION_PICTURE", "TITLE_BLOCK")
@@ -202,6 +203,33 @@ def _reported(item) -> tuple | None:
   r = getattr(item, "region", None)
   return tuple(float(v) for v in r) if isinstance(r, (list, tuple)) and len(r) == 4 else None
 
+def holds(report: tuple, truth: tuple, need: float) -> bool:
+  cx, cy = (truth[0] + truth[2]) / 2, (truth[1] + truth[3]) / 2
+  return share_inside(truth, report) >= need or (report[0] <= cx <= report[2] and report[1] <= cy <= report[3])
+
+def reported_kinds(kind: str) -> tuple:
+  return tuple((cfg().get("reported_as") or {}).get(kind) or (kind,))
+
+def _model_state(r, same: list, boxes: list, need: float) -> tuple:
+  holders = [b for b in boxes if holds(b, r.box, need)]
+  pieces = [b for b in boxes if share_inside(b, r.box) >= need and not holds(b, r.box, need)]
+  if holders:
+    if all(sum(1 for t in same if holds(b, t.box, need)) >= 2 for b in holders):
+      return MERGED, len(holders)
+    return FOUND, len(holders)
+  if len(pieces) >= 2:
+    return SPLIT, len(pieces)
+  return MISSED, 0
+
+def _text_type(r, read, made: dict, need: float) -> str:
+  held = [d for d in made.get(r.sheet) or [] if d["kind"] in reported_kinds(r.kind) and holds(tuple(d["box"]), r.box, need)]
+  if held:
+    t = WD.text_type((min(held, key=lambda d: _area(d["box"])).get("extra") or {}).get("text") or {})
+    if t != "NONE":
+      return t
+  page = (getattr(read, "pages", None) or {}).get(r.sheet)
+  return ((page.register or {}).get("text_type") if page is not None else None) or "NONE"
+
 def score_regions(regions: list, read) -> dict:
   c = cfg()
   need = float(c["overlap"])
@@ -209,40 +237,69 @@ def score_regions(regions: list, read) -> dict:
   items_on: dict = {}
   for it in read.items:
     items_on.setdefault(it.sheet, []).append(it)
+  made = getattr(read, "regions", None) or {}
   by_sheet_kind: dict = {}
-
+  
   for r in regions:
     by_sheet_kind.setdefault((r.sheet, r.kind), []).append(r)
   reported_all = {sheet: sorted({b for b in (_reported(i) for i in its) if b}) for sheet, its in items_on.items()}
   for r in regions:
     kind_items = [i for i in items_on.get(r.sheet, []) if c["kind_of_class"].get(i.cls.value) == r.kind]
-    reported = reported_all.get(r.sheet, [])
     state, basis, n = MISSED, "none", 0
-    hits = [b for b in reported if iou(b, r.box) >= need]
-    pieces = [b for b in reported if share_inside(b, r.box) >= need and iou(b, r.box) < need]
-    swallows = [b for b in reported if share_inside(r.box, b) >= need and any(o is not r and share_inside(o.box, b) >= need for o in regions if o.sheet == r.sheet)]
-    if hits:
-      state, basis, n = FOUND, "reported", len(hits)
-    elif swallows:
-      state, basis, n = MERGED, "reported", len(swallows)
-    elif len(pieces) >= 2:
-      state, basis, n = SPLIT, "reported", len(pieces)
+    if r.sheet in made:
+      kinds = reported_kinds(r.kind)
+      boxes = [tuple(d["box"]) for d in made[r.sheet] if d["kind"] in kinds]
+      state, n = _model_state(r, by_sheet_kind[(r.sheet, r.kind)], boxes, need)
+      basis = "region" if state != MISSED else "none"
+      if state == MISSED:
+        located = [i for i in kind_items if point_of(None, i.geom) is not None]
+        inside_n = sum(1 for i in located if inside(r.box, point_of(None, i.geom)))
+        if inside_n:
+          state, basis, n = FOUND, "inside", inside_n
+          
     else:
-      located = [i for i in kind_items if _reported(i) is None and point_of(None, i.geom) is not None]
-      inside_n = sum(1 for i in located if inside(r.box, point_of(None, i.geom)))
-      unlocated = [i for i in kind_items if _reported(i) is None and point_of(None, i.geom) is None]
-      if inside_n:
-        state, basis, n = FOUND, "inside", inside_n
-      elif unlocated and len(by_sheet_kind[(r.sheet, r.kind)]) == 1:
-        state, basis, n = FOUND, "class", len(unlocated)
-    rows.append({"sheet": r.sheet, "kind": r.kind, "title": r.title, "box": list(r.box), "state": state, "basis": basis, "evidence": n, "checked": r.truth.checked is True})
-
+      reported = reported_all.get(r.sheet, [])
+      hits = [b for b in reported if iou(b, r.box) >= need]
+      pieces = [b for b in reported if share_inside(b, r.box) >= need and iou(b, r.box) < need]
+      swallows = [b for b in reported if share_inside(r.box, b) >= need and any(o is not r and share_inside(o.box, b) >= need for o in regions if o.sheet == r.sheet)]
+      if hits:
+        state, basis, n = FOUND, "reported", len(hits)
+      elif swallows:
+        state, basis, n = MERGED, "reported", len(swallows)
+      elif len(pieces) >= 2:
+        state, basis, n = SPLIT, "reported", len(pieces)
+      else:
+        located = [i for i in kind_items if _reported(i) is None and point_of(None, i.geom) is not None]
+        inside_n = sum(1 for i in located if inside(r.box, point_of(None, i.geom)))
+        unlocated = [i for i in kind_items if _reported(i) is None and point_of(None, i.geom) is None]
+        if inside_n:
+          state, basis, n = FOUND, "inside", inside_n
+        elif unlocated and len(by_sheet_kind[(r.sheet, r.kind)]) == 1:
+          state, basis, n = FOUND, "class", len(unlocated)
+    rows.append({"sheet": r.sheet, "kind": r.kind, "title": r.title, "box": list(r.box), "state": state, "basis": basis, "evidence": n, "checked": r.truth.checked is True, "text_type": _text_type(r, read, made, need)})
   by_kind: dict = {}
+  by_text: dict = {}
   for row in rows:
     slot = by_kind.setdefault(row["kind"], {"truth": 0, FOUND: 0, MISSED: 0, SPLIT: 0, MERGED: 0})
     slot["truth"] += 1
     slot[row["state"]] += 1
-  return {"rows": rows, "by_kind": by_kind, "reported_regions": sum(len(v) for v in reported_all.values())}
+    tslot = by_text.setdefault(row["text_type"], {"truth": 0, FOUND: 0, MISSED: 0, SPLIT: 0, MERGED: 0})
+    tslot["truth"] += 1
+    tslot[row["state"]] += 1
+  n_made = sum(len(v) for v in made.values())
+  return {"rows": rows, "by_kind": by_kind, "by_text_type": by_text, "reported_regions": n_made or sum(len(v) for v in reported_all.values()), "from_model": bool(made)}
+
+def place(read) -> None:
+  kind_of = cfg()["kind_of_class"]
+  for it in read.items:
+    regs = (getattr(read, "regions", None) or {}).get(it.sheet)
+    pt = point_of(None, it.geom)
+    if not regs or pt is None or it.region is not None:
+      continue
+    kinds = reported_kinds(kind_of.get(it.cls.value, "VIEW"))
+    held = [d for d in regs if d["kind"] in kinds and inside(tuple(d["box"]), pt)]
+    if held:
+      it.region = list(min(held, key=lambda d: _area(d["box"]))["box"])
 
 def _truth_miss(o: dict) -> bool:
   return o["side"] == "truth" and o["outcome"] != OK_OUTCOME and o["class"] != "BBS_FINDING"
@@ -278,7 +335,7 @@ def apply_stages(regions: list, region_rows: list, read, outcomes: list) -> dict
       kind = c["kind_of_class"].get(cls)
       pt = o.get("at")
       home = None
-      
+
       if kind and pt:
         home = next((r for r in regions if r.sheet == o["sheet"] and r.kind == kind and inside(r.box, pt)), None)
       if home is not None:
@@ -292,3 +349,41 @@ def apply_stages(regions: list, region_rows: list, read, outcomes: list) -> dict
     o["stage"], o["stage_basis"] = stage, basis
     counts[stage] += 1
   return {"counts": counts, "unstaged": unstaged}
+
+def cmd_regions_show(args) -> int:
+  from app.modules.drawings_boq.takeoff.page import build as B
+  from app.modules.drawings_boq.takeoff.page import picture as PIC
+  from app.modules.drawings_boq.takeoff.prep.extract import extract_page, open_document
+  for ref in S.find_sets(args.cases_dir, args.root):
+    if ref.link:
+      continue
+    ts = F.load_set(ref.truth_folder)
+    if not (ref.pdf_key.startswith(args.set) or ts.document.alias == args.set):
+      continue
+    if not ref.pdf_path:
+      print(f"{ts.document.alias}: the PDF is not in the PDF folder; give --cases-dir")
+      return 1
+    
+    with open(ref.pdf_path, "rb") as fh:
+      doc = open_document(fh.read())
+    try:
+      if not 1 <= args.page <= len(doc):
+        print(f"{ts.document.alias} has {len(doc)} page(s); --page {args.page} is not one of them")
+        return 1
+      raw = extract_page(doc, args.page - 1, budget_s=40)
+      model = B.build(raw)
+      truth = [list(r.box) for r in load(ref.truth_folder, ts.document.pages) if r.sheet == args.page]
+      shown = [r for r in model["regions"] if args.callouts or r["kind"] != "CALLOUT"]
+      img = PIC.draw(doc[args.page - 1], shown, truth, args.scale)
+      
+    finally:
+      doc.close()
+    out = args.out or f"{ts.document.alias}_p{args.page}_regions.png"
+    img.save(out)
+    kinds: dict = {}
+    for r in model["regions"]:
+      kinds[r["kind"]] = kinds.get(r["kind"], 0) + 1
+    print(f"{out}: " + ", ".join(f"{k} {v}" for k, v in sorted(kinds.items())) + f"; {len(truth)} truth region(s) dashed")
+    return 0
+  print(f"no set {args.set!r}")
+  return 1

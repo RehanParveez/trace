@@ -8,6 +8,8 @@ from app.modules.ai_requests.service import AIOrchestratorService, AIRunResult, 
 from app.modules.drawings_boq.takeoff.ai_reader import cache as CACHE
 from app.modules.drawings_boq.takeoff.ai_reader import candidate as CAND
 from app.modules.drawings_boq.takeoff.ai_reader import contract as C
+from app.modules.drawings_boq.takeoff.ai_reader import examples as EX
+from app.modules.drawings_boq.takeoff.ai_reader import prompts as P
 from app.modules.drawings_boq.takeoff.ai_reader import legend as LG
 from app.modules.drawings_boq.takeoff.ai_reader import notes as NT
 from app.modules.drawings_boq.takeoff.ai_reader import reader as RD
@@ -33,11 +35,14 @@ def entry_of(*, record: dict, sha: str, page: int, provider: AIProvider, region:
   candidate = CAND.build(task=record["task"], page=page, value=value or {}, quotes=quotes, bbox=union, confidence=(value or {}).get("confidence"), model=record["model"],
     prompt=record["prompt"], prompt_version=record["prompt_version"], cache_key=record["cache_key"], validators=record["validators"], shadow=True,
     input_tokens=record["input_tokens"], output_tokens=record["output_tokens"])
+  shown = record["crop"].get("examples") or {}
   return {"cache_key": record["cache_key"], "task": record["task"], "pdf_sha256": sha, "page": page, "region": region, "prompt_version": record["prompt_version"],
+    "variant": shown.get("variant") or record["prompt_version"], "examples": shown or None,
     "model": record["model"], "provider": provider.value, "seconds": record["seconds"], "input_tokens": record["input_tokens"], "output_tokens": record["output_tokens"],
     "status": record["status"], "problems": record["problems"], "error": record["error"], "answer": value, "validators": record["validators"], "candidate": candidate}
 
-async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: str | None, force: bool, max_tokens: int, timeout_s: float | None, task: str = RD.TASK, mode: str = LG.WEAK) -> dict:
+async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: str | None, force: bool, max_tokens: int, timeout_s: float | None, task: str = RD.TASK, mode: str = LG.WEAK,
+    prompt_name: str | None = None, bank: list | None = None, office=None, leave_out_office: bool = False) -> dict:
   with open(pdf, "rb") as fh:
     contents = fh.read()
   sha = CACHE.pdf_sha256(contents)
@@ -59,12 +64,17 @@ async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: s
 
   for page in pages_of(pages, total):
     stats["pages"] += 1
-    key = CACHE.key(sha, page, region, task, version, model)
+    name = (prompt_name or TASKS.prompt_name(task)) if task in EX.TASKS else None
+    version = P.load(name)["version"] if name else version
+    shown = EX.for_page(bank=bank or [], task=task, name=name, contents=contents, page=page, office=office, drawing=sha, leave_out_office=leave_out_office) if task in EX.TASKS else []
+    key = CACHE.key(sha, page, region, task, version, model, EX.state(shown, leave_out_office))
     if not force and CACHE.read(out, key) is not None:
       stats["cached"] += 1
       continue
     if task == LG.TASK:
       record = await LG.read_legends(contents=contents, page_no=page, rows=LG.page_rows(contents, page), mode=mode, ask=ask, cache_key=key, model=model)
+    elif task in EX.TASKS:
+      record = await reading(contents=contents, page_no=page, ask=ask, cache_key=key, model=model, prompt_name=name, examples=shown, leave_out_office=leave_out_office)
     else:
       record = await reading(contents=contents, page_no=page, ask=ask, cache_key=key, model=model)
     stats["asked"] += 1
@@ -88,6 +98,10 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--model", default=None)
   ap.add_argument("--pages", default=None, help="for example 1-5,9; all pages when omitted")
   ap.add_argument("--mode", choices=(LG.WEAK, LG.ALL), default=LG.WEAK, help="for LEGEND_ENTRY: WEAK reads only the legend rows the rules could not place; ALL reads every row, to measure the AI against the rules. Name the legend pages with --pages.")
+  ap.add_argument("--prompt", default=None, help="for NOTE_FACT and SCHEDULE_ROW: the prompt file to ask with, for example schedule.v2; the task's own file when omitted")
+  ap.add_argument("--examples", default=None, metavar="CASES_DIR", help="show the bank's three best examples of the task, from the ai_examples folders under CASES_DIR and never from this PDF; needs a prompt file with an examples slot")
+  ap.add_argument("--office", default=None, help="with --examples: the office of this PDF (its letter in the bench), so that examples from the same office come first")
+  ap.add_argument("--leave-out-office", action="store_true", help="with --examples: give none from the office of this case, to measure the bank on an office it has never seen")
   ap.add_argument("--force", action="store_true")
   ap.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
   ap.add_argument("--timeout", type=float, default=None)
@@ -100,7 +114,14 @@ def main(argv: list | None = None) -> int:
     return 2
   provider = CONSENT_PROVIDER["LOCAL" if args.where == "local" else "OUTSIDE"]
   model = args.model or model_of(provider)
-  stats = asyncio.run(fill(pdf=args.pdf, out=args.out, provider=provider, model=model, pages=args.pages, force=args.force, max_tokens=args.max_tokens, timeout_s=args.timeout, task=args.task, mode=args.mode))
+  bank = None
+  if args.examples:
+    bank = EX.load_root(args.examples)
+    
+    if not bank:
+      print(f"No example is kept in any case folder under {args.examples}: nothing will be shown.", file=sys.stderr)
+  stats = asyncio.run(fill(pdf=args.pdf, out=args.out, provider=provider, model=model, pages=args.pages, force=args.force, max_tokens=args.max_tokens, timeout_s=args.timeout, task=args.task, mode=args.mode,
+    prompt_name=args.prompt, bank=bank, office=args.office, leave_out_office=args.leave_out_office))
   print(f"{provider.value} {model}: {stats['pages']} page(s), {stats['asked']} asked, {stats['cached']} already cached, {stats['failed']} failed, {stats['seconds']} s, {stats['input_tokens']} input and {stats['output_tokens']} output tokens")
   return 0 if not stats["failed"] else 1
 

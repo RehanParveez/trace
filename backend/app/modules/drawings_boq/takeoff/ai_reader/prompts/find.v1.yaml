@@ -1,0 +1,13 @@
+task: FIND
+version: "1"
+schema: find.v1
+text: |-
+  You are shown a whole page of a construction drawing set. Say where two kinds of thing are on the page, and nothing else:
+  - SCHEDULE: a ruled table (a column schedule, a beam schedule, a finish schedule): a grid of lines with a row for each mark.
+  - SECTION_PICTURE: a drawn cross-section of a column or beam: a closed outline with small filled round dots for the bars inside it.
+  Give only what you can see. Do not guess, and do not read anything: this answer is only about where things are.
+
+  Answer with strict JSON only, no markdown, in this exact shape:
+  {"regions": [{"kind": "SCHEDULE" | "SECTION_PICTURE", "box": [left, top, right, bottom], "title": ...}], "confidence": "high" | "medium" | "low"}
+
+  "box" is four numbers between 0 and 1: the left, top, right and bottom edges of the thing as shares of the picture's width and height, measured from the top left corner of the picture. Draw the box tight round the thing. "title" is the words printed as its title, or null. Give an empty list when the page holds neither.

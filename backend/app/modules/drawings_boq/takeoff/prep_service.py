@@ -33,6 +33,7 @@ from app.modules.drawings_boq.takeoff.extract import electrical as electrical_re
 from app.modules.drawings_boq.takeoff.prep import footing_sections, footing_views, units as unit_reader
 from app.modules.drawings_boq.takeoff.extract import structure_tables, rebar_rules, set_join
 from app.modules.drawings_boq.takeoff.prep import sheet_marks
+from app.modules.drawings_boq.takeoff.page import access as PM
 from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
 from app.modules.drawings_boq.takeoff.prep import opening_heights as OHT
 from app.modules.drawings_boq.takeoff.prep import scale_bar
@@ -84,8 +85,9 @@ def _open(contents: bytes):
   except PdfOpenError as exc:
     raise TraceException(exc.message, status_code=422, code=exc.code)
 
-def _analyze_one(doc, page_no: int, user_unit: float, budget_s: float):
+def _analyze_one(doc, page_no: int, user_unit: float, budget_s: float, proposals: list | None = None):
   raw = extract_page(doc, page_no - 1, budget_s=budget_s)
+  raw.ai_regions = proposals
   result = analyze_page(raw, user_unit, budget_s=max(5.0, budget_s / 2))
   _read_details(doc, page_no, raw, result)
   return result, raw.stats
@@ -100,19 +102,32 @@ def _read_details(doc, page_no: int, raw, result) -> None:
     return
   size = page.get_size()
   try:
-    found = details.read_column_details(result.index.words, result.index, page, size, raw.cropbox, raw.rotation)
+    legend = electrical_reader.read_legend_rows(page, result.index.words, identity=result.meta.get("identity"))
+    if legend:
+      result.meta["electrical_legend"] = legend
+  except Exception:
+    result.meta["electrical_reader"] = "FAILED"
+  try:
+    model = PM.model_of(raw, result.meta.get("electrical_legend"), PM.to_page_of(page) if result.meta.get("electrical_legend") else None)
+    result.meta["page_model"] = PM.compact(model)
+  except Exception:
+    model = None
+    result.meta["page_model"] = {"error": "FAILED"}
+  try:
+    found = details.read_column_details(result.index.words, result.index, page, size, raw.cropbox, raw.rotation, regions=PM.regions_of(model, "SECTION_PICTURE", "SCHEDULE", "VIEW"), h=float((model or {}).get("h") or 8.0))
     if found["details"]:
       result.meta["details"] = found["details"]
       result.meta["details_reader"] = found["ocr"]
   except Exception:
     result.meta["details_reader"] = "FAILED"
   try:
-    beams = beam_details.read_beam_details(result.index.words, result.index, page, size, raw.cropbox, raw.rotation)
+    beams = beam_details.read_beam_details(result.index.words, result.index, page, size, raw.cropbox, raw.rotation, regions=PM.regions_of(model, "SECTION_PICTURE", "VIEW"), h=float((model or {}).get("h") or 8.0))
     if beams["details"]:
       result.meta["beam_details"] = beams["details"]
       result.meta["beam_details_reader"] = beams["ocr"]
   except Exception:
     result.meta["beam_details_reader"] = "FAILED"
+    
   try:
     tanks = tank_details.read_tank_details(result.index.words, page, size, raw.cropbox, raw.rotation)
     if tanks["details"]:
@@ -120,12 +135,6 @@ def _read_details(doc, page_no: int, raw, result) -> None:
       result.meta["tank_details_reader"] = tanks["ocr"]
   except Exception:
     result.meta["tank_details_reader"] = "FAILED"
-  try:
-    tables = structure_tables.read_all(raw)
-    if tables:
-      result.meta["structure_tables"] = tables
-  except Exception:
-    result.meta["structure_tables_reader"] = "FAILED"
   try:
     plot = set_join.plot_text(result.index.words)
     if plot:
@@ -146,13 +155,13 @@ def _read_details(doc, page_no: int, raw, result) -> None:
   except Exception:
     result.meta["rebar_rules_reader"] = "FAILED"
   try:
-    legend = electrical_reader.read_legend_rows(page, result.index.words, identity=result.meta.get("identity"))
-    if legend:
-      result.meta["electrical_legend"] = legend
+    tables = structure_tables.read_all(raw, model)
+    if tables:
+      result.meta["structure_tables"] = tables
   except Exception:
-    result.meta["electrical_reader"] = "FAILED"
+    result.meta["structure_tables_reader"] = "FAILED"
   try:
-    sections = footing_sections.read(result.index, result.index.words, size)
+    sections = footing_sections.read(result.index, result.index.words, size, PM.regions_of(model, "SECTION_PICTURE", "VIEW"))
     if sections:
       result.meta["footing_sections"] = sections
   except Exception:
@@ -167,6 +176,7 @@ def _read_details(doc, page_no: int, raw, result) -> None:
     result.meta["mark_evidence"] = MV.read_sheet(result.index, result.index.words, result.meta.get("units_hint"), page_no)
   except Exception:
     result.meta["mark_evidence_reader"] = "FAILED"
+    
   try:
     marks = sheet_marks.read(page, raw.rotation, tuple(raw.cropbox), result.index.words)
     strip = marks.get("strip")
@@ -313,7 +323,7 @@ class PrepService:
   async def _prepare_one(self, org: UUID, user_id: UUID, drawing, sheet, doc, budget_s: float) -> bool:
     user_unit = float(repo_mod.sheet_user_unit(sheet))
     try:
-      result, stats = await asyncio.to_thread(_analyze_one, doc, sheet.page_no, user_unit, min(budget_s, 40.0))
+      result, stats = await asyncio.to_thread(_analyze_one, doc, sheet.page_no, user_unit, min(budget_s, 40.0), (sheet.prep_meta or {}).get("ai_find"))
     except Exception as exc:  
       log.exception("Sheet %s (page %s) could not be prepared", sheet.id, sheet.page_no)
       await self._mark_failed(org, sheet.id, failure_text(sheet.page_no, exc))
@@ -324,7 +334,7 @@ class PrepService:
     locked = await self._sheet(org, sheet.id, lock=True)
     old_meta = dict(locked.prep_meta or {})
     meta = {**result.meta, "prepared_at": _now().isoformat()}
-    for keep in ("user_unit", "kind_source", "ai_facts", "ai_schedule", "ai_legend"):
+    for keep in ("user_unit", "kind_source", "ai_facts", "ai_schedule", "ai_legend", "ai_find", "ai_reading"):
       if keep in old_meta:
         meta[keep] = old_meta[keep]
     if (old_meta.get("identity") or {}).get("basis") == "PERSON":

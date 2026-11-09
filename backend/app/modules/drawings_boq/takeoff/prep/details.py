@@ -9,12 +9,12 @@ import tempfile
 import time
 from collections import Counter
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, to_visual
+from app.modules.drawings_boq.takeoff.page import access as AC
 
 COLUMN_CAPTION = re.compile(r"^\s*(?:(?P<m1>[A-Z]{1,3}\s*-?\s*\d{1,2})\s+COLUMN(?:\s+(?:DETAILS?|SEC(?:TION)?\.?))?|COLUMN\s+(?:(?:DETAILS?|SEC(?:TION)?\.?)\s+)?(?P<m2>[A-Z]{1,3}\s*-?\s*\d{1,2}))\s*$", re.I)
 LABEL = re.compile(r"^(\d{1,2}(?:\.\d)?)\s*[\"”″'’′]{1,2}$")
 INCH_MIN, INCH_MAX = 8.0, 48.0
 BOX_MIN_PT, BOX_MAX_PT = 8.0, 90.0
-SEARCH_REACH_PT = 130.0
 STRIP_DEPTH_PT = 15.0
 RENDER_SCALES = (8, 11)
 MIN_AGREE = 2
@@ -38,8 +38,7 @@ def find_captions(words: list) -> list[dict]:
       "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws)})
   return out
 
-def find_box(segs: list, x: float, y: float, vis) -> dict | None:
-  """The drawn outline nearest above (on the page as read) the caption at (x, y): four straight segments forming a rectangle."""
+def find_box(segs: list, x: float, y: float, vis, within: list | None = None) -> dict | None:
   hs, vs = [], []
   for x1, y1, x2, y2, kind in segs:
     if kind:
@@ -68,9 +67,9 @@ def find_box(segs: list, x: float, y: float, vis) -> dict | None:
       by0, by1 = sorted((corners[0][1], corners[1][1]))
       if by1 > vy + 4.0:
         continue
-      d = math.hypot((bx0 + bx1) / 2 - vx, by1 - vy)
-      if d > SEARCH_REACH_PT:
+      if within is not None and not (within[0] - tol <= lo and hi <= within[2] + tol and within[1] - tol <= a0 and a1 <= within[3] + tol):
         continue
+      d = math.hypot((bx0 + bx1) / 2 - vx, by1 - vy)
       if best_d is None or d < best_d:
         best, best_d = {"native": [lo, a0, hi, a1], "visual": [bx0, by0, bx1, by1]}, d
   return best
@@ -240,6 +239,41 @@ def text_box_labels(words: list, vis, box_vis: list) -> dict:
       out[key] = values.pop()
   return out
 
+LABEL_SIZE = re.compile(r"""^(\d{1,2}(?:\.5)?)\s*(?:["\u201d\u2033]|'')?\s*[xX\u00d7]\s*(\d{1,2}(?:\.5)?)\s*(?:["\u201d\u2033]|'')?$""")
+LABEL_REACH_X_H, LABEL_REACH_UP_H, LABEL_ROW_H = 14.0, 16.0, 5.0
+
+def caption_labels(words: list, vis, c: dict, caps: list) -> dict:
+  from app.engine.measure import steel_grammar as SG
+  cx, cy = vis(c["x"], c["y"])
+  sizes = sorted(w.size for w in words if getattr(w, "size", 0) > 0)
+  h = sizes[len(sizes) // 2] if sizes else 8.0
+  up = LABEL_REACH_UP_H * h
+  gaps = [abs(vis(o["x"], o["y"])[0] - cx) / 2.0 for o in caps if o is not c and abs(vis(o["x"], o["y"])[1] - cy) <= LABEL_ROW_H * h]
+  reach = min([LABEL_REACH_X_H * h] + gaps)
+  near = []
+  for w in words:
+    vx, vy = vis(w.cx, w.cy)
+    if abs(vx - cx) <= reach and cy - up <= vy <= cy:
+      near.append(w)
+      
+  out: dict = {"label_size_in": None, "label_bars": [], "label_ring": None, "label_brick": False}
+  texts = [w.text.strip() for w in near]
+  rcc = any(re.match(r"^R\.?\s*C\.?\s*C", t.upper()) for t in texts)
+  sizes = {(float(m.group(1)), float(m.group(2))) for t in texts for m in [LABEL_SIZE.match(t)] if m}
+  if rcc and len(sizes) == 1:
+    out["label_size_in"] = list(next(iter(sizes)))
+  out["label_brick"] = any(t.upper().strip(".,") == "BRICK" for t in texts)
+  
+  for t in texts:
+    got = SG.parse_callout(t)
+    if got["spaced"] and not got["bars"] and not got["unread"] and got["spaced"][0].get("bar") and not out["label_ring"]:
+      out["label_ring"] = {"bar": got["spaced"][0]["bar"], "spacing_mm": got["spaced"][0]["spacing_mm"]}
+    elif got["bars"] and not got["spaced"] and not got["unread"] and all(b.get("n") and b.get("bar") for b in got["bars"]):
+      for b in got["bars"]:
+        if [b["n"], b["bar"]] not in out["label_bars"]:
+          out["label_bars"].append([b["n"], b["bar"]])
+  return out
+
 def read_box_labels(page, box_vis: list, page_wh: tuple, deadline: float) -> dict:
   """The two dimensions written beside a detail box, in inches: {w_in, h_in, w_votes, h_votes, raw}. A value needs MIN_AGREE agreeing readings
   and a clear margin; the sides are read in turn and reading stops as soon as the horizontal and the vertical label are both settled."""
@@ -294,8 +328,9 @@ def read_box_labels(page, box_vis: list, page_wh: tuple, deadline: float) -> dic
       done[vertical] = _pick(strong)
   return {"w_in": done[False][0], "h_in": done[True][0], "w_votes": done[False][1], "h_votes": done[True][1], "raw": raw[:16]}
 
-def read_column_details(words: list, index, page, page_wh: tuple, crop: tuple, rotation: int, use_ocr: bool = True, budget_s: float = OCR_BUDGET_S) -> dict:
-  """Every column detail on the sheet: its mark, where it is drawn and, if the reader is available, the size written beside it."""
+CAPTION_REACH_H = 6.0  
+
+def read_column_details(words: list, index, page, page_wh: tuple, crop: tuple, rotation: int, use_ocr: bool = True, budget_s: float = OCR_BUDGET_S, regions: list | None = None, h: float = 8.0) -> dict:
   caps = find_captions(words)
   ocr = bool(use_ocr and ocr_available())
   Wv, Hv = page_wh
@@ -306,10 +341,15 @@ def read_column_details(words: list, index, page, page_wh: tuple, crop: tuple, r
   out = []
   drawn: list = []
   for c in caps:
-    segs, _, _ = index.window(c["x"] - SEARCH_REACH_PT, c["y"] - SEARCH_REACH_PT, c["x"] + SEARCH_REACH_PT, c["y"] + SEARCH_REACH_PT)
-    box = find_box(segs, c["x"], c["y"], vis)
+    home, home_box = AC.holder_or_over(regions or [], vis, c["x"], c["y"], CAPTION_REACH_H * h)
+    if home is None:
+      box = None
+    else:
+      segs, _, _ = index.window(*home_box)
+      box = find_box(segs, c["x"], c["y"], vis, home_box)
     rec = {"mark": c["mark"], "caption": c["text"], "x": round(c["x"], 1), "y": round(c["y"], 1),
       "box": box["native"] if box else None, "w_in": None, "h_in": None, "read": "NONE"}
+    rec.update(caption_labels(words, vis, c, caps))
     
     if box:
       txt = text_box_labels(words, vis, box["visual"])

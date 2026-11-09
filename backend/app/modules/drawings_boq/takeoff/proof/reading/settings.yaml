@@ -12,6 +12,8 @@ regions:
     NOTES: 0.15
     LEGEND: 0.10
     TITLE_BLOCK: 0.10
+  reported_as:
+    SCHEDULE: [SCHEDULE, SECTION_PICTURE]
   kind_of_class:
     GRID: VIEW
     LEVEL: VIEW

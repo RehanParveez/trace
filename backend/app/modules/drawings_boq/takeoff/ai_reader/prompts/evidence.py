@@ -10,7 +10,16 @@ EDGE_SLACK = 0.001
 NUMBER_RX = re.compile(r"(?<![\w.])\d{1,3}(?:,\d{3})+(?:\.\d+)?|(?<![\w.])\d+(?:\.\d+)?")
 GLYPH_FRACTION = {"\u00bd": 0.5, "\u00bc": 0.25, "\u00be": 0.75, "\u215b": 0.125, "\u215c": 0.375, "\u215d": 0.625, "\u215e": 0.875}
 FRACTION_RX = re.compile(r"(?<![\w.])(?:(?P<w>\d{1,3})\s*)?(?:(?P<n>\d{1,2})\s*/\s*(?P<d>\d{1,2})|(?P<g>[\u00bd\u00bc\u00be\u215b\u215c\u215d\u215e]))(?![\w.])")
-NAMES = ("quote_printed", "number_printed", "unit_parses", "value_in_range", "box_on_page", "choice_offered", "scale_parses", "value_in_quote", "fields_given", "cells_in_quote", "mark_in_vocab", "floor_known", "size_parses", "size_in_range", "meaning_given", "symbol_present", "meaning_not_contradicted")
+OCR_MIN_CONF = 60.0
+CONFUSED = str.maketrans({"O": "0", "I": "1", "S": "5"})
+GLYPH_SLACK_SHARE = 0.2
+GLYPH_SLACK_MIN = 2
+WORD_GAP_TIMES = 2.2
+MIN_GAPS_FOR_WORDS = 3
+BOX_PAD_SHARE = 0.25
+TEXT_LAYER, OCR_AND_GLYPHS = "TEXT_LAYER", "OCR_AND_GLYPHS"
+SUPPORTS = (TEXT_LAYER, OCR_AND_GLYPHS)
+NAMES = ("quote_supported", "ocr_agrees", "glyphs_match", "quote_printed", "number_printed", "unit_parses", "value_in_range", "box_on_page", "choice_offered", "scale_parses", "value_in_quote", "fields_given", "cells_in_quote", "mark_in_vocab", "floor_known", "size_parses", "size_in_range", "meaning_given", "symbol_present", "meaning_not_contradicted")
 
 def result(name: str, passed: bool, detail: str) -> dict:
   return {"name": name, "passed": bool(passed), "detail": detail}
@@ -119,6 +128,92 @@ def choice_offered(value, offered) -> dict:
   if str(value) in {str(o) for o in offered}:
     return result("choice_offered", True, f"{value} is one of the {len(list(offered))} offered items")
   return result("choice_offered", False, f"{value} is not one of the offered items")
+
+def canon(token) -> str:
+  """A token as OCR may confuse it: capitals, with O read as 0, I as 1 and S as 5 on both sides."""
+  text = str(token or "").replace("\u201d", '"').replace("\u2033", '"').replace("''", '"').replace("\u00d7", "X").upper()
+  return re.sub(r"[^A-Z0-9./'\"#@+-]", "", text).translate(CONFUSED)
+
+def ocr_agrees(quote, ocr_words) -> dict:
+  """Every word of the quote is among the words an OCR engine read in the same picture (sure enough, each used once, 0/O 1/I 5/S taken as one). The detail names the box of the words that agreed, which is where the quote stands."""
+  tokens = [t for t in str(quote or "").split() if canon(t)]
+  if not tokens:
+    return result("ocr_agrees", False, "the quote is empty")
+  if not ocr_words:
+    return result("ocr_agrees", False, "no word was read from the picture of the region")
+  free = [w for w in ocr_words if float(w.get("conf", 0.0)) >= OCR_MIN_CONF]
+  used, boxes, missing = set(), [], []
+  for t in tokens:
+    c = canon(t)
+    hit = next((i for i, w in enumerate(free) if i not in used and canon(w["text"]) == c), None)
+    if hit is None:
+      missing.append(t)
+    else:
+      used.add(hit)
+      boxes.append(free[hit]["box"])
+  if missing:
+    return {**result("ocr_agrees", False, "not read from the picture: " + " ".join(missing[:6])), "box": None}
+  box = [min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)]
+  return {**result("ocr_agrees", True, f"all {len(tokens)} words of the quote were read from the picture"), "box": box}
+
+def _lines_of(boxes: list) -> list:
+  lines: list = []
+  for b in sorted(boxes, key=lambda b: (b[1] + b[3]) / 2):
+    for ln in lines:
+      lo, hi = ln["span"]
+      if min(hi, b[3]) - max(lo, b[1]) > 0.5 * (b[3] - b[1]):
+        ln["boxes"].append(b)
+        ln["span"] = (min(lo, b[1]), max(hi, b[3]))
+        break
+    else:
+      lines.append({"boxes": [b], "span": (b[1], b[3])})
+  return [sorted(ln["boxes"], key=lambda b: b[0]) for ln in lines]
+
+def glyph_words(clusters: list) -> int:
+  total = 0
+  for line in _lines_of(clusters):
+    gaps = [max(0.0, b[0] - a[2]) for a, b in zip(line, line[1:])]
+    if len(gaps) < MIN_GAPS_FOR_WORDS:
+      total += 1
+      continue
+    med = sorted(gaps)[len(gaps) // 2]
+    total += 1 + sum(1 for g in gaps if g > WORD_GAP_TIMES * max(med, 1.0))
+  return total
+
+def glyphs_match(quote, clusters, box) -> dict:
+  chars = [c for c in str(quote or "") if not c.isspace()]
+  tokens = [t for t in str(quote or "").split() if canon(t)]
+  if not chars:
+    return result("glyphs_match", False, "the quote is empty")
+  if not clusters or box is None:
+    return result("glyphs_match", False, "no ink clusters or no box to count them in")
+  x0, y0, x1, y1 = box
+  
+  px, py = BOX_PAD_SHARE * (y1 - y0), BOX_PAD_SHARE * (y1 - y0)
+  inside = [c for c in clusters if x0 - px <= (c[0] + c[2]) / 2 <= x1 + px and y0 - py <= (c[1] + c[3]) / 2 <= y1 + py]
+  slack = max(GLYPH_SLACK_MIN, int(round(GLYPH_SLACK_SHARE * len(chars))))
+  if abs(len(inside) - len(chars)) > slack:
+    return result("glyphs_match", False, f"{len(inside)} ink clusters in the box, {len(chars)} characters in the quote (allowed difference {slack})")
+  words = glyph_words(inside)
+  word_slack = 1 if len(tokens) <= 5 else max(1, int(round(GLYPH_SLACK_SHARE * len(tokens))))
+  if abs(words - len(tokens)) > word_slack:
+    return result("glyphs_match", False, f"the ink falls into {words} words, the quote has {len(tokens)} (allowed difference {word_slack})")
+  return result("glyphs_match", True, f"{len(inside)} ink clusters in {words} words fit {len(chars)} characters in {len(tokens)} words")
+
+def quote_supported(quote, region_text: str | None, ocr_words=None, clusters=None) -> dict:
+  printed = quote_printed(quote, region_text)
+  
+  if printed["passed"]:
+    return {**result("quote_supported", True, printed["detail"]), "support": TEXT_LAYER}
+  if ocr_words is None or clusters is None:
+    return {**result("quote_supported", False, printed["detail"] + "; no second source was read"), "support": None}
+  agreed = ocr_agrees(quote, ocr_words)
+  if not agreed["passed"]:
+    return {**result("quote_supported", False, "the text layer does not show it and " + agreed["detail"]), "support": None}
+  fit = glyphs_match(quote, clusters, agreed.get("box"))
+  if not fit["passed"]:
+    return {**result("quote_supported", False, "an OCR reading agrees, but " + fit["detail"]), "support": None}
+  return {**result("quote_supported", True, "not in the text layer; the OCR reading agrees and " + fit["detail"]), "support": OCR_AND_GLYPHS}
 
 def passed(results: list) -> bool:
   return bool(results) and all(r["passed"] for r in results)

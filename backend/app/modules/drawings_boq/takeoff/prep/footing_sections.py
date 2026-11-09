@@ -14,8 +14,6 @@ CLOSE_SHARE = 0.8
 AXIS_TOL = 0.35
 SNAP_IN = 0.5
 LABEL_AGREE = 0.04
-MAX_PICTURE_Z = 175.0
-MAX_HALF_X = 60.0
 MM = 25.4
 BRICK_WALLS_IN = (4.5, 9.0, 13.5)
 SEC_CAPTION = re.compile(r"SEC\.?\s*(?P<mark>[A-Z]{1,2}\d{1,2})\s*-\s*(?P=mark)?.*?(?P<t>\d+(?:\s*½|\s*1\s*/\s*2|\.5)?)\s*[\"”]\s*TH(?:ICK|K)\.?\s*(?P<where>INTERIOR|EXTERIOR|INTERNAL|EXTERNAL)?\s*.*?WALL\s+FOOTING", re.I)
@@ -25,8 +23,6 @@ LAYER_LABEL = re.compile(r"(?P<n>\d+(?:\s*½|\s*1\s*/\s*2|\.5)?)\s*[\"”]\s*THI
 CAPTION_X_REACH = 40.0
 CAPTION_LINE_GAP = 22.0
 CAPTION_LINES_MAX = 4
-SEC_HALF_X = 80.0
-SEC_PICTURE_Z = 240.0
 SEC_AXIS_SLACK = 12.0
 STEP_MIN_OFFSET = 1.0
 STEP_Z_TOL = 0.8
@@ -254,13 +250,39 @@ def sec_captions(lines: list) -> list:
     out.append({**head, "text": text, "mark": m.group("mark").upper(), "wall_in": thick, "exterior": True if where in ("EXTERIOR", "EXTERNAL") else False if where else None, "Z_bottom": last["Z"]})
   return out
 
+def _picture_of(regions: list, cap: dict, u: tuple, w: tuple) -> tuple | None:
+  """(X0, X1, Z0, Z1): the extent, in the text frame, of the picture of a caption: the regions of the page model (section pictures and views) that stand over the caption's X, joined from the one that holds the caption, or the nearest that is within two caption line gaps of it, upward through any that lie within two caption line gaps of the join (a view often ends where its drawing ends, with the caption and the drawing's own notes as other views under or beside it). None when no region stands there."""
+  reach = 2.0 * CAPTION_LINE_GAP
+  over = []
+  for r in regions or []:
+    xs = [x * u[0] + y * u[1] for x in (r.box[0], r.box[2]) for y in (r.box[1], r.box[3])]
+    zs = [x * w[0] + y * w[1] for x in (r.box[0], r.box[2]) for y in (r.box[1], r.box[3])]
+    ext = (min(xs), max(xs), min(zs), max(zs))
+    
+    if ext[0] <= cap["X"] <= ext[1]:
+      over.append(ext)
+      
+  start = [e for e in over if e[2] <= cap["Z"] <= e[3]] or [e for e in over if 0 < e[2] - cap["Z"] <= reach]
+  if not start:
+    return None
+  
+  join = list(min(start, key=lambda e: (e[3] - e[2]) * (e[1] - e[0])))
+  join[2] = min(join[2], cap["Z"])
+  grew = True
+  while grew:
+    grew = False
+    for e in over:
+      if e[3] > join[3] and e[2] - join[3] <= reach:
+        join = [min(join[0], e[0]), max(join[1], e[1]), join[2], e[3]]
+        grew = True
+  return tuple(join)
+
 def _spans(hruns: list, z: float, a: float, b: float) -> bool:
   lo, hi = min(a, b), max(a, b)
   cov = sum(max(0.0, min(h[2], hi) - max(h[1], lo)) for h in hruns if abs(h[0] - z) <= 0.4)
   return cov >= 0.6 * (hi - lo)
 
 def _wall_pairs(vruns: list) -> list:
-  """[(left x, right x, z where the wall ends on the top step)], the narrowest pairs of tall vertical lines first: the two faces of the wall."""
   seen: set = set()
   found = []
   for i in range(len(vruns)):
@@ -298,18 +320,22 @@ def _printed(lines: list, x0: float, x1: float, z0: float, z1: float, near_x: fl
   got = [(abs(l["X"] - near_x), _feet_inches(l["text"])) for l in lines if x0 <= l["X"] <= x1 and z0 <= l["Z"] <= z1 and _feet_inches(l["text"]) is not None]
   return min(got)[1] if got else None
 
-def read_stepped(index, words: list, u: tuple, w: tuple, lines: list, caps: list) -> list:
+def read_stepped(index, words: list, u: tuple, w: tuple, lines: list, caps: list, regions: list | None = None) -> list:
   out: list = []
   for cap in caps:
     rec = {"caption": cap["text"][:120], "mark": cap["mark"], "wall_in": cap["wall_in"], "exterior": cap["exterior"], "grammar": "SEC", "axis": round(cap["X"], 1), "read": "UNUSABLE", "issues": [], "steel": [],
       "masonry_only": True, "footing": None}
     out.append(rec)
+    pic = _picture_of(regions, cap, u, w)
+    if pic is None:
+      rec["issues"].append("PICTURE_NOT_FOUND")
+      continue
     
-    near = [abs(c["X"] - cap["X"]) for c in caps if c is not cap and abs(c["Z"] - cap["Z"]) < 40.0]
-    half = min(SEC_HALF_X, 0.5 * min(near)) if near else SEC_HALF_X
-    above = [c["Z_bottom"] for c in caps if c is not cap and abs(c["X"] - cap["X"]) < 2.0 * half and c["Z"] > cap["Z"] + 20.0]
-    X0, X1, Z0 = cap["X"] - half, cap["X"] + half, cap["Z"] + 1.0
-    Z1 = min([Z0 + SEC_PICTURE_Z] + [z - 2.0 for z in above])
+    near = [abs(c["X"] - cap["X"]) for c in caps if c is not cap and abs(c["Z"] - cap["Z"]) < 0.25 * (pic[3] - pic[2])]
+    half = 0.5 * min(near) if near else max(cap["X"] - pic[0], pic[1] - cap["X"])
+    above = [c["Z_bottom"] for c in caps if c is not cap and abs(c["X"] - cap["X"]) < 2.0 * half and c["Z"] > cap["Z"] + (pic[3] - pic[2]) / 10.0]
+    X0, X1, Z0 = max(pic[0], cap["X"] - half), min(pic[1], cap["X"] + half), cap["Z"] + 1.0
+    Z1 = min([pic[3]] + [z - 2.0 for z in above])
     corners = [(X * u[0] + Z * w[0], X * u[1] + Z * w[1]) for X in (X0, X1) for Z in (Z0, Z1)]
     segs, _, _ = index.window(min(c[0] for c in corners), min(c[1] for c in corners), max(c[0] for c in corners), max(c[1] for c in corners), max_segments=60000)
     V, H = [], []
@@ -431,13 +457,13 @@ def read_stepped(index, words: list, u: tuple, w: tuple, lines: list, caps: list
     rec["read"] = "UNUSABLE" if BAD_ISSUES & set(rec["issues"]) else "OK"
   return out
 
-def read(index, words: list, page_wh: tuple | None = None) -> list:
+def read(index, words: list, page_wh: tuple | None = None, regions: list | None = None) -> list:
   if not words:
     return []
   if page_wh is None:
-    return _read(index, words)
+    return _read(index, words, regions)
   cindex, cwords, k = PU.canon(index, words, page_wh)
-  out = _read(cindex, cwords)
+  out = _read(cindex, cwords, [_scaled(r, k) for r in regions or []])
   for rec in out:
     if rec.get("axis") is not None:
       rec["axis"] = round(rec["axis"] * k, 1)
@@ -445,7 +471,11 @@ def read(index, words: list, page_wh: tuple | None = None) -> list:
       rec["scale_mm_per_pt"] = round(rec["scale_mm_per_pt"] / k, 4)
   return out
 
-def _read(index, words: list) -> list:
+def _scaled(r, k: float):
+  from dataclasses import replace
+  return replace(r, box=tuple(v * k for v in r.box))
+
+def _read(index, words: list, regions: list | None = None) -> list:
   u, w = _frame(words)
   lines = _lines(words, u, w)
   caps = []
@@ -460,10 +490,16 @@ def _read(index, words: list) -> list:
   out: list = []
   
   for i, cap in enumerate(caps):
-    nxt = [abs(c["X"] - cap["X"]) for c in caps if c is not cap and abs(c["Z"] - cap["Z"]) < 40.0]
-    half = min(MAX_HALF_X, 0.5 * min(nxt)) if nxt else MAX_HALF_X
-    block_top = max([l["Z"] for l in lines if abs(l["X"] - cap["X"]) <= max(35.0, half) and cap["Z"] - 45.0 <= l["Z"] <= cap["Z"] + 6.0 and re.search(r"SECTION|FOOTING|THICK|MASONRY|WALL", l["text"], re.I)] or [cap["Z"]])
-    X0, X1, Z0, Z1 = cap["X"] - half, cap["X"] + half, block_top + 1.0, block_top + MAX_PICTURE_Z
+    pic = _picture_of(regions, cap, u, w)
+    rec = {"caption": cap["text"][:80], "wall_in": cap["wall_in"], "axis": round(cap["X"], 1), "read": "UNUSABLE", "issues": [], "steel": []}
+    if pic is None:
+      rec["issues"].append("PICTURE_NOT_FOUND")
+      out.append(rec)
+      continue
+    nxt = [abs(c["X"] - cap["X"]) for c in caps if c is not cap and abs(c["Z"] - cap["Z"]) < 0.25 * (pic[3] - pic[2])]
+    half = 0.5 * min(nxt) if nxt else max(cap["X"] - pic[0], pic[1] - cap["X"])
+    block_top = max([l["Z"] for l in lines if abs(l["X"] - cap["X"]) <= half and pic[2] <= l["Z"] <= cap["Z"] + (pic[3] - pic[2]) / 30.0 and re.search(r"SECTION|FOOTING|THICK|MASONRY|WALL", l["text"], re.I)] or [cap["Z"]])
+    X0, X1, Z0, Z1 = max(pic[0], cap["X"] - half), min(pic[1], cap["X"] + half), block_top + 1.0, pic[3]
     corners = [(X * u[0] + Z * w[0], X * u[1] + Z * w[1]) for X in (X0, X1) for Z in (Z0, Z1)]
     nx0, nx1 = min(c[0] for c in corners), max(c[0] for c in corners)
     ny0, ny1 = min(c[1] for c in corners), max(c[1] for c in corners)
@@ -482,7 +518,6 @@ def _read(index, words: list) -> list:
         
     V, H = _merge(V), _merge(H)
     rects = rectangles(V, H, cap["X"])
-    rec = {"caption": cap["text"][:80], "wall_in": cap["wall_in"], "axis": round(cap["X"], 1), "read": "UNUSABLE", "issues": [], "steel": []}
     if len(rects) < 2:
       rec["issues"].append("PICTURE_NOT_FOUND")
       out.append(rec)
@@ -553,7 +588,7 @@ def _read(index, words: list) -> list:
     bad = {"WIDTHS_NOT_STEPPED", "ECCENTRIC_FOOTING", "DIMENSIONS_NOT_ON_HALF_INCH", "NO_FOOTING_FOUND", "NO_STEPS_FOUND"}
     rec["read"] = "UNUSABLE" if bad & set(rec["issues"]) else "OK"
     out.append(rec)
-  out.extend(read_stepped(index, words, u, w, lines, sec_caps))
+  out.extend(read_stepped(index, words, u, w, lines, sec_caps, regions))
   return out
 
 def _section_key(s: dict) -> tuple:

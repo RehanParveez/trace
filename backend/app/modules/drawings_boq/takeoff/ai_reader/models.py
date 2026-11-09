@@ -46,3 +46,44 @@ class AiShadowRead(Base, TimestampMixin):
   problems: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
   error: Mapped[str | None] = mapped_column(Text, nullable=True)
   created_by_user_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL", name="fk_ai_shadow_reads_created_by"), nullable=True)
+
+class AiExample(Base, TimestampMixin):
+  __tablename__ = "ai_examples"
+
+  __table_args__ = (
+    Index("ix_ai_examples_task_office", "task", "office"),
+    Index("ix_ai_examples_org", "organization_id"),
+    CheckConstraint("task IN ('SCHEDULE_ROW','NOTE_FACT')", name="ck_ai_examples_task"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  task: Mapped[str] = mapped_column(String(24), nullable=False)
+  office: Mapped[str | None] = mapped_column(String(120), nullable=True)
+  kind: Mapped[str | None] = mapped_column(String(40), nullable=True)
+  
+  crop_ref: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  words: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list,
+    server_default=text("'[]'::jsonb"),
+  )
+  
+  answer: Mapped[dict] = mapped_column(JSONB, nullable=False)
+  checked_by: Mapped[str] = mapped_column(String(120), nullable=False)
+  checked_on: Mapped[str] = mapped_column(String(32), nullable=False)
+  drawing: Mapped[str] = mapped_column(String(64), nullable=False)
+  shared: Mapped[bool] = mapped_column(nullable=False, default=False, server_default=text("false"))

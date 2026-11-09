@@ -8,6 +8,7 @@ from app.modules.drawings_boq.takeoff.prep import ocr_layer
 from app.modules.drawings_boq.takeoff.prep import glyph_shift
 from app.modules.drawings_boq.takeoff.prep import text_repair as TR
 from app.modules.drawings_boq.takeoff.prep import pdf_type as PT
+from app.modules.drawings_boq.takeoff.prep import words as WD
 from app.modules.drawings_boq.takeoff.prep import raster_lines as RL
 
 IDENT = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
@@ -43,6 +44,12 @@ class Word:
   length: float     
   height: float  
   repair: str = ""
+  source: str = "NATIVE"
+  confidence: float = 1.0
+
+  @property
+  def turn(self) -> float:
+    return self.angle
 
 @dataclass
 class Ring:
@@ -413,6 +420,14 @@ def extract_page(doc, index: int, *, budget_s: float = DEFAULT_BUDGET_S) -> RawP
       PT.route(page, out, crop, stats, budget_s, scanned)
     except Exception as exc:
       stats["pdf_type"] = {"type": "UNKNOWN", "error": type(exc).__name__}
+    try:
+      WD.settle(out.words)
+      not_read = list((stats.get("pdf_type") or {}).get("not_read") or [])
+      if isinstance(stats.get("not_read"), dict):
+        not_read.append(stats["not_read"])
+      stats["text"] = WD.record(out.words, {"not_read": not_read} if not_read else None)
+    except Exception as exc:
+      stats["text"] = {"error": type(exc).__name__}
     traced = (stats.get("raster_lines") or {}).get("segments")
     if traced and isinstance(stats.get("pdf_type"), dict):
       stats["pdf_type"]["lines_from_picture"] = int(traced)

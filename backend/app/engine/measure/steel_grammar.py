@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+from app.engine.catalogue import bar_grammar as BG
 
 """Reads the reinforcement callouts printed on a structural drawing ("4-#6 BOT", "#3 @ 6" C/C", "#4 @ 8" B.W.", "4-16Ø", "Ø8 @ 150 c/c") into plain bar sets
 and spaced sets. Pure text in, plain numbers out, no drawing and no database. A bar number is the diameter in eighths of an inch (#4 is 1/2 in); a metric
@@ -26,7 +27,8 @@ def normalise(text: str) -> str:
   for ch in _DIA_SIGNS:
     s = s.replace(ch, "Ø")
   s = s.replace("×", "X").replace("–", "-").replace("—", "-")
-  s = re.sub(r"\bC\s*[/\-.]\s*C\b\.?", "CC", s, flags=re.I)
+  for rx, replacement in BG.rewrites():
+    s = rx.sub(replacement, s)
   s = re.sub(r"\bB\s*\.?\s*W\b\.?", "BW", s, flags=re.I)
   s = re.sub(r"\bE\s*\.?\s*W\b\.?", "EW", s, flags=re.I)
   s = re.sub(r"\bO\s*\.?\s*W\b\.?", "OW", s, flags=re.I)
@@ -34,7 +36,7 @@ def normalise(text: str) -> str:
   s = re.sub(r"\bNOS?\b\.?", "NOS", s, flags=re.I)
   return re.sub(r"\s+", " ", s).strip().upper()
 
-_N = r"(?P<n>\d{1,2})"
+_N = r"(?P<n>" + BG.count_pattern() + ")"
 _SEP = r"\s*(?:-|NOS|X)?\s*"
 _BAR_IMP = re.compile(r"(?<![#\d.])" + _N + _SEP + r"#\s*(?P<bar>\d{1,2})(?![\d])")
 _BAR_MET = re.compile(r"(?<![#\d.])" + _N + _SEP + r"(?:Ø\s*(?P<d1>\d{1,2})|(?P<d2>\d{1,2})\s*(?:MM\s*Ø?|Ø))(?!\d)")
@@ -86,11 +88,11 @@ def _role_after(s: str, start: int, stop: int) -> str | None:
 def _bar_matches(s: str) -> list:
   found = []
   for m in _BAR_IMP.finditer(s):
-    n, bar = int(m.group("n")), int(m.group("bar"))
+    n, bar = BG.count_value(m.group("n")), int(m.group("bar"))
     if BAR_COUNT[0] <= n <= BAR_COUNT[1] and BAR_NUMBERS[0] <= bar <= BAR_NUMBERS[1]:
       found.append((m.start(), m.end(), {"n": n, "bar": bar}))
   for m in _BAR_MET.finditer(s):
-    n, d = int(m.group("n")), float(m.group("d1") or m.group("d2"))
+    n, d = BG.count_value(m.group("n")), float(m.group("d1") or m.group("d2"))
     if BAR_COUNT[0] <= n <= BAR_COUNT[1] and DIA_MM[0] <= d <= DIA_MM[1]:
       found.append((m.start(), m.end(), {"n": n, "dia_mm": d}))
   found.sort(key=lambda t: t[0])

@@ -485,13 +485,13 @@ def read_planted(raw) -> dict | None:
     return None
   return {"kind": "PLANTED_LABELS", "labels": [{"mark": w.text.upper(), "at": [round((w.raw.x0 + w.raw.x1) / 2, 1), round((w.raw.y0 + w.raw.y1) / 2, 1)], "uv": [round(w.uc, 1), round(w.vc, 1)]} for w in labels]}
 
-def read_all(raw) -> dict | None:
+def read_all(raw, model: dict | None = None) -> dict | None:
   out: dict = {}
   
   sched = read(raw)
   if not (sched and sched.get("cells")):
     from app.modules.drawings_boq.takeoff.extract import schedule_axes
-    sched = schedule_axes.read(raw)
+    sched = schedule_axes.read(raw, model)
   if sched and sched.get("cells"):
     out["column_schedule"] = sched
   beams = read_beam_sections(raw)
@@ -501,11 +501,11 @@ def read_all(raw) -> dict | None:
   if planted:
     out["planted_labels"] = planted
   from app.modules.drawings_boq.takeoff.extract import beam_callouts
-  callouts = beam_callouts.read(raw)
+  callouts = beam_callouts.read(raw, model)
   if callouts:
     out["beam_callouts"] = callouts
   from app.modules.drawings_boq.takeoff.extract import slab_callouts
-  slabs = slab_callouts.read(raw)
+  slabs = slab_callouts.read(raw, model)
   if slabs:
     out[slab_callouts.SOURCE_KEY] = slabs
   from app.modules.drawings_boq.takeoff.extract import finish_spec_items

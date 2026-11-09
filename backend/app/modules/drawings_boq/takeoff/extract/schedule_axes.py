@@ -2,6 +2,8 @@ from __future__ import annotations
 import re
 from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.extract import structure_tables as ST
+from app.modules.drawings_boq.takeoff.page import access as AC
+from app.modules.drawings_boq.takeoff.page.model import SCHEDULE
 
 RULE = "COLUMN_SCHEDULE_AXES"
 
@@ -9,6 +11,9 @@ SIZE_LABELS = ("SIZE", "SECTION", "DIMENSION", "DIMENSIONS")
 STEEL_LABELS = ("STEEL", "REINFORCEMENT", "BARS", "MAIN", "VERTICAL")
 LABELS = SIZE_LABELS + STEEL_LABELS
 MIN_MARKS = 2
+ROW_TOL = 0.4      
+SLACK = 0.15       
+LONE_BAND = 5.0    
 
 def _kind(text: str) -> str | None:
   t = text.upper().strip(":.")
@@ -27,9 +32,9 @@ def _groups(items: list, key, tol: float) -> list:
       out.append([it])
   return out
 
-def _bands(pos: list) -> list:
+def _bands(pos: list, h: float) -> list:
   if len(pos) == 1:
-    return [(pos[0] - 40.0, pos[0] + 40.0)]
+    return [(pos[0] - LONE_BAND * h, pos[0] + LONE_BAND * h)]
   mids = [(pos[i] + pos[i + 1]) / 2 for i in range(len(pos) - 1)]
   lo = pos[0] - (mids[0] - pos[0])
   hi = pos[-1] + (pos[-1] - mids[-1])
@@ -41,7 +46,8 @@ def _frame(words: list, orient: str):
     return lambda w: (w.vc, w.uc)
   return lambda w: (w.uc, w.vc)
 
-def _layout(words: list, tol: float = 3.0) -> dict | None:
+def _layout(words: list, h: float) -> dict | None:
+  tol = ROW_TOL * h
   marks = [w for w in words if w.turn == 0 and ST.MARK_RE.match(w.text.upper())]
   labels = [(w, _kind(w.text)) for w in words if w.turn == 0 and _kind(w.text)]
   if len(marks) < MIN_MARKS or not labels:
@@ -60,7 +66,7 @@ def _layout(words: list, tol: float = 3.0) -> dict | None:
       pick = []
       for lab, kind in labels:
         la, lb = f(lab)
-        if (la < a_lo - 1.0 or la > a_hi + 1.0) and abs(lb - b) > tol:
+        if (la < a_lo - SLACK * h or la > a_hi + SLACK * h) and abs(lb - b) > tol:
           pick.append((lab, kind))
       for ag in _groups(pick, lambda p: f(p[0])[0], tol):
         kinds = {k for _, k in ag}
@@ -75,22 +81,23 @@ def _layout(words: list, tol: float = 3.0) -> dict | None:
   _, orient, grp, ag = best
   return {"orient": orient, "marks": grp, "labels": ag}
 
-def read_words(words: list) -> dict | None:
-  lay = _layout(words)
+def read_words(words: list, h: float) -> dict | None:
+  lay = _layout(words, h)
   if not lay:
     return None
   
   f = _frame(words, lay["orient"])
   marks = sorted(lay["marks"], key=lambda w: f(w)[0])
   labs = sorted(lay["labels"], key=lambda p: f(p[0])[1])
-  m_bands = _bands([f(w)[0] for w in marks])
-  l_bands = _bands([f(p[0])[1] for p in labs])
+  m_bands = _bands([f(w)[0] for w in marks], h)
+  l_bands = _bands([f(p[0])[1] for p in labs], h)
   used = {id(w) for w in marks} | {id(p[0]) for p in labs}
   cells: list = []
   
   for m, mb in zip(marks, m_bands):
     rec = {"mark": m.text.upper(), "floor": None, "state": "NONE", "why": "blank", "axes": lay["orient"]}
     texts: dict = {}
+    
     for (lab, kind), lb in zip(labs, l_bands):
       hit = [w for w in words if w.turn == 0 and id(w) not in used and mb[0] <= f(w)[0] <= mb[1] and lb[0] <= f(w)[1] <= lb[1]]
       hit.sort(key=lambda w: (round(w.vc / 3.0), w.u0))
@@ -100,14 +107,21 @@ def read_words(words: list) -> dict | None:
     if size:
       rec.update(state="READ", why=None, size={"size_in": size}, steel=steel, mid=None, joint=None)
     cells.append(rec)
+    
   if not any(c["state"] == "READ" for c in cells):
     return None
   return {"kind": "COLUMN_SCHEDULE", "cells": cells, "tables": 1, "reader": "AXES", "axes": lay["orient"]}
 
-def read(raw) -> dict | None:
+def read(raw, model: dict | None = None) -> dict | None:
   if not RR.on(RULE):
     return None
   if not raw.words:
     return None
   words, _ = ST.upright_words(raw)
-  return read_words(words)
+  model = model or AC.model_of(raw)
+  best = None
+  for r in AC.regions_of(model, SCHEDULE):
+    got = read_words(AC.words_of(words, r), float(model["h"]))
+    if got and (best is None or sum(c["state"] == "READ" for c in got["cells"]) > sum(c["state"] == "READ" for c in best["cells"])):
+      best = got
+  return best

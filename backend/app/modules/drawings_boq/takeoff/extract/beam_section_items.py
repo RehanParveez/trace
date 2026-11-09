@@ -30,18 +30,25 @@ def sections_of(meta: dict) -> list:
   if (tables.get("beam_sections") or {}).get("sections"):
     return []
   out: dict = {}
-  
+  drawn = {rec["mark"] for rec in (tables.get("beam_callouts") or {}).get("sections") or []}
+
   for rec in meta.get("beam_details") or []:
     attrs = _from_details(rec)
-    if attrs and rec.get("mark"):
+    if attrs and rec.get("mark") and rec["mark"] not in drawn:
       low = [r for r in ("OCR_LOW_CONFIDENCE",) if rec.get("read") == "OCR" and not attrs.get("top_bars")]
-      out[rec["mark"]] = {"mark": rec["mark"], "attrs": {"key": rec["mark"], **attrs}, "reasons": low, "source": "DETAILS"}
-      
+      out[(rec["mark"], None)] = {"mark": rec["mark"], "attrs": {"key": rec["mark"], **attrs}, "reasons": low, "source": "DETAILS"}
+
   for rec in (tables.get("beam_callouts") or {}).get("sections") or []:
-    attrs = {"key": rec["mark"], "top_bars": rec["top"], "bottom_bars": rec["bottom"]}
-    if rec.get("stirrup"):
-      attrs["stirrup"] = rec["stirrup"]
-    out[rec["mark"]] = {"mark": rec["mark"], "attrs": attrs, "reasons": list(rec.get("reasons") or []), "source": "CALLOUTS"}
+    attrs = {"key": rec["mark"] + ("-" + rec["at"].split()[0] if rec.get("at") else ""), "top_bars": rec["top"], "bottom_bars": rec["bottom"]}
+    for name, value in (("stirrup", rec.get("stirrup")), ("section_at", rec.get("at")), ("width_in", rec.get("width_in"))):
+      if value:
+        attrs[name] = value
+    if rec.get("vertical_in"):
+      attrs["vertical_in"] = list(rec["vertical_in"])
+    item = {"mark": rec["mark"], "attrs": attrs, "reasons": list(rec.get("reasons") or []), "source": "CALLOUTS"}
+    if rec.get("point"):
+      item["point"] = list(rec["point"])
+    out[(rec["mark"], rec.get("at") or rec.get("point") and tuple(rec["point"]))] = item
   return list(out.values())
 
 def apply(rows: list) -> int:

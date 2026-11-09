@@ -37,6 +37,18 @@ def note_page(meta: dict | None) -> bool:
   vote = (m.get("identity") or {}).get("role_vote") or {}
   return vote.get("role") == PRL.NOTES or bool((m.get("facts") or {}).get("items"))
 
+FIND_NATIVE_WORDS = 200
+
+def find_page(meta: dict | None) -> bool:
+  m = meta or {}
+  model = m.get("page_model") or {}
+  if not model.get("regions") or model.get("error"):
+    return False
+  if any(r.get("kind") in ("SCHEDULE", "SECTION_PICTURE") for r in model["regions"]):
+    return False
+  native = int(((m.get("text") or {}).get("by_source") or {}).get("NATIVE") or 0)
+  return native < FIND_NATIVE_WORDS
+
 def legend_page(meta: dict | None) -> bool:
   return any(r.get("block") and r.get("objects") for r in (meta or {}).get("electrical_legend") or [])
 

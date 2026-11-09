@@ -4,6 +4,8 @@ import math
 from app.engine.measure import readings as RD
 from app.modules.drawings_boq.takeoff.prep import ocr_layer
 from app.modules.drawings_boq.takeoff.prep import outlined_text as OT
+from app.modules.drawings_boq.takeoff.prep import words as WD
+from app.modules.drawings_boq.takeoff.prep import stroke_text as STX
 
 VECTOR_TEXT, VECTOR_OUTLINED, VECTOR_NOLETTER, RASTER, IMAGE_PAGE, EMPTY = "VECTOR_TEXT", "VECTOR_OUTLINED", "VECTOR_NOLETTER", "RASTER", "IMAGE_PAGE", "EMPTY"
 TYPES = (VECTOR_TEXT, VECTOR_OUTLINED, VECTOR_NOLETTER, RASTER, IMAGE_PAGE, EMPTY)
@@ -98,6 +100,7 @@ def route(page, out, crop: tuple, stats: dict, budget_s: float, scanned: bool) -
   partial = None if scanned or suspect or bare else OT.evidence(out.rings, out.words)
   added = 0
   error = None
+  not_read: list = []
 
   if suspect or bare or partial:
     info.update(suspect or bare or {"outlined_clusters": partial["uncovered_clusters"]})
@@ -106,18 +109,26 @@ def route(page, out, crop: tuple, stats: dict, budget_s: float, scanned: bool) -
     elif not ocr_layer.available():
       error = "UNAVAILABLE"
     elif partial and not (suspect or bare):
-      found, oi = OT.read_regions(page, out.rotation, crop, partial["regions"], min(OCR_BUDGET_S, max(15.0, budget_s)))
+      found, oi = OT.read_regions(page, out.rotation, crop, partial["regions"], min(OCR_BUDGET_S, max(15.0, budget_s)), partial.get("axes"), partial.get("sizes"))
       error = oi.get("error")
+      if oi.get("not_read"):
+        not_read.append(oi["not_read"])
+      if partial.get("left_out"):
+        not_read.append({"reason": WD.REGION_LIMIT, "regions_left": int(partial["left_out"])})
       fresh = new_words(found, out.words) if found else []
       if len(fresh) >= RD.OUTLINED_MIN_LABELS:
         out.words = list(out.words) + fresh
         added = len(fresh)
         info.update(partial_outline=True, ocr_words_added=added, outlined_regions=oi.get("regions"), outlined_unsure=oi.get("unsure"), outlined_marks=oi.get("marks"), outlined_low_marks=oi.get("low"), ocr_elapsed_s=oi.get("seconds"))
+        if oi.get("turned"):
+          info["outlined_turned"] = oi["turned"]
       else:
         info["outlined_checked"] = True
     else:
-      found, oi = ocr_layer.read_page(page, out.rotation, crop, [], budget_s=min(OCR_BUDGET_S, max(15.0, budget_s)))
+      found, oi = ocr_layer.read_page(page, out.rotation, crop, [], budget_s=min(OCR_BUDGET_S, max(15.0, budget_s)), source=WD.OUTLINED_OCR)
       error = oi.get("ocr_error")
+      if oi.get("not_read"):
+        not_read.append(oi["not_read"])
       fresh = new_words(found, out.words) if found else []
       if len(fresh) >= MIN_NEW_WORDS:
         out.words = list(out.words) + fresh
@@ -128,6 +139,34 @@ def route(page, out, crop: tuple, stats: dict, budget_s: float, scanned: bool) -
       else:
         info["outlined_checked"] = True
 
+  picture = not scanned and not (suspect or bare) and cover >= ocr_layer.MIN_COVER and ENABLED and ocr_layer.available()
+  if picture:
+    found, oi = ocr_layer.read_page(page, out.rotation, crop, out.images, budget_s=min(OCR_BUDGET_S, max(15.0, budget_s)), source=WD.IMAGE_OCR)
+    kept = [w for w in found if WD.keep_picture_word(w.text, w.confidence * 100.0)]
+    fresh = new_words(kept, out.words)
+    out.words = list(out.words) + fresh
+    added += len(fresh)
+    info["image_ocr"] = {"read": len(found), "kept": len(kept), "new": added, "dpi": oi.get("ocr_dpi"), "mean_conf": oi.get("ocr_mean_conf")}
+    if oi.get("not_read"):
+      not_read.append(oi["not_read"])
+    if oi.get("ocr_error"):
+      info["ocr_error"] = oi["ocr_error"]
+
+  if not scanned and ENABLED and ocr_layer.available():
+    drawn = STX.evidence(out.segs, out.words)
+    if drawn:
+      found, si = STX.read_lines(out.rotation, crop, drawn["regions"], drawn["strokes"], drawn["text_h"], min(OCR_BUDGET_S, max(15.0, budget_s)))
+      fresh = new_words(found, out.words) if found else []
+      if si.get("not_read"):
+        not_read.append(si["not_read"])
+      if drawn.get("left_out"):
+        not_read.append({"reason": WD.REGION_LIMIT, "regions_left": int(drawn["left_out"])})
+      if fresh:
+        out.words = list(out.words) + fresh
+      info["stroke_text"] = {"lines": si.get("lines"), "words_added": len(fresh), "seconds": si.get("seconds")}
+
+  if not_read:
+    info["not_read"] = not_read
   if scanned:
     kind = RASTER
   elif suspect and added:

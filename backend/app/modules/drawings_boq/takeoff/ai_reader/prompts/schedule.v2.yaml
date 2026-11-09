@@ -1,0 +1,16 @@
+task: SCHEDULE_ROW
+version: "2"
+slots: [lists, examples]
+schema: schedule.v1
+text: |-
+  You are shown part of a page of a construction drawing set that may hold a schedule: a table whose rows are marks (column, beam) or layers of a finish. Read only what is printed in the picture. Do not guess, do not use anything you cannot see, and do not work anything out: give a cell only where it is printed. If the picture holds no schedule of the kinds listed below, answer with an empty list.
+
+  Answer with strict JSON only, no markdown, in this exact shape:
+  {"schedules": [{"kind": ..., "rows": [{"mark": ..., "floor": ..., "size": ..., "bars": ..., "ties": ..., "layer": ..., "thickness": ..., "quote": ...}]}], "confidence": "high" | "medium" | "low"}
+
+  One entry in "schedules" for each table, with one row for each row of that table, or for each floor of a row when the table gives one column for each floor. "quote" is the exact words printed in that row that the cells are read from. Every other cell is copied as printed, with its own units and marks; use null for a cell the row does not print. "floor" is the floor or level name as printed above or beside the cell. "size" is the section size as printed, for example 9"x9" or 230x450. "bars" is the main bars as printed. "ties" is the ties or stirrups as printed. "layer" and "thickness" are for a finish schedule only.
+
+  The kinds of schedule you may give (kind: what it is; the fields a row has):
+  {lists}
+
+  {examples}

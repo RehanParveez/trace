@@ -12,6 +12,7 @@ from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.engine.catalogue import tolerances as TOL
 from app.engine.catalogue import self_checks as SCK
 from app.engine.catalogue import confidence as CFG
+from app.engine.catalogue import bar_grammar as BG
 
 def ledger_families() -> dict:
   fams: dict = {}
@@ -73,9 +74,7 @@ def check_class_problems() -> list:
   return out
 
 def gate() -> tuple:
-  bad = problems() + TOL.problems() + SCK.problems() + check_class_problems() + CFG.problems()
-
-
+  bad = problems() + TOL.problems() + SCK.problems() + check_class_problems() + CFG.problems() + BG.problems() + BG.example_problems()
   if bad:
     return False, f"{len(bad)} problem(s)", bad
   its = CL.items()

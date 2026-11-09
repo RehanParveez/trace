@@ -169,7 +169,7 @@ def _settle(rows: list, views: dict, partial: bool) -> tuple[list, dict]:
     report["unchecked"] = len(todo)
   return kept, report
 
-def _build_word(text: str, a0: float, b0: float, a1: float, b1: float, view_angle: float, rotation: int, crop: tuple):
+def _build_word(text: str, a0: float, b0: float, a1: float, b1: float, view_angle: float, rotation: int, crop: tuple, source: str = "IMAGE_OCR", conf: float | None = None):
   from app.modules.drawings_boq.takeoff.prep.extract import Word
   corners = [view_to_user(a, b, rotation, crop) for a, b in ((a0, b0), (a1, b0), (a1, b1), (a0, b1))]
   xs = [c[0] for c in corners]
@@ -179,10 +179,9 @@ def _build_word(text: str, a0: float, b0: float, a1: float, b1: float, view_angl
   length = (b1 - b0) if vertical else (a1 - a0)
   height = (a1 - a0) if vertical else (b1 - b0)
   return Word(text=text, x0=x0, y0=y0, x1=x1, y1=y1, angle=user_angle(view_angle, rotation), size=height / 0.75,
-    cx=(x0 + x1) / 2, cy=(y0 + y1) / 2, length=length, height=height)
+    cx=(x0 + x1) / 2, cy=(y0 + y1) / 2, length=length, height=height, source=source, confidence=round(max(0.0, min(1.0, (conf if conf is not None else 50.0) / 100.0)), 3))
 
 def _sharpness(small, phi: float) -> float:
-  """How sharply the dark rows of the sheet separate when it is turned by phi: straight text and straight lines give tall, narrow row sums."""
   import numpy as np
   from PIL import Image
   turned = small.rotate(phi, resample=Image.BILINEAR, fillcolor=255)
@@ -289,8 +288,7 @@ def _record(info: dict, report: dict, rows: list, rotation: int, cropbox: tuple)
       at.append({"x": round(w.cx, 1), "y": round(w.cy, 1), "reads": sp["reads"]})
     info["ocr_split_at"] = at
 
-def read_page(page, rotation: int, cropbox: tuple, images: list, budget_s: float = SCAN_OCR_BUDGET_S) -> tuple[list, dict]:
-  """Words recovered from a scanned sheet, placed in the same unrotated page space as the words of a text layer."""
+def read_page(page, rotation: int, cropbox: tuple, images: list, budget_s: float = SCAN_OCR_BUDGET_S, source: str = "IMAGE_OCR") -> tuple[list, dict]:
   info: dict = {"text_source": "OCR"}
   if not available():
     info["ocr_error"] = "UNAVAILABLE"
@@ -378,7 +376,7 @@ def read_page(page, rotation: int, cropbox: tuple, images: list, budget_s: float
   confs: list = []
   for row in settled:
     a0, b0, a1, b1 = row["box"]
-    words.append(_build_word(row["text"], a0, b0, a1, b1, row["va"], rotation, cropbox))
+    words.append(_build_word(row["text"], a0, b0, a1, b1, row["va"], rotation, cropbox, source, row["conf"]))
     confs.append(row["conf"])
   _record(info, report, rows_kept, rotation, cropbox)
   info["ocr_words"] = len(words)
@@ -386,4 +384,6 @@ def read_page(page, rotation: int, cropbox: tuple, images: list, budget_s: float
   info["ocr_elapsed_s"] = round(time.monotonic() - started, 2)
   if partial:
     info["ocr_partial"] = True
+    info["not_read"] = {"reason": "OCR_BUDGET", "what": "tiles"}
   return words, info
+

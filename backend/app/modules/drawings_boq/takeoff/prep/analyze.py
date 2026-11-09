@@ -11,7 +11,7 @@ from app.modules.drawings_boq.takeoff.prep import units as UN
 from app.modules.drawings_boq.takeoff.prep import room_witness as RW
 from app.modules.drawings_boq.takeoff.orientation import carry as orient_carry, frame as orient_frame, turn as orient_turn
 
-ANALYSIS_VERSION = 54
+ANALYSIS_VERSION = 57
 PT_MM = 25.4 / 72.0
 FLOOR_PAPER_TOL = 0.01
 FLOOR_DIMS_TOL = 0.03
@@ -344,6 +344,8 @@ def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.
       meta[STX.META_KEY] = extents
   except Exception:
     meta["slab_top_extent_reader"] = "FAILED"
+  if raw.stats.get("text"):
+    meta["text"] = raw.stats["text"]
   pdf = raw.stats.get("pdf_type")
   if pdf:
     meta["pdf_type"] = pdf

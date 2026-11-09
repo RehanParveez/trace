@@ -4,6 +4,7 @@ from app.modules.drawings_boq.takeoff.completeness import ledger as LG
 from app.modules.drawings_boq.takeoff.extract import read_status as RS
 from app.engine.catalogue import loader as CAT
 from app.modules.drawings_boq.takeoff.completeness import facts as F
+from app.engine.catalogue import self_checks as SCK
 
 OUTLINED = ("OUTLINED", "PARTIAL")
 SHEET_SHIFT = 1000

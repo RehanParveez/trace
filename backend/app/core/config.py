@@ -73,7 +73,9 @@ class Settings(BaseSettings):
   ai_provider: str = "ollama"
   ai_api_key: str = ""
   ai_model: str = "claude-haiku-4-5-20251001"
-  ai_price_usd_per_million: str = '{"claude-haiku-4-5-20251001": [1.0, 5.0]}'
+  ai_model_strong: str = "claude-sonnet-4-5-20250929"
+  ai_prompt_names: str = '{}'
+  ai_price_usd_per_million: str = '{"claude-haiku-4-5-20251001": [1.0, 5.0], "claude-sonnet-4-5-20250929": [3.0, 15.0]}'
   ai_usd_to_pkr: float = 280.0
   ai_anthropic_url: str = "https://api.anthropic.com/v1/messages"
   ai_tasks_enabled: str = "SHEET"
@@ -84,6 +86,8 @@ class Settings(BaseSettings):
   engine_ai_note_org_ids: str = ""
   engine_ai_schedule_org_ids: str = ""
   engine_ai_legend_org_ids: str = ""
+  engine_ai_find_org_ids: str = ""
+  engine_ai_examples_org_ids: str = ""
   engine_spec_org_ids: str = ""
   engine_stage_org_ids: str = ""
   engine_layer_org_ids: str = ""

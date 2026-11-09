@@ -9,8 +9,9 @@ SUFFIX = ".json"
 def pdf_sha256(contents: bytes) -> str:
   return hashlib.sha256(contents).hexdigest()
 
-def key(pdf_sha: str, page: int, region: dict, task: str, prompt_version: str, model: str) -> str:
-  body = json.dumps([str(pdf_sha), int(page), region, str(task), str(prompt_version), str(model)], sort_keys=True, separators=(",", ":"))
+def key(pdf_sha: str, page: int, region: dict, task: str, prompt_version: str, model: str, state: str = "") -> str:
+  parts = [str(pdf_sha), int(page), region, str(task), str(prompt_version), str(model)] + ([str(state)] if state else [])
+  body = json.dumps(parts, sort_keys=True, separators=(",", ":"))
   return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
 def folder(case_dir: str) -> str:

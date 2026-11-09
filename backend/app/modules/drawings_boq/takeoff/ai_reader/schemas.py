@@ -6,7 +6,7 @@ from datetime import datetime
 class ShadowRunRequest(BaseModel):
   mode: str = Field(default="WEAK", description="WEAK reads only the sheets the rules are blind on; ALL reads every sheet, to measure the two readers against each other.")
   limit: int = Field(default=3, ge=1, le=10, description="Most sheets read in one request. Each is one AI request. Call again for the rest; a sheet already read is skipped.")
-  task: str = Field(default="SHEET", description="SHEET reads the title block and the page; NOTE_FACT reads the printed notes and specifications of the pages that carry them; SCHEDULE_ROW reads the rows of the column, beam and finish schedules of the pages that carry them; LEGEND_ENTRY reads the symbol rows of the electrical legends, one picture for each row, and in the mode WEAK only the rows the rules could not place.")
+  task: str = Field(default="SHEET", description="SHEET reads the title block and the page; NOTE_FACT reads the printed notes and specifications of the pages that carry them; FIND asks where schedules and section pictures are on the pages the rules found none on (the page model takes a box only when it holds what its kind needs); SCHEDULE_ROW reads the rows of the column, beam and finish schedules of the pages that carry them; LEGEND_ENTRY reads the symbol rows of the electrical legends, one picture for each row, and in the mode WEAK only the rows the rules could not place.")
   force: bool = Field(default=False, description="Read again a sheet that was already read with this prompt version.")
 
 class ShadowComparison(BaseModel):
@@ -34,6 +34,8 @@ class ShadowReadItem(BaseModel):
   totals: dict[str, int]
   problems: list[str]
   validators: list[ShadowValidator] = []
+  support: dict[str, int] = {}
+  review: list[dict] = []
   model: str | None = None
   error: str | None = None
   created_at: datetime
@@ -56,7 +58,21 @@ class ShadowCost(BaseModel):
   pkr: float = 0.0
   unpriced_models: list[str] = []
 
+class ShadowCostPerAccepted(BaseModel):
+  accepted: int = 0
+  review: int = 0
+  escalated: int = 0
+  reads: int = 0
+  input_tokens: int = 0
+  output_tokens: int = 0
+  usd: float = 0.0
+  pkr: float = 0.0
+  usd_per_accepted: float | None = None
+  pkr_per_accepted: float | None = None
+  unpriced_models: list[str] = []
+
 class ShadowSummaryResponse(BaseModel):
+  drawing_id: UUID
   drawing_id: UUID
   enabled: bool
   sheets_total: int
@@ -67,3 +83,4 @@ class ShadowSummaryResponse(BaseModel):
   note: str
   consent: str = "OFF"
   cost: ShadowCost = ShadowCost()
+  cost_per_accepted: dict[str, ShadowCostPerAccepted] = {}

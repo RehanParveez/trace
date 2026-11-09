@@ -1050,7 +1050,34 @@ export interface TraceRule {
 
 export interface TraceScale { agreement: string | null; support: number; trust: number | null; gate: string | null; decided_by: string }
 
-export interface TraceSheet { sheet_id: string; page_no: number; scale: TraceScale; rules: TraceRule[]; silent: string[] }
+export type RegionKind = "VIEW" | "SCHEDULE" | "LEGEND" | "NOTES" | "SECTION_PICTURE" | "TITLE_BLOCK" | "CALLOUT";
+
+export type TextType = "TEXT" | "OUTLINED" | "RASTER" | "MIXED" | "NONE";
+
+export interface TraceRegion { kind: RegionKind; box: number[]; title: string; confidence: number; source: string; words: number; text_type: TextType }
+
+export interface TraceNotRead { reason: "OCR_BUDGET" | "REGION_LIMIT" | string; left: number; what: string }
+
+export interface TraceText {
+  by_source: Partial<Record<"NATIVE" | "OUTLINED_OCR" | "IMAGE_OCR", number>>;
+  low: number;
+  mean_confidence: Partial<Record<"NATIVE" | "OUTLINED_OCR" | "IMAGE_OCR", number>>;
+  turned: number;
+  not_read: TraceNotRead[];
+}
+
+export interface TraceSheet {
+  sheet_id: string;
+  page_no: number;
+  scale: TraceScale;
+  rules: TraceRule[];
+  silent: string[];
+  regions: TraceRegion[];
+  regions_by_kind: Partial<Record<RegionKind, number>>;
+  regions_state: "READ" | "FAILED" | "NOT_READ";
+  regions_ms: number | null;
+  text: TraceText | null;
+}
 
 export interface ReaderTrace {
   drawing_id: string;

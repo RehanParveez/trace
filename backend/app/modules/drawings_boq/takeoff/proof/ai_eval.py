@@ -86,13 +86,12 @@ def note_report(entries: list) -> dict:
   proposed = accepted = 0
   for e in entries:
     checks = e.get("validators") or []
-    proposed += sum(1 for v in checks if v["name"].startswith("quote_printed"))
+    proposed += sum(1 for v in checks if v["name"].startswith(("quote_printed", "quote_supported")))
     facts = (e.get("answer") or {}).get("facts") or []
     accepted += len(facts)
     keys.update(f["key"] for f in facts)
     failed.update(v["name"].split(".")[0] for v in checks if not v["passed"])
   return {"proposed": proposed, "accepted": accepted, "failed": dict(sorted(failed.items())), "keys": dict(sorted(keys.items()))}
-
 
 SCHEDULE_CLASSES = {"COLUMN_SCHEDULE": "COLUMN_SCHEDULE_CELL", "BEAM_SCHEDULE": "BEAM_SECTION", "FINISH_SCHEDULE": "FINISH_LAYER"}
 SIZE_SLACK_IN = 0.05
@@ -130,8 +129,9 @@ def schedule_report(entries: list, refs: dict) -> dict:
   
   for e in entries:
     checks = e.get("validators") or []
-    proposed += sum(1 for v in checks if v["name"].startswith("quote_printed"))
+    proposed += sum(1 for v in checks if v["name"].startswith(("quote_printed", "quote_supported")))
     value = e.get("answer") or {}
+    accepted += len(value.get("rows") or [])
     for h in value.get("held") or []:
       held.update(h["reasons"])
     ref = refs.get(str(e["pdf_sha256"])[:KEY_LEN])
@@ -289,7 +289,22 @@ def main(argv: list | None = None) -> int:
   ap = argparse.ArgumentParser(description="Score the cached AI answers of every case against its truth folder and report time and cost. It reads files only and never calls a model.")
   ap.add_argument("--cases-dir", default=None)
   ap.add_argument("--reading-score", default=None, help="a reading_score.json; the rule reader's role for each sheet is read from it and printed beside the AI's")
+  ap.add_argument("--compare", nargs=2, metavar=("A", "B"), default=None, help="score two prompt variants (1, 2, 2+ex, 2+ex-loo) on every set; B replaces A only if it helps two offices and hurts none")
+  ap.add_argument("--loo", metavar="BASE", default=None, help="each office's score for prompt BASE without examples, with them, and with them minus its own office's")
+  ap.add_argument("--build-examples", action="store_true", help="make examples from the cached answers a person has checked; add --write to keep them in each case's ai_examples folder")
+  ap.add_argument("--write", action="store_true")
   args = ap.parse_args(argv)
+  
+  if args.compare or args.loo or args.build_examples:
+    from app.modules.drawings_boq.takeoff.proof import ai_compare as AC
+    if args.build_examples:
+      got = AC.build_examples(args.cases_dir, write=args.write)
+      print(f"{got['examples']} example(s) from checked answers {'written' if got['written'] else '(not written; add --write)'}; by office: " + (", ".join(f"{o} {n}" for o, n in got["by_office"].items()) or "none") + f"; left out: {got['skipped']['unchecked']} answer(s) whose truth is not checked, {got['skipped']['no_truth']} with no truth row")
+      return 0
+    data = AC.collect(args.cases_dir)
+    for ln in (AC.lines_compare(AC.compare(data, *args.compare)) if args.compare else AC.lines_loo(AC.loo(data, args.loo), args.loo)):
+      print(ln)
+    return 0
   report = evaluate(args.cases_dir, reading_score=args.reading_score)
   if not report:
     print("No ai_cache folder holds an answer yet.")

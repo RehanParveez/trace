@@ -6,6 +6,11 @@ META_KEY = "column_detail_cells"
 IN_MM = 25.4
 MIN_VOTES = 3
 
+def _bars_text(groups: list) -> str:
+  if len(groups) == 1:
+    return f"{groups[0][0]}-#{groups[0][1]}"
+  return "+".join(f"{n}#{b}" for n, b in sorted(groups, key=lambda g: -g[1]))
+
 def enabled() -> bool:
   return RR.on(RULE)
 
@@ -26,15 +31,29 @@ def _reasons(d: dict) -> list:
   votes = min(int(d.get("w_votes") or 0), int(d.get("h_votes") or 0))
   return [] if votes >= MIN_VOTES else ["OCR_LOW_CONFIDENCE"]
 
+def _label_ring(d: dict) -> str | None:
+  ring = d.get("label_ring")
+  if not ring:
+    return None
+  return f'#{int(ring["bar"])}@{float(ring["spacing_mm"]) / IN_MM:g}"c/c'
+
 def cell_of(d: dict) -> dict | None:
   if not d.get("mark"):
     return None
   
-  groups = _groups(d.get("bar_notes"))
+  groups = _groups(d.get("bar_notes")) or _groups([{"n": n, "bar": b} for n, b in d.get("label_bars") or []])
   size = (float(d["w_in"]), float(d["h_in"])) if d.get("w_in") and d.get("h_in") else None
+  overall = None
+  
+  if d.get("label_size_in"):
+    printed = tuple(float(x) for x in d["label_size_in"])
+    if size and size != printed and size[0] == size[1] and printed[0] == printed[1] and size[0] > printed[0]:
+      overall = size[0]
+    size = printed
   return {"mark": str(d["mark"]).upper(), "state": "READ", "size_in": list(size) if size else None, "read": d.get("read"),
-    "bars": {"count": sum(n for n, _b in groups), "text": " and ".join(f"{n}-#{b}" for n, b in groups), "groups": [list(g) for g in groups]} if groups else None,
-    "ties": _ties(d.get("steel")), "reasons": _reasons(d), "anchor": [d["x"], d["y"]] if d.get("x") is not None and d.get("y") is not None else None}
+    "bars": {"count": sum(n for n, _b in groups), "text": _bars_text(groups), "groups": [list(g) for g in groups]} if groups else None,
+    "ties": _ties(d.get("steel")) or _label_ring(d), "reasons": [] if d.get("label_size_in") else _reasons(d), "anchor": [d["x"], d["y"]] if d.get("x") is not None and d.get("y") is not None else None,
+    "overall_in": overall, "brick_in": round((overall - size[0]) / 2.0, 2) if overall and size and d.get("label_brick") else None}
 
 def attrs_of(page: int, rec: dict) -> dict:
   a: dict = {"key": f"{rec['mark']}@p{page}"}
@@ -43,6 +62,12 @@ def attrs_of(page: int, rec: dict) -> dict:
     a.update(width_in=w, depth_in=h, size_mm=[round(w * IN_MM, 1), round(h * IN_MM, 1)])
   if rec.get("bars"):
     a.update(bar_count=rec["bars"]["count"], bars=rec["bars"]["text"])
+  if rec.get("ties") and str(rec["ties"]).endswith("c/c"):
+    a["ring"] = rec["ties"]
+  if rec.get("overall_in"):
+    a["overall_in"] = rec["overall_in"]
+  if rec.get("brick_in"):
+    a["cladding_brick_in"] = rec["brick_in"]
   return a
 
 def apply(rows: list) -> int:

@@ -4,6 +4,7 @@ import io
 import os
 import re
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark, ocr_available
+from app.modules.drawings_boq.takeoff.page import access as AC
 from app.modules.drawings_boq.takeoff.prep import marks as M
 import math
 import tempfile
@@ -23,10 +24,6 @@ TIE_CAPTION = re.compile(r"\bTIE\s+BEAM\b|\bLEVEL\s+TIE\s+BAND\b|\bTIE\s+BAND\b"
 MAX_CAPTION_CHARS = 40
 UPSTAND_WORD = re.compile(r"\b(?:UP[\s-]?STAND(?:ING)?|INVERTED|UP[\s-]?TURNED?)\b", re.I)
 UPSTAND_REACH_PT = 45.0
-REGION_HALF_WIDTH_PT = 55.0
-REGION_HEIGHT_PT = 100.0
-REGION_BELOW_PT = 3.0
-NEIGHBOUR_REACH_PT = 60.0
 RENDER_SCALE = 8
 WHITELIST = "0123456789#@-\"'/Cc.”"
 INCH_MIN, INCH_MAX = 3.0, 48.0
@@ -136,14 +133,31 @@ def parse_dim(text: str, bare_ok: bool = False) -> float | None:
     return None
   return v if INCH_MIN <= v <= INCH_MAX else None
 
-def _region(cap_v: tuple, others_v: list, Wv: float, Hv: float, k: float = 1.0) -> tuple:
-  """The rectangle (visual page units) of the detail drawn above a caption: as wide as a detail, as tall as one, and no taller than the next caption above."""
-  vx, vy = cap_v
-  top = vy - REGION_HEIGHT_PT * k
-  for ox, oy in others_v:
-    if (ox, oy) != cap_v and abs(ox - vx) < NEIGHBOUR_REACH_PT * k and oy < vy - 12.0 * k:
-      top = max(top, oy + 4.0 * k)
-  return (max(0.0, vx - REGION_HALF_WIDTH_PT * k), max(0.0, top), min(Wv, vx + REGION_HALF_WIDTH_PT * k), max(0.0, vy - REGION_BELOW_PT * k))
+PAD_H = 5.0  
+REACH_H = 6.0  
+
+def _region(cap: dict, regions: list, vis, h: float, Wv: float, Hv: float, caps: list | None = None):
+  vx, vy = vis(cap["x"], cap["y"])
+  held, over = [], []
+  for r in regions or []:
+    corners = [vis(x, y) for x in (r.box[0], r.box[2]) for y in (r.box[1], r.box[3])]
+    ext = (min(c[0] for c in corners), min(c[1] for c in corners), max(c[0] for c in corners), max(c[1] for c in corners))
+    area = (ext[2] - ext[0]) * (ext[3] - ext[1])
+    if ext[0] <= vx <= ext[2] and ext[1] <= vy <= ext[3]:
+      held.append((area, ext))
+    elif ext[0] <= vx <= ext[2] and 0 < vy - ext[3] <= REACH_H * h:
+      over.append((area, ext))
+  pick = held or over
+  if not pick:
+    return None
+  ext = min(pick)[1]
+  
+  row = [vis(c["x"], c["y"]) for c in caps or [] if c is not cap]
+  left = [(vx + nx) / 2 for nx, ny in row if abs(ny - vy) <= 3.0 * h and nx < vx]
+  right = [(vx + nx) / 2 for nx, ny in row if abs(ny - vy) <= 3.0 * h and nx > vx]
+  x0 = max([ext[0] - PAD_H * h] + left)
+  x1 = min([ext[2] + PAD_H * h] + right)
+  return (max(0.0, min(x0, ext[0])), max(0.0, ext[1] - PAD_H * h), min(Wv, max(x1, ext[2])), max(0.0, vy - 0.5 * h if not held else min(vy - 0.5 * h, ext[3])))
 
 SCALES = (4, 6, 8, 11)
 MIN_VOTES_BARS = 2
@@ -374,18 +388,17 @@ def column_bars(words: list, page, box_v: tuple, page_wh: tuple, crop: tuple, ro
   return out
 
 def _whole(got: dict) -> bool:
-  """A reading that needs nothing more: the depth and the bars at the top and the bottom."""
   steel = got.get("steel") or {}
   return bool(got.get("depth_in") and steel.get("top") and steel.get("bottom"))
 
-def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rotation: int, use_ocr: bool = True, budget_s: float = OCR_BUDGET_S) -> dict:
-  """Every beam section on the sheet: its mark, kind and, when the character reader is available, the size and bars written on it."""
+def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rotation: int, use_ocr: bool = True, budget_s: float = OCR_BUDGET_S, regions: list | None = None, h: float = 8.0) -> dict:
   lines = build_lines(words)
   caps = caption_marks(lines)
   for ln in lines:
     t = (ln.text or "").strip()
     if not t or len(t) > MAX_CAPTION_CHARS or not ln.spans or not UPSTAND_WORD.search(t):
       continue
+    
     ws = [w for _, _, w in ln.spans]
     lx, ly = sum(w.cx for w in ws) / len(ws), sum(w.cy for w in ws) / len(ws)
     near = sorted((math.hypot(c["x"] - lx, c["y"] - ly), i) for i, c in enumerate(caps))
@@ -401,19 +414,16 @@ def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rot
     u, v = to_visual(px, py, crop, rotation)
     return u * Wv, v * Hv
   deadline = time.monotonic() + budget_s
-  cap_v = {id(c): vis(c["x"], c["y"]) for c in caps}
-  others = [vis(c["x"], c["y"]) for c in caps]
-  try:
-    from app.modules.drawings_boq.takeoff.prep.details import find_captions
-    others += [vis(c["x"], c["y"]) for c in find_captions(words)]
-  except Exception:
-    pass
 
   out = []
   for c in caps:
-    region = _region(cap_v[id(c)], others, Wv, Hv, k)
-    rec = {"mark": c["mark"], "caption": c["text"], "kind": c["kind"], "upstand": bool(c.get("upstand")), "x": round(c["x"], 1), "y": round(c["y"], 1), "region": [round(v, 1) for v in region],
+    region = _region(c, regions, vis, h, Wv, Hv, caps)
+    rec = {"mark": c["mark"], "caption": c["text"], "kind": c["kind"], "upstand": bool(c.get("upstand")), "x": round(c["x"], 1), "y": round(c["y"], 1), "region": [round(v, 1) for v in region] if region else None,
       "width_in": None, "depth_in": None, "steel": None, "read": "NONE", "checks": {}}
+    if region is None:
+      rec["from_text"] = False
+      out.append(rec)
+      continue
     inside = PT.region_words(words, region, crop, rotation, page_wh)
     text_pic = PT.beam_picture(inside)
     got = interpret(text_pic)

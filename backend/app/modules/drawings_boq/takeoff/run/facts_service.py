@@ -23,7 +23,8 @@ class ProofService(ExtractService):
         continue
       meta = await self.prep.prep.meta(org, s.id)
       out.append({"sheet_id": s.id, "page_no": s.page_no, "title": (s.prep_meta or {}).get("title"), "stats": exts[s.id].stats, "candidates": by.get(s.id, []),
-        "schedule": (s.prep_meta or {}).get("schedule"), "notes": exts[s.id].notes or [], "analysis": meta.analysis if meta is not None else None})
+        "schedule": (s.prep_meta or {}).get("schedule"), "notes": exts[s.id].notes or [], "analysis": meta.analysis if meta is not None else None,
+        "page_model": (s.prep_meta or {}).get("page_model"), "text": (s.prep_meta or {}).get("text"), "reading": (s.prep_meta or {}).get("ai_reading")})
     return out
 
   async def facts_check(self, org: UUID, drawing_id: UUID, payload) -> dict:
@@ -45,7 +46,7 @@ class ProofService(ExtractService):
 
   async def trace(self, org: UUID, drawing_id: UUID) -> dict:
     read = await self.read_of(org, drawing_id)
-    sheets = [{"sheet_id": sh["sheet_id"], **TR.sheet_trace(sh["page_no"], sh["notes"], sh["candidates"], sh["analysis"], sh["stats"])} for sh in read]
+    sheets = [{"sheet_id": sh["sheet_id"], **TR.sheet_trace(sh["page_no"], sh["notes"], sh["candidates"], sh["analysis"], sh["stats"], sh.get("page_model"), sh.get("text"), sh.get("reading"))} for sh in read]
     return {"drawing_id": drawing_id, "sheets": sheets, "summary": TR.drawing_summary(sheets)}
 
   async def summary(self, org: UUID, drawing_id: UUID) -> dict:

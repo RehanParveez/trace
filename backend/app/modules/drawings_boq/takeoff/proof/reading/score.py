@@ -305,6 +305,7 @@ def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: s
     if facts:
       out += fact_outcomes(ref.pdf_key, ts, case_facts, results_all, ref.pdf)
     regions = RG.load(ref.truth_folder, ts.document.pages)
+    RG.place(read)
     region_score = RG.score_regions(regions, read)
     stages = RG.apply_stages(regions, region_score["rows"], read, out)
     regions_out[ts.document.alias] = region_score

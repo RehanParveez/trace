@@ -1,6 +1,7 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import scalegate as SG
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.prep import words as WD
 
 TUNED, STANDARD, DEFAULT = "TUNED", "STANDARD", "DEFAULT"
 
@@ -68,9 +69,39 @@ def scale_record(analysis: dict | None) -> dict:
   how = ("OVERRIDE" if agreement == "CONFLICT" and ok else "PRINTED_SCALE" if agreement == "DECLARED_ONLY" and ok else "ROOM_LABELS" if agreement == "ROOMS_ONLY" else "SCALE_BAR" if agreement == "BAR_ONLY" or rec.get("basis") in ("DECLARED_AND_BAR", "MEASURED_FROM_SCALE_BAR") else "DIMENSIONS" if ok else "PERSON")
   return {"agreement": agreement, "support": int(rec.get("support") or 0), "trust": rec.get("trust"), "gate": "OPEN" if ok else code, "decided_by": how}
 
-def sheet_trace(page_no: int, notes: list, candidates: list, analysis: dict | None = None, stats: dict | None = None) -> dict:
-  by_code: dict = {}
+MAX_REGIONS_SHOWN = 60
+
+def text_record(t: dict | None) -> dict:
+  if not t:
+    return {"text": None}
+  if t.get("error"):
+    return {"text": None}
+  return {"text": {"by_source": {k: int(v) for k, v in (t.get("by_source") or {}).items()}, "low": int(t.get("low") or 0), "mean_confidence": {k: float(v) for k, v in (t.get("mean_confidence") or {}).items()},
+    "turned": int(t.get("turned") or 0), "stroked": int(t.get("stroked") or 0), "not_read": [{"reason": str(n.get("reason")), "left": int(n.get("regions_left") or 0), "what": str(n.get("what") or "")} for n in t.get("not_read") or []]}}
+
+def regions_record(model: dict | None) -> dict:
+  if not model:
+    return {"regions": [], "regions_by_kind": {}, "regions_state": "NOT_READ"}
+  if model.get("error"):
+    return {"regions": [], "regions_by_kind": {}, "regions_state": "FAILED"}
+  found = model.get("regions") or []
   
+  by_kind: dict = {}
+  for d in found:
+    by_kind[d["kind"]] = by_kind.get(d["kind"], 0) + 1
+  shown = sorted((d for d in found if d["kind"] != "CALLOUT"), key=lambda d: (-d.get("confidence", 0), d["box"][1], d["box"][0]))[:MAX_REGIONS_SHOWN]
+  return {"regions": [{"kind": d["kind"], "box": [float(v) for v in d["box"]], "title": d.get("title") or "", "confidence": float(d.get("confidence", 1.0)), "source": d.get("source") or "", "words": int(d.get("n_words", 0)), "text_type": WD.text_type((d.get("extra") or {}).get("text") or {})} for d in shown],
+    "regions_by_kind": dict(sorted(by_kind.items())), "regions_state": "READ", "regions_ms": round(float(model["seconds"]) * 1000, 1) if model.get("seconds") is not None else None}
+
+def ai_record(reading: dict | None, model: dict | None) -> dict:
+  tasks = {name: {"accepted": int(r.get("accepted") or 0), "review": int(r.get("review") or 0), "escalated": int(r.get("escalated") or 0), "examples": int(r.get("examples") or 0), "support": {k: int(v) for k, v in (r.get("support") or {}).items()}} for name, r in (reading or {}).items()}
+  prop = (model or {}).get("proposed")
+  proposed = {"given": int(prop["given"]), "accepted": int(prop["accepted"]), "refused": [{"kind": str(x.get("kind")), "why": str(x.get("why"))} for x in prop.get("refused") or []]} if prop else None
+  return {"ai": {"tasks": tasks, "proposed": proposed} if tasks or proposed else None}
+
+def sheet_trace(page_no: int, notes: list, candidates: list, analysis: dict | None = None, stats: dict | None = None, model: dict | None = None, text: dict | None = None, reading: dict | None = None) -> dict:
+  by_code: dict = {}
+
   for n in notes or []:
     by_code.setdefault(n.get("code"), {"notes": 0, "items": set(), "tags": []})["notes"] += 1
   for c in candidates:
@@ -102,7 +133,7 @@ def sheet_trace(page_no: int, notes: list, candidates: list, analysis: dict | No
     else:
       silent.append(rid)
   fired.sort(key=lambda r: (-(r["items"] + r["notes"]), r["id"]))
-  return {"page_no": page_no, "scale": scale, "rules": fired, "silent": silent}
+  return {"page_no": page_no, "scale": scale, "rules": fired, "silent": silent, **regions_record(model), **text_record(text), **ai_record(reading, model)}
 
 def drawing_summary(sheets: list) -> dict:
   tuned = {r["id"] for s in sheets for r in s["rules"] if r["basis"] == TUNED}

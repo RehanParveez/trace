@@ -3,7 +3,7 @@ import os
 import re
 import time
 from app.engine.measure import readings as RD
-from app.modules.drawings_boq.takeoff.prep import pdf_type as PT, ocr_layer, text_repair as TR
+from app.modules.drawings_boq.takeoff.prep import pdf_type as PT, ocr_layer, text_repair as TR, words as WD
 
 MARK_WHITELIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
 MARK = re.compile(r"^[A-Z]{1,3}-?\d{1,2}[A-Z]?$")
@@ -84,7 +84,7 @@ def evidence(rings: list, words: list) -> dict | None:
   found = isolated(uncovered(clusters(rings), words), glyph_boxes(rings))
   if len(found) < RD.OUTLINED_MIN_UNCOVERED:
     return None
-  return {"partial_outline": True, "uncovered_clusters": len(found), "regions": [c["box"] for c in found[:RD.OUTLINED_MAX_REGIONS]]}
+  return {"partial_outline": True, "uncovered_clusters": len(found), "regions": [c["box"] for c in found[:RD.OUTLINED_MAX_REGIONS]], "axes": [c["axis"] for c in found[:RD.OUTLINED_MAX_REGIONS]], "sizes": [c["n"] for c in found[:RD.OUTLINED_MAX_REGIONS]], "left_out": max(0, len(found) - RD.OUTLINED_MAX_REGIONS)}
 
 def _user_to_view(x: float, y: float, rotation: int, crop: tuple) -> tuple:
   cx0, cy0, cx1, cy1 = crop
@@ -100,7 +100,15 @@ def _view_box(box: tuple, rotation: int, crop: tuple) -> tuple:
   pts = [_user_to_view(x, y, rotation, crop) for x, y in ((box[0], box[1]), (box[2], box[1]), (box[2], box[3]), (box[0], box[3]))]
   return min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts)
 
-def read_regions(page, rotation: int, cropbox: tuple, regions: list, budget_s: float) -> tuple:
+def _line(img, timeout: float, whitelist: str | None = None) -> tuple:
+  rows = ocr_layer._tsv(img, timeout, "7", whitelist)
+  if not rows:
+    return "", 0.0
+  glue = "" if whitelist else " "
+  text = glue.join(r["text"] for r in sorted(rows, key=lambda r: r["l"]))
+  return text, min(r["conf"] for r in rows)
+
+def read_regions(page, rotation: int, cropbox: tuple, regions: list, budget_s: float, axes: list | None = None, sizes: list | None = None) -> tuple:
   info: dict = {"regions": len(regions)}
   if not ocr_layer.available():
     info["error"] = "UNAVAILABLE"
@@ -111,12 +119,15 @@ def read_regions(page, rotation: int, cropbox: tuple, regions: list, budget_s: f
   low: set = set()
   Wv, Hv = page.get_size()
   scale = RD.OUTLINED_OCR_DPI / 72.0
-  
-  for box in regions:
+  vocabulary = TR.words()
+  turned = 0
+
+  for i, box in enumerate(regions):
     if time.monotonic() - started > budget_s:
       info["partial"] = True
+      info["not_read"] = {"reason": WD.OCR_BUDGET, "regions_left": len(regions) - i}
       break
-  
+
     vx0, vy0, vx1, vy1 = _view_box(box, rotation, cropbox)
     m = RD.OUTLINED_REGION_MARGIN_PT
     vx0, vy0, vx1, vy1 = max(0.0, vx0 - m), max(0.0, vy0 - m), min(Wv, vx1 + m), min(Hv, vy1 + m)
@@ -127,23 +138,36 @@ def read_regions(page, rotation: int, cropbox: tuple, regions: list, budget_s: f
     except Exception:
       info["error"] = "RENDER"
       continue
-  
-    rows = ocr_layer._tsv(img, max(5.0, budget_s - (time.monotonic() - started)), "7", MARK_WHITELIST)
-    text = "".join(r["text"] for r in sorted(rows, key=lambda r: r["l"]))
-    if not text or not any(ch.isalnum() for ch in text):
-      continue
-    conf = min(r["conf"] for r in rows)
-    if not label_like(text):
-      info["not_a_label"] = info.get("not_a_label", 0) + 1
-      continue
-  
-    w = ocr_layer._build_word(text, vx0 + m, vy0 + m, vx1 - m, vy1 - m, 0.0, rotation, cropbox)
-    w.repair = LABELS_OUTLINED if conf >= RD.OUTLINED_MIN_CONFIDENCE else OCR_LOW_CONFIDENCE
-    unsure += 0 if conf >= RD.OUTLINED_MIN_CONFIDENCE else 1
-    marks.add(text.upper())
-    if w.repair == OCR_LOW_CONFIDENCE:
+
+    left = max(5.0, budget_s - (time.monotonic() - started))
+    text, conf = _line(img, left, MARK_WHITELIST)
+    repair, view_angle = "", 0.0
+    if text and any(ch.isalnum() for ch in text) and label_like(text):
+      repair = LABELS_OUTLINED if conf >= RD.OUTLINED_MIN_CONFIDENCE else OCR_LOW_CONFIDENCE
+    else:
+      axis = axes[i] if axes is not None and i < len(axes) else 0
+      if sizes is not None and i < len(sizes) and sizes[i] < WD.setting("cluster_min_glyphs"):
+        continue
+      got = WD.turned_readings(img, axis, lambda im: _line(im, left), lambda t: WD.parses(t, vocabulary))
+      if got is None:
+        if text and any(ch.isalnum() for ch in text):
+          info["not_a_label"] = info.get("not_a_label", 0) + 1
+        continue
+      text, conf, turn = got
+      repair = LABELS_OUTLINED if turn == 0 else WD.TURNED + str(turn)
+      view_angle = float(turn)
+      turned += 1 if turn else 0
+
+    w = ocr_layer._build_word(text, vx0 + m, vy0 + m, vx1 - m, vy1 - m, view_angle, rotation, cropbox, WD.OUTLINED_OCR, conf)
+    w.repair = repair
+    if repair == OCR_LOW_CONFIDENCE:
+      unsure += 1
       low.add(text.upper())
+    marks.add(text.upper())
     words.append(w)
-    
+
   info.update(words=len(words), unsure=unsure, marks=sorted(marks), low=sorted(low), dpi=RD.OUTLINED_OCR_DPI, seconds=round(time.monotonic() - started, 2))
+  if turned:
+    info["turned"] = turned
   return words, info
+

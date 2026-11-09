@@ -70,6 +70,7 @@ class SetRead:
   items: list = field(default_factory=list)
   pages: dict = field(default_factory=dict)
   unmapped: Counter = field(default_factory=Counter)
+  regions: dict = field(default_factory=dict)  
 
 def class_of(cand) -> V.ElementClass | None:
   kind = K.kind_of(cand)
@@ -163,9 +164,9 @@ def structure_items(sheet: int, meta: dict, source: V.ReadSource) -> list:
     out.append(ReadItem(sheet=sheet, cls=V.ElementClass.COLUMN, mark=None, geom={"point": [float(rec["at"][0]), float(rec["at"][1])]} if rec.get("at") else None, attrs={"count": 1, "size_mm": list(rec["size_mm"]), "floor": rec["floor"]},
       status=V.Status.UNSURE, reasons=list(CCI.REASONS), source=source))
   for rec in ((meta or {}).get(BSI.META_KEY) or {}).get("sections") or []:
-    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.BEAM_SECTION, mark=rec["mark"], geom=None, attrs=rec["attrs"], status=_status_of(None, rec["reasons"]), reasons=list(rec["reasons"]), source=source))
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.BEAM_SECTION, mark=rec["mark"], geom={"point": [float(rec["point"][0]), float(rec["point"][1])]} if rec.get("point") else None, attrs=rec["attrs"], status=_status_of(None, rec["reasons"]), reasons=list(rec["reasons"]), source=source))
   for rec in ((meta or {}).get(SC.META_KEY) or {}).get("callouts") or []:
-    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.SLAB_BAR_CALLOUT, mark=None, geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs={"text": rec["text"], "bar_dia_no": rec["bar"], "spacing_in": rec["spacing_in"]}, status=V.Status.READ, reasons=[], source=source))
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.SLAB_BAR_CALLOUT, mark=None, geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs={"text": rec["text"], "bar_dia_no": rec["bar"], "spacing_in": rec["spacing_in"], **({"panel": f'{rec["panel"]["view"]}#{rec["panel"]["n"]}'} if rec.get("panel") else {})}, status=V.Status.READ, reasons=[], source=source))
   for rec in ((meta or {}).get(STI.META_KEY) or {}).get("facts") or []:
     if rec.get("key"):
       out.append(ReadItem(sheet=sheet, cls=V.ElementClass.NOTE_FACT, mark=rec["key"], geom=None, attrs={"key": rec["key"], "value": rec["value"], "unit": rec["unit"]}, status=V.Status.READ, reasons=[], source=source))
@@ -234,7 +235,10 @@ def items_of(rows: list) -> SetRead:
     cov = {r["class"]: r["status"] for r in ((row.get("stats") or {}).get("coverage") or {}).get("classes") or []}
     out.pages[sheet] = PageInfo(sheet=sheet, mm_per_pt=row.get("mm_per_pt"), paper_mm=(paper.get("width_mm"), paper.get("height_mm")) if paper else None, upright=upright, register=register_of(row), coverage=cov)
     source = _source(meta.get("pdf_type") or {})
-    
+    model = meta.get("page_model") or {}
+    if model.get("regions"):
+      out.regions[sheet] = list(model["regions"])
+
     for c in row.get("candidates") or []:
       if not _live(c):
         continue

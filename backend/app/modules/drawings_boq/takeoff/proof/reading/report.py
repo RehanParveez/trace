@@ -97,13 +97,27 @@ def region_lines(doc: dict) -> list:
   for name in sorted(regions):
     for kind, r in sorted(regions[name]["by_kind"].items()):
       out.append(f"| {name} | {kind} | {r['truth']} | {r['FOUND']} | {r['MISSED']} | {r['SPLIT']} | {r['MERGED']} |")
-
+  by_text: dict = {}
+  
+  for r in regions.values():
+    for tt, s in (r.get("by_text_type") or {}).items():
+      slot = by_text.setdefault(tt, {"truth": 0, "FOUND": 0, "MISSED": 0, "SPLIT": 0, "MERGED": 0})
+      for k in slot:
+        slot[k] += s[k]
+  if by_text:
+    out += ["", "By the text the region holds (TEXT: the text layer; OUTLINED: read from outlined letters; RASTER: read from a picture; MIXED; NONE: no word in it and no page type):", "", "| Text type | Truth regions | Found | Missed | Split | Merged |", "|---|---|---|---|---|---|"]
+    out += [f"| {tt} | {s['truth']} | {s['FOUND']} | {s['MISSED']} | {s['SPLIT']} | {s['MERGED']} |" for tt, s in sorted(by_text.items())]
   basis: dict = {}
   for r in regions.values():
     for row in r["rows"]:
       basis[row["basis"]] = basis.get(row["basis"], 0) + 1
   reported = sum(r["reported_regions"] for r in regions.values())
-  out += ["", "Found by: " + ", ".join(f"{k} {v}" for k, v in sorted(basis.items())) + f". Trace reports no region of its own yet ({reported} reported), so a region is FOUND when a read item of the right kind lies inside it (`inside`), or, for items with no position, when it is the only region of its kind on the sheet and one is read (`class`). SPLIT and MERGED can only be judged from reported regions and stay 0 until the readers report `source.region`. The regions are drafted from truth item positions and are not yet checked by a person.", ""]
+  own = any(r.get("from_model") for r in regions.values())
+  if own:
+    why = f"Trace reports its own regions ({reported} reported). A truth region is FOUND when a reported region of its kind holds it (half of it inside, or its centre inside); MERGED when every such region also holds another truth region of that kind; SPLIT when no region holds it but two or more lie mostly inside it. A SCHEDULE truth region also counts a SECTION_PICTURE report (assumed: a column schedule is often drawn as a row of section sketches). A region the pages did not report is also FOUND when a read item of its kind lies in it (`inside`)."
+  else:
+    why = f"Trace reports no region of its own in this run ({reported} reported), so a region is FOUND when a read item of the right kind lies inside it (`inside`), or, for items with no position, when it is the only region of its kind on the sheet and one is read (`class`)."
+  out += ["", "Found by: " + ", ".join(f"{k} {v}" for k, v in sorted(basis.items())) + ". " + why + " The regions are drafted from truth item positions and are not yet checked by a person.", ""]
   return out
 
 REGISTER_ORDER = ("role", "plan_kind", "floor", "discipline", "scale_basis", "scale_ratio", "sheet_no", "title", "text_type")

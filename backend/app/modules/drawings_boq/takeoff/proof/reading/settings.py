@@ -32,6 +32,12 @@ def check(doc: dict) -> dict:
   for cls, kind in kinds.items():
     if kind not in gaps:
       raise SettingsError(f"{os.path.basename(PATH)}: regions.kind_of_class.{cls} is {kind!r}, which has no gap_share")
+  alias = (doc.get("regions") or {}).get("reported_as") or {}
+  if not isinstance(alias, dict):
+    raise SettingsError(f"{os.path.basename(PATH)}: regions.reported_as must map a kind to a list of kinds")
+  for kind, reported in alias.items():
+    if kind not in gaps or not isinstance(reported, list) or not reported or not all(isinstance(k, str) for k in reported):
+      raise SettingsError(f"{os.path.basename(PATH)}: regions.reported_as.{kind} must be a list of kinds, for a kind that has a gap_share")
   return doc
 
 @functools.lru_cache(maxsize=1)

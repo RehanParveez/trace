@@ -1,0 +1,58 @@
+forms:
+  - id: inch_mark_pair
+    kind: rewrite
+    status: active
+    find: "(?<=\\d)\\s*(?:''|’’)"
+    replace: "\""
+    why: The inch mark is printed as two apostrophes after a figure. One apostrophe is the foot mark, so a spacing of 6'' was read as six feet and refused.
+    examples:
+      - {office: B, text: "#4@6''c/c", expect: "#4@6\"CC"}
+      - {office: B, text: "#3@7.5''c/c", expect: "#3@7.5\"CC"}
+      - {office: C, text: "4'-0''", expect: "4'-0\""}
+      - {office: D, text: "1'-6''", expect: "1'-6\""}
+      - {office: A, text: "3''", expect: "3\""}
+  - id: cc_centres
+    kind: rewrite
+    status: active
+    find: "\\bC\\s*[/\\-.]\\s*C\\b\\.?"
+    replace: "CC"
+    flags: I
+    why: Spacing is written c/c, C/C, c-c or C.C. and means centre to centre.
+    examples:
+      - {office: A, text: "#3@7\"C/C", expect: "#3@7\"CC"}
+      - {office: B, text: "#4@12\"c/c", expect: "#4@12\"CC"}
+      - {office: C, text: "#3@10\"c/c", expect: "#3@10\"CC"}
+      - {office: D, text: "#3@6\"C/C", expect: "#3@6\"CC"}
+  - id: count_sum
+    kind: count
+    status: active
+    pattern: "\\d{1,2}(?:\\s*\\+\\s*\\d{1,2})+"
+    why: A count written as a sum (5+5-#4) is the bars of both parts together, ten bars; it was read as five.
+    examples:
+      - {office: B, text: "5+5-#4", expect: {n: 10, bar: 4}}
+      - {office: B, text: "6+6-#4", expect: {n: 12, bar: 4}}
+      - {office: C, text: "5+5-#4", expect: {n: 10, bar: 4}}
+      - {office: C, text: "6+6-#4", expect: {n: 12, bar: 4}}
+  - id: count_plain
+    kind: count
+    status: active
+    pattern: "\\d{1,2}"
+    why: A count is one or two figures (4#6, 4-#6, 4 nos #6).
+    examples:
+      - {office: A, text: "4-#4", expect: {n: 4, bar: 4}}
+      - {office: B, text: "4#6", expect: {n: 4, bar: 6}}
+      - {office: C, text: "2-#6", expect: {n: 2, bar: 6}}
+  - id: count_sum_bracketed
+    kind: count
+    status: seen_once
+    pattern: "\\(\\s*\\d{1,2}(?:\\s*\\+\\s*\\d{1,2})+\\s*\\)"
+    why: A bracketed sum, (2+2)-#4. Printed once, in one office; not used until a second office prints it.
+    examples:
+      - {office: A, text: "(2+2)-#4", expect: {n: 4, bar: 4}}
+  - id: bar_then_spacing_dash
+    kind: spacing
+    status: seen_once
+    pattern: "#\\d-\\d{1,2}\""
+    why: A bar number and a spacing joined by a dash with no c/c (#3-7"). Printed three times, in one office; not used.
+    examples:
+      - {office: B, text: "#3-7\"", expect: {bar: 3, spacing_in: 7}}

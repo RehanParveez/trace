@@ -6,7 +6,11 @@ from app.engine.catalogue import schedule_kinds as SK
 from app.modules.drawings_boq.takeoff.ai_reader import prompts as P
 from app.modules.drawings_boq.takeoff.ai_reader import evidence as E
 from app.modules.drawings_boq.takeoff.ai_reader import compare as CMP
+from app.modules.drawings_boq.takeoff.ai_reader import examples as EX
 from app.modules.drawings_boq.takeoff.ai_reader import regions as R
+from app.modules.drawings_boq.takeoff.ai_reader import picture_ink as PI
+from app.modules.drawings_boq.takeoff.ai_reader import tasks as T
+from app.modules.drawings_boq.takeoff.ai_reader import twice as TW
 from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
 from app.modules.drawings_boq.takeoff.extract import structure_tables as ST
 from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
@@ -27,9 +31,9 @@ IN_MM = 25.4
 METRIC_SIZE = re.compile(r"^(\d{2,4}(?:\.\d+)?)\s*(?:mm)?\s*[x×]\s*(\d{2,4}(?:\.\d+)?)\s*(?:mm)?$", re.I)
 LEVELS = tuple((code, re.compile(rx, re.I)) for code, rx in SID.LEVEL)
 
-def prompt() -> str:
+def prompt(name: str | None = None, examples: list | None = None) -> str:
   lines = [f'- {e["key"]}: {e["about"]}; fields: {", ".join(e["fields"])}' for e in SK.kinds()]
-  return P.render(PROMPT_NAME, lists="\n".join(lines))
+  return P.render(name or PROMPT_NAME, lists="\n".join(lines), examples=EX.render(examples or [])).rstrip()
 
 def _text(value, limit: int) -> str | None:
   text = re.sub(r"\s+", " ", str(value if value is not None else "")).strip()
@@ -85,9 +89,15 @@ def _in_range(size: tuple, ranges) -> bool:
   a, b = size[0] * IN_MM, size[1] * IN_MM
   return (a0 <= a <= a1 and b0 <= b <= b1) or (a0 <= b <= a1 and b0 <= a <= b1)
 
-def row_checks(entry: dict, row: dict, tile_text: str | None) -> list:
+SPARSE_WORDS = 30
+
+def sparse(tile_text: str | None) -> bool:
+  return tile_text is None or len(tile_text.split()) < SPARSE_WORDS
+
+def row_checks(entry: dict, row: dict, tile_text: str | None, support: tuple | None = None) -> list:
   quote = row["quote"]
-  out = [E.quote_printed(quote, tile_text)] if quote else [E.result("quote_printed", False, "the row has no quote")]
+  ocr, clusters = support if support else (None, None)
+  out = [E.quote_supported(quote, tile_text, ocr, clusters)] if quote else [E.result("quote_supported", False, "the row has no quote")]
   gone = [f for f in entry["needs"] if not row.get(f)]
   out.append(E.result("fields_given", not gone, "every needed field is given" if not gone else "not given: " + ", ".join(gone)))
   inside = [f for f in entry["quoted"] if row.get(f) and f != "floor" and _compact(row[f]) not in _compact(quote)]
@@ -179,49 +189,77 @@ def accepted_from(ai_value: dict | None, tables: dict | None) -> dict:
   items = [(s["kind"], to_item(s["kind"], r)) for s in (ai_value or {}).get("schedules") or [] for r in s["rows"]]
   return merge(rule_rows(tables), items)["accepted"]
 
-async def read_schedules(*, contents: bytes, page_no: int, ask, store_crop=None, cache_key: str | None = None, model: str | None = None, tables: dict | None = None) -> dict:
+def row_key(kind: str, row: dict) -> tuple:
+  entry = SK.get(kind)
+  return (kind, _compact(row.get("mark")), _compact(row.get("floor")) if entry.get("floors") else "", _compact(row.get("layer")) if kind == "FINISH_SCHEDULE" else "")
+
+def rows_of(clean: dict):
+  for schedule in clean["schedules"]:
+    for row in schedule["rows"]:
+      yield row_key(schedule["kind"], row), {**row, "_kind": schedule["kind"]}
+
+def row_signature(row: dict) -> tuple:
+  entry = SK.get(row["_kind"])
+  return tuple(_compact(row.get(f)) for f in entry["fields"])
+
+async def read_schedules(*, contents: bytes, page_no: int, ask, store_crop=None, cache_key: str | None = None, model: str | None = None, tables: dict | None = None, prompt_name: str | None = None,
+    examples: list | None = None, leave_out_office: bool = False) -> dict:
   page_pt = await asyncio.to_thread(lambda: R.page_picture(contents, page_no, 64)[1]["page_pt"])
   text = await asyncio.to_thread(R.page_text, contents, page_no, page_pt)
   boxes = R.note_tiles(page_pt, len((text or "").split()))
-  prompt_text = prompt()
+  version = P.load(prompt_name or PROMPT_NAME)["version"]
+  shown = examples if "{examples}" in P.load(prompt_name or PROMPT_NAME)["text"] else []
+  prompt_text = prompt(prompt_name, shown)
+  route = T.route(TASK)
   
-  record = {"task": TASK, "purpose": PURPOSE, "prompt": prompt_text, "prompt_version": PROMPT_VERSION, "schema_version": SCHEMA_VERSION, "crop_key": None, "crop": {"tiles": boxes, "page_pt": page_pt},
+  record = {"task": TASK, "purpose": PURPOSE, "prompt": prompt_text, "prompt_version": EX.prompt_version(version, shown, leave_out_office), "schema_version": SCHEMA_VERSION, "crop_key": None,
+    "crop": {"tiles": boxes, "page_pt": page_pt, "reads": [], "review": [], "support": {}, "examples": EX.record(version, shown, leave_out_office)},
     "cache_key": cache_key, "model": model, "rule_value": {"cells": sum(len(v) for v in rule_rows(tables).values())}, "ai_request_id": None, "input_tokens": 0, "output_tokens": 0, "seconds": 0.0,
     "ai_value": None, "comparison": [], "totals": {}, "validators": [], "status": OK, "problems": [], "error": None, "items": {}}
   kept, held, validators, problems, confidences = [], [], [], [], []
+  how: dict = {}
   
   for n, box in enumerate(boxes):
-    png, _info = await asyncio.to_thread(R.box_picture, contents, page_no, box)
+    pictures = [(await asyncio.to_thread(R.box_picture, contents, page_no, box, int(R.BOX_LONG_SIDE_PX * scale)))[0] for scale in route["scales"]]
     if n == 0 and store_crop:
-      record["crop_key"] = await store_crop(png)
-    result = await ask(prompt_text, png, [])
-    record["model"] = getattr(result, "model", None) or record["model"]
-    record["ai_request_id"] = getattr(result, "ai_request_id", None) or record["ai_request_id"]
-    record["input_tokens"] += getattr(result, "input_tokens", None) or 0
-    record["output_tokens"] += getattr(result, "output_tokens", None) or 0
-    record["seconds"] += getattr(result, "seconds", None) or 0.0
-    
-    if not result.success:
-      record["status"], record["error"] = FAILED, str(result.error_message or "The AI request failed.")[:MAX_ERROR]
+      record["crop_key"] = await store_crop(pictures[0])
+    tile_text = await asyncio.to_thread(R.text_in_boxes, contents, page_no, [box])
+    support = await asyncio.to_thread(PI.support_inputs, pictures[0]) if sparse(tile_text) else None
+
+    def checks(_key, row, tile_text=tile_text, support=support):
+      kind = row["_kind"]
+      return [{**c, "name": f"{c['name']}.{kind}"} for c in row_checks(SK.get(kind), row, tile_text, support)]
+
+    got = await TW.read_region(task=TASK, ask=ask, prompt=prompt_text, pictures=pictures, parse=validate, rows_of=rows_of, signature=row_signature, checks=checks)
+    for spent in got["spent"]:
+      record["crop"]["reads"].append({k: (str(v) if k == "ai_request_id" and v is not None else v) for k, v in spent.items()})
+      record["model"] = spent.get("model") or record["model"]
+      record["ai_request_id"] = spent.get("ai_request_id") or record["ai_request_id"]
+      record["input_tokens"] += spent["input_tokens"]
+      record["output_tokens"] += spent["output_tokens"]
+      record["seconds"] += spent["seconds"]
+      
+    if got["failed"]:
+      record["status"], record["error"] = FAILED, got["failed"][:MAX_ERROR]
       return record
-    clean, found = validate(result.parsed_output)
-    problems.extend(found)
-    if clean is None:
+    if got["invalid"]:
       record["status"] = INVALID
       return record
-    confidences.append(clean["confidence"])
-    tile_text = await asyncio.to_thread(R.text_in_boxes, contents, page_no, [box])
-    for schedule in clean["schedules"]:
-      entry = SK.get(schedule["kind"])
-      for row in schedule["rows"]:
-        checks = [{**c, "name": f"{c['name']}.{schedule['kind']}"} for c in row_checks(entry, row, tile_text)]
-        validators.extend(checks)
-        if all(c["passed"] for c in checks):
-          kept.append((schedule["kind"], row))
-        else:
-          held.append({"kind": schedule["kind"], "mark": row.get("mark"), "reasons": [c["name"].split(".")[0] for c in checks if not c["passed"]], "quote": row.get("quote")})
-          problems.append(f"{schedule['kind']}_ROW_HELD")
-          
+    problems.extend(got["problems"])
+    confidences.extend(got["confidences"])
+    for a in got["accepted"]:
+      validators.extend(a["checks"])
+      kept.append((a["row"]["_kind"], {k: v for k, v in a["row"].items() if k != "_kind"}))
+      support_of = next((c.get("support") for c in a["checks"] if c["name"].startswith("quote_supported")), None)
+      how[a["how"]] = how.get(a["how"], 0) + 1
+      record["crop"]["support"][support_of or "NONE"] = record["crop"]["support"].get(support_of or "NONE", 0) + 1
+    for r in got["review"]:
+      validators.extend(r.get("checks") or [])
+      kind, mark = r["key"][0], r["key"][1]
+      held.append({"kind": kind, "mark": (r["candidates"][0] or {}).get("mark"), "reasons": [x.split(".")[0] for x in r["reasons"]], "quote": (r["candidates"][0] or {}).get("quote")})
+      record["crop"]["review"].append({"kind": kind, "key": list(r["key"]), "reasons": r["reasons"], "candidates": [{k: v for k, v in c.items() if k != "_kind"} for c in r["candidates"]]})
+      problems.append(f"{kind}_ROW_HELD")
+      
   unique = list({_key(k, to_item(k, r)): (k, r) for k, r in kept}.values())
   merged = merge(rule_rows(tables), [(k, to_item(k, r)) for k, r in unique])
   record["items"] = merged["accepted"]
@@ -231,5 +269,5 @@ async def read_schedules(*, contents: bytes, page_no: int, ask, store_crop=None,
   record["ai_value"] = {"schedules": [{"kind": k, "rows": rows} for k, rows in grouped.items()], "held": held, "confidence": min(confidences, key=CONFIDENCE.index) if confidences else "low"}
   record["validators"], record["problems"] = validators, problems
   record["comparison"] = merged["records"]
-  record["totals"] = CMP.totals(merged["records"])
+  record["totals"] = {**CMP.totals(merged["records"]), "accepted": len(unique), "review": len(held), "escalated": how.get(TW.ESCALATED, 0)}
   return record

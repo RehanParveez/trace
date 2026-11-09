@@ -84,8 +84,22 @@ def pair_by_size(truth: list, read: list) -> list:
   cost = [[dist(t, r) for r in read] for t in truth]
   return sorted(assign(cost)) if cost and cost[0] else []
 
+BAR_GROUP = re.compile(r"(\d+)\s*-?\s*#\s*(\d+)")
+BAR_JOINERS = re.compile(r"[\s+,]|\band\b")
+
+def bar_groups(value) -> list | None:
+  text = str(value).strip().lower()
+  groups = BAR_GROUP.findall(text)
+  if not groups or BAR_JOINERS.sub("", BAR_GROUP.sub("", text)):
+    return None
+  return sorted((int(n), int(d)) for n, d in groups)
+
 def values_equal(key: str, a, b) -> bool:
   r = rules()["fact"]
+  if isinstance(a, str) and isinstance(b, str) and key.endswith("bars"):
+    ga, gb = bar_groups(a), bar_groups(b)
+    if ga is not None and gb is not None:
+      return ga == gb
   if isinstance(a, bool) or isinstance(b, bool):
     return a == b
   if isinstance(a, (int, float)) and isinstance(b, (int, float)):

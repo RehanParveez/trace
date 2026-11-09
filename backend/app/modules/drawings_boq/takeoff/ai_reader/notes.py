@@ -5,8 +5,13 @@ from app.modules.drawings_boq.takeoff.ai_reader import prompts as P
 from app.engine.catalogue import note_keys as NK
 from app.modules.drawings_boq.takeoff.prep import printed_params as PP
 from app.modules.drawings_boq.takeoff.ai_reader import compare as CMP
+from app.modules.drawings_boq.takeoff.ai_reader import examples as EX
 from app.modules.drawings_boq.takeoff.ai_reader import evidence as E
 from app.modules.drawings_boq.takeoff.ai_reader import regions as R
+from app.modules.drawings_boq.takeoff.ai_reader import picture_ink as PI
+from app.modules.drawings_boq.takeoff.ai_reader import tasks as T
+from app.modules.drawings_boq.takeoff.ai_reader import twice as TW
+from app.modules.drawings_boq.takeoff.ai_reader.schedule import sparse
 
 TASK = "NOTE_FACT"
 PURPOSE = "NOTE_FACT"
@@ -20,12 +25,12 @@ MAX_SCOPE = 40
 OK, INVALID, FAILED = "OK", "INVALID", "FAILED"
 MAX_ERROR = 500
 
-def prompt() -> str:
+def prompt(name: str | None = None, examples: list | None = None) -> str:
   lines = []
   for e in NK.keys():
     scopes = ", ".join(e["scopes"]) if e.get("scopes") else "any member or material, in a few words"
     lines.append(f'- {e["key"]}: {e["about"]}; unit {e["unit"]}; scope: {scopes}')
-  return P.render(PROMPT_NAME, lists="\n".join(lines))
+  return P.render(name or PROMPT_NAME, lists="\n".join(lines), examples=EX.render(examples or [])).rstrip()
 
 def _text(value, limit: int) -> str | None:
   text = re.sub(r"\s+", " ", str(value or "")).strip()
@@ -70,10 +75,11 @@ def millimetres(fact: dict) -> float | None:
   entry = NK.get(fact["key"])
   return NK.to_mm(fact["value"], fact["unit"]) if entry and entry["unit"] == "mm" else None
 
-def fact_checks(fact: dict, tile_text: str | None) -> list:
+def fact_checks(fact: dict, tile_text: str | None, support: tuple | None = None) -> list:
   entry = NK.get(fact["key"])
   quote = fact["quote"]
-  out = [E.quote_printed(quote, tile_text)] if quote else [E.result("quote_printed", False, "the fact has no quote")]
+  ocr, clusters = support if support else (None, None)
+  out = [E.quote_supported(quote, tile_text, ocr, clusters)] if quote else [E.result("quote_supported", False, "the fact has no quote")]
   out.append(E.number_printed(fact["value"], quote))
   mm = millimetres(fact)
   
@@ -135,45 +141,70 @@ def merge(rule_items: list, items: list) -> dict:
 def accepted_from(ai_value: dict | None, rule_items: list) -> list:
   return merge(rule_items, [to_item(f) for f in (ai_value or {}).get("facts") or []])["accepted"]
 
-async def read_notes(*, contents: bytes, page_no: int, ask, store_crop=None, cache_key: str | None = None, model: str | None = None, rule_items: list | None = None) -> dict:
+def fact_key(fact: dict) -> tuple:
+  return (fact["key"], _scope(fact.get("scope")), _scope(fact.get("where")), fact.get("bar"))
+
+def facts_of(clean: dict):
+  for fact in clean["facts"]:
+    yield fact_key(fact), fact
+
+def fact_signature(fact: dict) -> tuple:
+  return (fact["key"], _scope(fact.get("scope")), _scope(fact.get("where")), fact.get("bar"), str(fact.get("value")), str(fact.get("unit") or "").lower())
+
+async def read_notes(*, contents: bytes, page_no: int, ask, store_crop=None, cache_key: str | None = None, model: str | None = None, rule_items: list | None = None, prompt_name: str | None = None,
+    examples: list | None = None, leave_out_office: bool = False) -> dict:
   page_pt = await asyncio.to_thread(lambda: R.page_picture(contents, page_no, 64)[1]["page_pt"])
   text = await asyncio.to_thread(R.page_text, contents, page_no, page_pt)
   boxes = R.note_tiles(page_pt, len((text or "").split()))
-  prompt_text = prompt()
+  version = P.load(prompt_name or PROMPT_NAME)["version"]
+  shown = examples if "{examples}" in P.load(prompt_name or PROMPT_NAME)["text"] else []
+  prompt_text = prompt(prompt_name, shown)
+  route = T.route(TASK)
   
-  record = {"task": TASK, "purpose": PURPOSE, "prompt": prompt_text, "prompt_version": PROMPT_VERSION, "schema_version": SCHEMA_VERSION, "crop_key": None, "crop": {"tiles": boxes, "page_pt": page_pt},
+  record = {"task": TASK, "purpose": PURPOSE, "prompt": prompt_text, "prompt_version": EX.prompt_version(version, shown, leave_out_office), "schema_version": SCHEMA_VERSION, "crop_key": None, "crop": {"tiles": boxes, "page_pt": page_pt, "reads": [], "review": [], "support": {}, "examples": EX.record(version, shown, leave_out_office)},
     "cache_key": cache_key, "model": model, "rule_value": {"items": len(rule_items or [])}, "ai_request_id": None, "input_tokens": 0, "output_tokens": 0, "seconds": 0.0, "ai_value": None,
     "comparison": [], "totals": {}, "validators": [], "status": OK, "problems": [], "error": None, "items": []}
-  facts, validators, problems, confidences = [], [], [], []
+  facts, validators, problems, confidences, held = [], [], [], [], 0
+  how: dict = {}
+  
   for n, box in enumerate(boxes):
-    png, _info = await asyncio.to_thread(R.box_picture, contents, page_no, box)
+    pictures = [(await asyncio.to_thread(R.box_picture, contents, page_no, box, int(R.BOX_LONG_SIDE_PX * scale)))[0] for scale in route["scales"]]
     if n == 0 and store_crop:
-      record["crop_key"] = await store_crop(png)
-    result = await ask(prompt_text, png, [])
-    
-    record["model"] = getattr(result, "model", None) or record["model"]
-    record["ai_request_id"] = getattr(result, "ai_request_id", None) or record["ai_request_id"]
-    record["input_tokens"] += getattr(result, "input_tokens", None) or 0
-    record["output_tokens"] += getattr(result, "output_tokens", None) or 0
-    record["seconds"] += getattr(result, "seconds", None) or 0.0
-    
-    if not result.success:
-      record["status"], record["error"] = FAILED, str(result.error_message or "The AI request failed.")[:MAX_ERROR]
+      record["crop_key"] = await store_crop(pictures[0])
+    tile_text = await asyncio.to_thread(R.text_in_boxes, contents, page_no, [box])
+    support = await asyncio.to_thread(PI.support_inputs, pictures[0]) if sparse(tile_text) else None
+
+    def checks(_key, fact, tile_text=tile_text, support=support):
+      return [{**c, "name": f"{c['name']}.{fact['key']}"} for c in fact_checks(fact, tile_text, support)]
+
+    got = await TW.read_region(task=TASK, ask=ask, prompt=prompt_text, pictures=pictures, parse=validate, rows_of=facts_of, signature=fact_signature, checks=checks)
+    for spent in got["spent"]:
+      record["crop"]["reads"].append({k: (str(v) if k == "ai_request_id" and v is not None else v) for k, v in spent.items()})
+      record["model"] = spent.get("model") or record["model"]
+      record["ai_request_id"] = spent.get("ai_request_id") or record["ai_request_id"]
+      record["input_tokens"] += spent["input_tokens"]
+      record["output_tokens"] += spent["output_tokens"]
+      record["seconds"] += spent["seconds"]
+      
+    if got["failed"]:
+      record["status"], record["error"] = FAILED, got["failed"][:MAX_ERROR]
       return record
-    clean, found = validate(result.parsed_output)
-    problems.extend(found)
-    if clean is None:
+    if got["invalid"]:
       record["status"] = INVALID
       return record
-    confidences.append(clean["confidence"])
-    tile_text = await asyncio.to_thread(R.text_in_boxes, contents, page_no, [box])
-    for fact in clean["facts"]:
-      checks = [{**c, "name": f"{c['name']}.{fact['key']}"} for c in fact_checks(fact, tile_text)]
-      validators.extend(checks)
-      if all(c["passed"] for c in checks):
-        facts.append(fact)
-      else:
-        problems.append(f"{fact['key']}_DROPPED")
+    problems.extend(got["problems"])
+    confidences.extend(got["confidences"])
+    for a in got["accepted"]:
+      validators.extend(a["checks"])
+      facts.append(a["row"])
+      support_of = next((c.get("support") for c in a["checks"] if c["name"].startswith("quote_supported")), None)
+      how[a["how"]] = how.get(a["how"], 0) + 1
+      record["crop"]["support"][support_of or "NONE"] = record["crop"]["support"].get(support_of or "NONE", 0) + 1
+    for r in got["review"]:
+      held += 1
+      validators.extend(r.get("checks") or [])
+      record["crop"]["review"].append({"key": [str(x) for x in r["key"]], "reasons": r["reasons"], "candidates": r["candidates"]})
+      problems.append(f"{r['key'][0]}_DROPPED")
         
   facts = list({(f["key"], f["scope"], f["where"], f["bar"], f["value"], f["unit"]): f for f in facts}.values())
   merged = merge(rule_items or [], [to_item(f) for f in facts])
@@ -181,5 +212,5 @@ async def read_notes(*, contents: bytes, page_no: int, ask, store_crop=None, cac
   record["ai_value"] = {"facts": facts, "confidence": min(confidences, key=CONFIDENCE.index) if confidences else "low"}
   record["validators"], record["problems"] = validators, problems
   record["comparison"] = merged["records"]
-  record["totals"] = CMP.totals(merged["records"])
+  record["totals"] = {**CMP.totals(merged["records"]), "accepted": len(facts), "review": held, "escalated": how.get(TW.ESCALATED, 0)}
   return record

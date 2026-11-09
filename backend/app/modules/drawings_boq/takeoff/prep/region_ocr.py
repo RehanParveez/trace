@@ -67,7 +67,7 @@ def read_region(page, rotation: int, cropbox: tuple, view: tuple, dpi: float = D
       continue
     a0, b0 = vx0 + r["l"] / scale, vy0 + r["t"] / scale
     a1, b1 = vx0 + (r["l"] + r["w"]) / scale, vy0 + (r["t"] + r["h"]) / scale
-    words.append(ocr_layer._build_word(r["text"], a0, b0, a1, b1, 0.0, rotation, cropbox))
+    words.append(ocr_layer._build_word(r["text"], a0, b0, a1, b1, 0.0, rotation, cropbox, conf=r["conf"]))
   info.update(words=len(words), dpi=round(scale * 72.0, 1), seconds=round(time.monotonic() - started, 2))
   return words, info
 
@@ -136,6 +136,6 @@ def read_cells(page, rotation: int, cropbox: tuple, view: tuple, dpi: float = 45
 
     a0, a1 = vx0 + c0 / scale, vx0 + c1 / scale
     t0, t1 = vy0 + b0 / scale, vy0 + b1 / scale
-    words.append(ocr_layer._build_word(text.strip(), a0, t0, a1, t1, 0.0, rotation, cropbox))
+    words.append(ocr_layer._build_word(text.strip(), a0, t0, a1, t1, 0.0, rotation, cropbox, conf=min((r["conf"] for r in rows), default=50.0)))
   info.update(words=len(words), dpi=round(scale * 72.0, 1), seconds=round(time.monotonic() - started, 2))
   return words, info
