@@ -42,7 +42,7 @@ def line_marks(billed_lines: list, priced: list, rows: list, conf: dict | None =
       "measured_amount": None if amount is None else float(round(amount * (1 - share), 2)),
       "assumed_amount": None if amount is None else float(round(amount * share, 2)),
       "low_pct": pct_of(p.low, amount), "high_pct": pct_of(p.high, amount), "elements": elements, "open_rows": open_touching(elements, rows), "band": band,
-      "confidence": band if shown else None, "confidence_why": why if shown else None})
+      "band_why": why, "confidence": band if shown else None, "confidence_why": why if shown else None})
   return out
 
 def confidence_block(marks: list, conf: dict | None) -> dict:

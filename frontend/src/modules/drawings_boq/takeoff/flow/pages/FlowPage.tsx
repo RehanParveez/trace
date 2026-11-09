@@ -4,10 +4,11 @@ import { useTranslation } from "react-i18next";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../../../identity";
 import { Badge, EmptyState, ErrorState, LoadingState, Panel, PanelHeader, useToast } from "../../../../organizations/components/OrganizationUi";
 import { takeoffErrorMessage } from "../../utils/errors";
+import { AccuracyReportView } from "../components/AccuracyReportView";
 import { FlowBoq } from "../components/FlowBoq";
 import { FlowSteps } from "../components/FlowSteps";
 import { FlowTiming } from "../components/FlowTiming";
-import { useExport, useFlowBoq, useFlowSeen, useFlowStatus, useRateBooks, useStartQuantities, useStartRead, useUploadDrawing } from "../hooks/useFlow";
+import { useExport, useFlowAccuracy, useFlowBoq, useFlowSeen, useFlowStatus, useRateBooks, useStartQuantities, useStartRead, useUploadDrawing } from "../hooks/useFlow";
 import { EXPORT_TEXT, EXPORTS, saveBlob } from "../utils/flow";
 
 export function FlowPage() {
@@ -25,6 +26,7 @@ export function FlowPage() {
   const books = useRateBooks();
   const ready = status.data?.steps.find((s) => s.key === "boq")?.state === "READY";
   const boq = useFlowBoq(projectId, profile, bookId, showBoq && ready);
+  const accuracy = useFlowAccuracy(projectId, profile, bookId, showBoq && ready);
   const seen = useFlowSeen(projectId);
   const upload = useUploadDrawing(projectId);
   const read = useStartRead(projectId);
@@ -74,6 +76,14 @@ export function FlowPage() {
               <FlowBoq data={boq.data} profiles={status.data.profiles} profile={profile} profileSource={boq.data.profile_source} books={books.data ?? []} bookId={bookId}
                 onProfile={(id) => setParam("profile", id)} onBook={(id) => setParam("book", id)} />
             )}
+          </div>
+        </Panel>
+      ) : null}
+      {showBoq && ready ? (
+        <Panel>
+          <PanelHeader eyebrow={t("boq.flow.eyebrow", "Project")} title={t("boq.flow.accuracy", "How much of this bill to trust")} description={t("boq.flow.accuracyText", "What was measured, what was assumed, what was not read, and what to check first.")} />
+          <div className="p-4">
+            {accuracy.isLoading ? <LoadingState label={t("boq.flow.loadingAccuracy", "Preparing the accuracy report…")} /> : accuracy.isError || !accuracy.data ? <ErrorState title={t("boq.flow.accuracyError", "The accuracy report could not be made")} onRetry={() => void accuracy.refetch()} /> : <AccuracyReportView report={accuracy.data} />}
           </div>
         </Panel>
       ) : null}

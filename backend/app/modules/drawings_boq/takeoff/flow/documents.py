@@ -108,3 +108,52 @@ def client_pdf(title: str, meta: list, warnings: list, totals: dict, coverage: l
     story.append(Paragraph("Every line has a rate.", s["body"]))
   story += [Spacer(1, 8), Paragraph(footer, s["small"])]
   return build(story, A4)
+
+def accuracy_pdf(r: dict, meta: list) -> bytes:
+  s = styles()
+  story = head_block(s, r["title"], meta, [])
+  story += [Paragraph(r["intro"], s["body"]), Spacer(1, 6), Paragraph("1. What was read", s["h2"])]
+  c = r["coverage"]
+  rows = [[Paragraph(x["section"], s["cell"]), x["MEASURED"], x["ASSUMED"], x["ASKED"], x["NOT_READ"], f"{x['with_quantity_pct']:.1f}%"] for x in c["sections"]]
+  t = c["total"]
+  
+  rows.append(["All", t["MEASURED"], t["ASSUMED"], t["ASKED"], t["NOT_READ"], f"{t['with_quantity_pct']:.1f}%"])
+  story.append(table([["Section", "Measured", "Assumed", "Asked", "Not read", "With a quantity"]] + rows, [68 * mm, 20 * mm, 20 * mm, 20 * mm, 20 * mm, 32 * mm], right=(1, 2, 3, 4, 5)))
+  if c["note"]:
+    story.append(Paragraph(c["note"], s["warn"]))
+    for n in c["not_read_items"]:
+      story.append(Paragraph(f"{n['section']}: {', '.join(n['items'])}" + (f" and {n['more']} more" if n["more"] else ""), s["small"]))
+      
+  m = r["money"]
+  story += [Spacer(1, 8), Paragraph("2. The money", s["h2"])]
+  if m["priced"]:
+    story.append(table([["Total of the priced lines", money(m["total"])], ["Measured", money(m["measured"])], ["Resting on assumptions", f"{money(m['assumed'])} ({m['assumed_pct']}%)"], ["Lines with no rate", f"{m['unpriced_lines']} of {m['lines']}"]], [90 * mm, 90 * mm], right=(1,)))
+  else:
+    story.append(Paragraph(m["note"], s["body"]))
+  cf = r["confidence"]
+  story += [Spacer(1, 8), Paragraph("3. How sure Trace is", s["h2"])]
+  if cf["shown"]:
+    story.append(table([["Confidence", "Lines", "Money" if cf["basis"] == "MONEY" else "-", "Share"]] + [[b["band"], b["lines"], money(b["amount"]) if b["amount"] is not None else "", f"{b['pct']}%"] for b in cf["bands"]], [60 * mm, 30 * mm, 50 * mm, 30 * mm], right=(1, 2, 3)))
+  else:
+    story.append(Paragraph(cf["why"], s["body"]))
+  q = r["questions"]
+  story += [Spacer(1, 8), Paragraph(f"4. Open questions ({q['open']})", s["h2"])]
+  if q["rows"]:
+    story.append(table([["What", "Sheet", "Changes", "Effect (Rs)"]] + [[Paragraph(f"{x['item']}: {x['prompt']}", s["cell"]), x["page"] or "", f"{x['touches']} item(s)", money(x["effect_rs"])] for x in q["rows"]], [100 * mm, 14 * mm, 22 * mm, 34 * mm], right=(3,)))
+    if q["more"]:
+      story.append(Paragraph(f"{q['more']} more are in the review list of the project.", s["small"]))
+  else:
+    story.append(Paragraph("No review row is open.", s["body"]))
+  a = r["assumptions"]
+  story += [Spacer(1, 8), Paragraph(f"5. Assumptions and their sources ({a['count']})", s["h2"])]
+  if a["rows"]:
+    story.append(table([["Input", "Figure used", "Range", "Source", "Items"]] + [[x["input"].replace("_", " "), f"{x.get('value')} {x.get('unit') or ''}".strip(), "-" if not x.get("range") else f"{x['range'][0]} to {x['range'][1]}", Paragraph(str(x.get("source") or ""), s["cell"]), x["items"]] for x in a["rows"]], [40 * mm, 28 * mm, 28 * mm, 70 * mm, 14 * mm], right=(4,)))
+  else:
+    story.append(Paragraph("No quantity rests on an assumed input.", s["body"]))
+  k = r["check_first"]
+  story += [Spacer(1, 8), Paragraph("6. Check these first", s["h2"]), Paragraph(k["text"], s["small"])]
+  if k["lines"]:
+    story.append(table([["Line", "Floor", "Amount", "Band", "Open", "Sheets"]] + [[Paragraph(f"{x['code']} {x.get('description') or ''}", s["cell"]), x.get("floor") or "", money(x.get("amount")), x.get("band") or "", x["open_rows"] or "", ", ".join(str(p) for p in x["pages"])] for x in k["lines"]], [70 * mm, 18 * mm, 28 * mm, 18 * mm, 12 * mm, 30 * mm], right=(2,)))
+  tr = r["track_record"]
+  story += [Spacer(1, 8), Paragraph("7. Track record", s["h2"]), Paragraph(tr["text"], s["body"]), Paragraph(tr["rule"], s["small"]), Spacer(1, 8), Paragraph(r["footer"], s["small"])]
+  return build(story, A4)

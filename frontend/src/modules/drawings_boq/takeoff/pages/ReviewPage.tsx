@@ -32,9 +32,9 @@ export function ReviewPage() {
   if (review.isLoading) return <LoadingState label={t("boq.review.loading", "Loading the review list…")} />;
   if (review.isError || !review.data) return <ErrorState title={t("boq.review.loadError", "The review list could not be loaded")} onRetry={() => void review.refetch()} />;
 
-  const send = (action: "accept" | "correct" | "reject" | "withdraw", value: string | null) => {
+  const send = (action: "accept" | "correct" | "reject" | "withdraw", value: string | null, reason?: string | null) => {
     if (!current) return;
-    act.mutate({ key: current.key, body: { action, value } }, {
+    act.mutate({ key: current.key, body: { action, value, reason: reason ?? null } }, {
       onSuccess: (done) => showToast({ tone: "success", title: t("boq.review.saved", "Decision saved"), description: touchedText(done.touched) }),
       onError: (e) => showToast({ tone: "error", title: t("boq.review.failed", "The decision was not saved"), description: takeoffErrorMessage(e) }),
     });

@@ -61,10 +61,12 @@ class OrganizationUpdateRequest(BaseModel):
 class AISettingsResponse(BaseModel):
   ai_enabled: bool
   ai_consent: str = "OFF"
+  learning_consent: str = "OFF"
 
 class AISettingsUpdateRequest(BaseModel):
   ai_enabled: bool | None = None
   ai_consent: Literal["OFF", "LOCAL", "OUTSIDE"] | None = None
+  learning_consent: Literal["OFF", "OWN", "SHARED"] | None = Field(default=None, description="OFF: corrections stay in the company's log. OWN: accepted answers become examples for this company's drawings. SHARED: as OWN, and the examples and nameless patterns of corrections may serve other companies.")
 
 class BillingProfileResponse(BaseModel):
   billing_profile: str | None = None

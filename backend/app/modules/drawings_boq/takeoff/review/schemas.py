@@ -40,6 +40,7 @@ class ReviewRow(BaseModel):
   unquantified: int = Field(default=0, description="How many of the lines hold no quantity yet.")
   touches: list[str] = Field(default_factory=list, description="The catalogue items the row changes: the ones an action on it re-runs.")
   actions: list[ReviewAction] = Field(default_factory=list)
+  reasons: dict[str, list[str]] = Field(default_factory=dict, description="For a row of an AI read: the reasons each action takes, so that a person can say why they corrected or left it out.")
   state: str = Field(description="OPEN or DECIDED.")
   decision: ReviewDecision | None = None
   default: dict | None = None
@@ -62,6 +63,7 @@ class ReviewResponse(BaseModel):
 class ReviewActionRequest(BaseModel):
   action: str = Field(description="accept, correct, reject, or withdraw to take the decision back.")
   value: str | None = Field(default=None, description="The value of a correction.")
+  reason: str | None = Field(default=None, description="Why a read was corrected or left out, one of the short list the action takes (WRONG_NUMBER, WRONG_UNIT, WRONG_NAME, WRONG_FLOOR for a correction; NOT_ON_DRAWING, ALREADY_COUNTED, NOT_FOR_THIS_JOB, DRAWING_IS_WRONG for leaving out; OTHER for either). Never needed. Only the review of an AI read keeps it.")
 
 class ReviewActionResponse(ReviewResponse):
   key: str

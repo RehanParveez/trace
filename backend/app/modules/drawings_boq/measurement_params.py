@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from app.modules.drawings_boq.models import ProjectMeasurementParameter
 from app.modules.drawings_boq.company_conventions import CompanyConventionsResponse, CompanyConventionsService, CompanyConventionsUpdate
 from app.modules.drawings_boq.takeoff.printed_service import printed_for_project
+from app.modules.drawings_boq.qs_method_service import QsMethodChoice, QsMethodResult, QsMethodService, QsMethodsResponse
 from decimal import Decimal
 from app.modules.projects.repository import ProjectRepository
 from datetime import datetime, timezone
@@ -303,5 +304,21 @@ async def adopt_qs_conventions(
   current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_MANAGE)),
   session: AsyncSession = Depends(get_db),
 ):
-  """Save the QS's figures, as the software holds them, for every convention the company has set nothing for."""
+
   return await CompanyConventionsService(session).adopt_qs(current_user.active_membership.organization_id, current_user.id)
+
+@router.get("/company-conventions/qs-methods", response_model=QsMethodsResponse)
+async def get_qs_methods(
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await QsMethodService(session).view(current_user.active_membership.organization_id)
+
+@router.put("/company-conventions/qs-method", response_model=QsMethodResult)
+async def put_qs_method(
+  payload: QsMethodChoice,
+  current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  
+  return await QsMethodService(session).choose(current_user.active_membership.organization_id, payload)

@@ -117,6 +117,18 @@ class OrganizationService:
     organization = await self.get_organization(organization_id)
     return organization.ai_consent
 
+  async def get_learning_consent(self, organization_id: UUID) -> str:
+    organization = await self.get_organization(organization_id)
+    return organization.learning_consent
+
+  async def _apply_learning_consent(self, organization_id: UUID, was: str, now: str) -> None:
+    from sqlalchemy import delete, update
+    from app.modules.drawings_boq.takeoff.ai_reader.models import AiExample
+    if now == "OFF":
+      await self.session.execute(delete(AiExample).where(AiExample.organization_id == organization_id))
+    elif now != "SHARED" and was == "SHARED":
+      await self.session.execute(update(AiExample).where(AiExample.organization_id == organization_id).values(shared=False))
+
   async def update_ai_settings(
     self,
     organization_id: UUID,
@@ -137,6 +149,10 @@ class OrganizationService:
       organization.ai_enabled = payload.ai_enabled
     if payload.ai_consent is not None:
       organization.ai_consent = payload.ai_consent
+    learning_was = organization.learning_consent
+    if payload.learning_consent is not None:
+      organization.learning_consent = payload.learning_consent
+      await self._apply_learning_consent(organization_id, learning_was, payload.learning_consent)
     await self.session.commit()
 
     if payload.ai_enabled is not None:
@@ -156,6 +172,15 @@ class OrganizationService:
         organization_id,
         AuditAction.UPDATE,
         f"AI consent set to {payload.ai_consent} for the organization",
+      )
+    if payload.learning_consent is not None and payload.learning_consent != learning_was:
+      await self.audit.log(
+        organization_id,
+        actor_user_id,
+        AuditEntityType.ORGANIZATION,
+        organization_id,
+        AuditAction.UPDATE,
+        f"Learning from corrections set from {learning_was} to {payload.learning_consent} for the organization",
       )
 
     return organization.ai_enabled

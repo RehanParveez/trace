@@ -59,6 +59,48 @@ def _flagged(read_items: list, page=None, cls: str | None = None) -> bool:
     return True
   return any(i.status is not V.Status.READ for i in read_items)
 
+def _polyline_of(geom) -> list | None:
+  pl = (geom or {}).get("polyline")
+  return pl if pl and len(pl) >= 2 else None
+
+def cover_outcomes(key: str, ts, sheet, cls: str, truths: list, reads: list, page, paired: dict | None) -> list:
+  share = M.rules()["cover"]["min_share"]
+  def line_of(t):
+    return (_polyline_of(t.geom), M.line_offset_pt(page, (t.attrs or {}).get("thickness_mm")))
+  live = [line_of(t) for t in truths if not F.is_draft(t.truth) and _polyline_of(t.geom)]
+  draft = [line_of(t) for t in truths if F.is_draft(t.truth) and _polyline_of(t.geom)]
+  on_truth = {j for j, r in enumerate(reads) if _polyline_of(r.geom) and M.on_share_each(_polyline_of(r.geom), live) >= share}
+  eligible = [(j, _polyline_of(r.geom)) for j, r in enumerate(reads) if _polyline_of(r.geom)]
+  
+  out, seen = [], 0
+  for t in truths:
+    if F.is_draft(t.truth):
+      continue
+    seen += 1
+    
+    oid = f"{key}:EL:{sheet}:{cls}:-:{seen}"
+    tl, off = line_of(t)
+    if tl is not None and eligible and M.on_share(tl, [pl for _j, pl in eligible], off) >= share:
+      best_j = max(eligible, key=lambda e: M.on_share(tl, [e[1]], off))[0]
+      near = reads[best_j]
+      
+      if paired is not None:
+        paired[id(t)] = near
+      wrong, unread = M.compare_attrs(t.attrs, near.attrs)
+      out.append(_outcome(oid, ts, cls, sheet, "truth", WRONG if wrong else OK, t.mark, ("wrong: " + ", ".join(wrong) if wrong else None) or ("not read: " + ", ".join(unread) if unread else None), at=RG.point_of(t.at, t.geom)))
+    else:
+      out.append(_outcome(oid, ts, cls, sheet, "truth", MISSED_R if _flagged(reads, page, cls) else MISSED_S, t.mark, at=RG.point_of(t.at, t.geom)))
+  for j, r in enumerate(reads):
+    oid = f"{key}:RD:{sheet}:{cls}:{M.group_key(r.mark) or '-'}:{j + 1}"
+    rl = _polyline_of(r.geom)
+    if j in on_truth:
+      out.append(_outcome(oid, ts, cls, sheet, "read", TRUE, r.mark))
+    elif rl is not None and draft and M.on_share_each(rl, draft) >= share:
+      continue
+    else:
+      out.append(_outcome(oid, ts, cls, sheet, "read", INV_S if r.status is V.Status.READ else INV_F, r.mark))
+  return out
+
 def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | None = None) -> list:
   out, seen = [], {}
   by_scope: dict = {}
@@ -72,7 +114,9 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | 
     page = read.pages.get(sheet)
     reads = list(reads_by_scope.get((sheet, cls), []))
     used: set = set()
-    
+    if cls in M.cover_classes():
+      out += cover_outcomes(key, ts, sheet, cls, truths, reads, page, paired)
+      continue
     marked = {}
     for t in truths:
       marked.setdefault(M.row_key(t), []).append(t)

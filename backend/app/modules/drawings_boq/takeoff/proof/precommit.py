@@ -70,6 +70,14 @@ def step_catalogue() -> tuple:
   from app.modules.drawings_boq.takeoff.proof import catalogue_check as CC
   return CC.gate()
 
+def step_methods() -> tuple:
+  from app.modules.drawings_boq.takeoff.proof import methods_check as MC
+  return MC.gate()
+
+def step_track() -> tuple:
+  from app.modules.drawings_boq.takeoff.proof.bench import track_record as TR
+  return TR.gate()
+
 def step_gates(cases_dir: str | None, out: str, no_toggles: bool) -> tuple:
   from app.modules.drawings_boq.takeoff.proof import check as CK
   argv = ["--out", out] + (["--cases-dir", cases_dir] if cases_dir else []) + (["--no-toggles"] if no_toggles else [])
@@ -185,7 +193,7 @@ def main(argv: list | None = None) -> int:
   cases_dir = CIO.cases_dir(args.cases_dir)
   
   steps = [("commit hook", step_hook), ("settings", step_settings), ("prompts", step_prompts), ("import check", step_import), ("case files", step_files),
-    ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys), ("gate 17", step_gate17), ("catalogue", step_catalogue)]
+    ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys), ("gate 17", step_gate17), ("catalogue", step_catalogue), ("qs methods", step_methods), ("track record", step_track)]
   if not args.fast:
     steps += [("gates", lambda: step_gates(cases_dir, args.out, args.no_toggles)), ("baseline", lambda: step_baseline(cases_dir, args.out))]
   for name, run in steps:

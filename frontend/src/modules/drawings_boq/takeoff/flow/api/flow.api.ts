@@ -1,5 +1,5 @@
 import { apiClient } from "../../../../../shared/api/client";
-import type { ExportKind, FlowBoq, FlowStatus, RateBookOption, SeenStep } from "../types/flow.types";
+import type { AccuracyReport, ExportKind, FlowBoq, FlowStatus, RateBookOption, SeenStep } from "../types/flow.types";
 
 const BASE = "/drawings-boq";
 const flowUrl = (projectId: string) => `${BASE}/projects/${projectId}/flow`;
@@ -13,6 +13,12 @@ export const flowApi = {
     if (profile) params.profile = profile;
     if (rateBookId) params.rate_book_id = rateBookId;
     return (await apiClient.get<FlowBoq>(`${flowUrl(projectId)}/boq`, { params })).data;
+  },
+  async accuracy(projectId: string, profile: string | null, rateBookId: string | null): Promise<AccuracyReport> {
+    const params: Record<string, string> = {};
+    if (profile) params.profile = profile;
+    if (rateBookId) params.rate_book_id = rateBookId;
+    return (await apiClient.get<AccuracyReport>(`${flowUrl(projectId)}/accuracy`, { params })).data;
   },
   async seen(projectId: string, step: SeenStep): Promise<void> {
     await apiClient.post(`${flowUrl(projectId)}/seen`, { step });

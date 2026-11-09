@@ -1,6 +1,7 @@
-- line: EXCAVATION/FOUNDATION
-  cause: '+5.04% (+845 cft), measured by explain_line: the basement dig matches to the cubic foot (12,960); the 9 in trench is 4.5 x 3.5 ft in Trace against 4 x 3 ft in the workbook (width +530, depth +596, run -70) and the 4.5 in trench is smaller in Trace (-211); the trench sizes are read by rule, not from the foundation drawing'
-  pack: '170'
+- line: BRICK_FOUNDATION/FOUNDATION
+  cause: 'not diagnosed; -29.4% against the QS as written (371.9 against 526.9 cft), -14.8% against the signed 436.62 cft (Trace gave 435.96 and was within 0.2% of the signed figure until GX-4 moved it by -64.1 cft (PM-1 and PM-2 left the score hash at 9cd95179d0d1c556); the excavation line moved by -159.5 cft in the same change). The line holds three 9 in wall step rows of 36.6 m run each (169.0, 112.7 and 90.1 cft) and no 4.5 in wall step row; the signed correction takes the 9 in wall over 126.16 ft (38.5 m) and a 3rd step for the 4.5 in wall'
+  pack: 'HM-2'
+  question: which GX-4 change moved the step rows (the section reading is the one that touches them; not bisected to a single edit); and whether the 4.5 in wall prints a footing section that Trace should read
 - line: MEMBRANE/FOUNDATION
   cause: 'not diagnosed; +7.4% against the signed 1,814.505 sft (-13.6% against the QS as written, 2,254.505): Trace measures 1,948.6 sft, 134.1 sft more than the wall runs times 11 ft that remain after the ten 4 x 11 ft pieces come off'
   question: the membrane correction rests on workbook rows only; a drawing page that shows the membrane widths would settle it

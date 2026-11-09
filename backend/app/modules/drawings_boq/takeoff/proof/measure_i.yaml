@@ -1,0 +1,16 @@
+required_gates: [14, 15, 16, 17, 18, 19, 20]
+top_groups: 20
+failures_run: PRODUCT
+reading_splits: [dev, heldout]
+stages: [FIND, READ, JOIN, MEASURE]
+folders:
+  score: score_out
+  bench: bench_out
+  reading: reading_out
+  product_score: product_score_out
+result_file: I_RESULT.md
+before_note: "the figures of the IX-1 commit in before_i.yaml: the check, the product and engine scores and the reading score were run on the tree after IX-1, and the benchmark (BX-4's report) on the tree that had IX-1, IX-2 and BX-4 and the same readers, since the benchmark did not exist at IX-1; the region score, the truth checked and the calibration came after and have no before."
+
+ix1_registry: "27 rules, all CANDIDATE, all off (7 Nov, before IX-1)"
+ix1_overrides: "28 (7 Nov, before IX-1)"
+ix1_gate17_exceptions: "11 (7 Nov, before IX-1)"

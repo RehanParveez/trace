@@ -14,11 +14,13 @@ from app.modules.drawings_boq.pricing.priced import export as X
 from app.modules.drawings_boq.takeoff.flow import documents as DOC
 from app.modules.drawings_boq.takeoff.flow import marks as MK
 from app.modules.drawings_boq.takeoff.questions import answers as AN
+from app.modules.drawings_boq.takeoff.accuracy import report as ACC
+from app.modules.drawings_boq.takeoff.accuracy import track as TRK
 from app.modules.projects.models import Project
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 PDF = "application/pdf"
-KINDS = {"xlsx": (XLSX, "xlsx", "priced-boq"), "priced_pdf": (PDF, "pdf", "priced-boq"), "client_pdf": (PDF, "pdf", "client-report")}
+KINDS = {"xlsx": (XLSX, "xlsx", "priced-boq"), "priced_pdf": (PDF, "pdf", "priced-boq"), "client_pdf": (PDF, "pdf", "client-report"), "accuracy_pdf": (PDF, "pdf", "accuracy-report")}
 FAILED_RUN = ("FAILED", "CANCELLED")
 WAITING_RUN = ("QUEUED", "RUNNING", "STAGED", "PROMOTED")
 
@@ -104,7 +106,7 @@ class FlowService(PricedService):
     body["lines"] = [{**ln, **{k: m[k] for k in ("state", "label", "priced", "measured_amount", "assumed_amount", "low_pct", "high_pct", "elements", "open_rows", "confidence", "confidence_why")}} for ln, m in zip(body["lines"], marks)]
     body.update({"profile_source": source, "banner": MK.banner(body["totals"], review["open"], block["high_pct"]), "open_rows": review["open"], "coverage": MK.coverage(prepared["entries"]), "assumptions": MK.assumptions(prepared["entries"]),
       "confidence": block, "checks": (head.get("source") or {}).get("checks") or []})
-    return {"head": head, "body": body, "lines": lines, "totals": totals, "mats": mats, "marks": marks, "profile": profile, "rows": review["rows"], "books": prepared["rows"]}
+    return {"head": head, "body": body, "lines": lines, "totals": totals, "mats": mats, "marks": marks, "profile": profile, "rows": review["rows"], "books": prepared["rows"], "entries": prepared["entries"], "conf": conf}
 
   async def boq(self, org: UUID, project_id: UUID, requested: str | None = None, book_id: UUID | None = None) -> dict:
     got = await self._flow(org, project_id, requested, book_id)
@@ -132,6 +134,8 @@ class FlowService(PricedService):
     
     if kind == "xlsx":
       data = X.build_xlsx(str(project_id), profile.id, got["lines"], got["totals"], got["mats"], None, now, got["marks"])
+    elif kind == "accuracy_pdf":
+      data = DOC.accuracy_pdf(await self._accuracy(org, project_id, got, now), meta)
     elif kind == "priced_pdf":
       data = DOC.priced_pdf("Priced bill of quantities", meta, body["banner"], body["lines"], body["totals"], MK.TEXT["footer"])
     else:
@@ -141,3 +145,15 @@ class FlowService(PricedService):
     await self.record(org, project_id, SIT.EXPORT, {"kind": kind, "profile": profile.id, "rate_books": [b["code"] for b in got["books"]]})
     media, ext, stem = KINDS[kind]
     return data, media, f"{stem}-{project_id}.{ext}"
+
+  async def _accuracy(self, org: UUID, project_id: UUID, got: dict, now: str | None = None) -> dict:
+    name = (await self.session.execute(select(Project.name).where(Project.id == project_id))).scalar_one_or_none()
+    track = TRK.current(ACC.TEXT)
+    return ACC.build(project={"id": str(project_id), "name": name}, lines=ACC.flow_lines(got["body"]["lines"], got["marks"]), entries=got["entries"], rows=got["rows"],
+      conf={"shown": bool((got["conf"] or {}).get("shown"))}, track=track, generated=now, profile=got["profile"].id)
+
+  async def accuracy(self, org: UUID, project_id: UUID, requested: str | None = None, book_id: UUID | None = None) -> dict:
+    got = await self._flow(org, project_id, requested, book_id)
+    if got is None:
+      raise TraceException("This project has no ledger yet. Run the first-upload job.", status_code=409, code="NO_LEDGER")
+    return await self._accuracy(org, project_id, got, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))

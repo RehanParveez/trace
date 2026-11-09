@@ -14,12 +14,17 @@ export interface OrganizationUpdateRequest {
   ai_enabled?: boolean;
 }
 
+export type LearningConsent = "OFF" | "OWN" | "SHARED";
+
 export interface AISettingsResponse {
   ai_enabled: boolean;
+  ai_consent?: string;
+  learning_consent?: LearningConsent;
 }
 
 export interface AISettingsUpdateRequest {
-  ai_enabled: boolean;
+  ai_enabled?: boolean;
+  learning_consent?: LearningConsent;
 }
 
 export interface Permission {

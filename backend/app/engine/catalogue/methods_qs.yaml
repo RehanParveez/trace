@@ -1,0 +1,172 @@
+aspects: [deductions, faces, heights, laps, wastage, working_space, projections]
+
+profiles:
+  - id: QS_JUNAID
+    label: "Measure the way M. Junaid does"
+    qs: "M. Junaid"
+    methods:
+    
+      - id: DED-PLASTER-BOTH-FACES
+        aspect: deductions
+        item: PL-01
+        says: "Plaster is on both faces, so an opening comes off both."
+        rule: {key: deduct_opening_plaster, scope: {}, value: 1}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-26", reading: R6}
+      - id: DED-BRICK-LINTELS-OFF
+        aspect: deductions
+        item: MS-01
+        says: "The lintels are separate concrete and are taken off the brick."
+        rule: {key: brick_net_of_lintels, scope: {}, value: 1}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-26", reading: R1}
+      - id: DED-LINTEL-TIE-BAND
+        aspect: deductions
+        item: RC-13
+        says: "The tie band and the lintel are one member; the lintel is still added."
+        rule: {key: tie_band_replaces_lintel, scope: {}, value: 0}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-26", reading: R2}
+      
+      - id: FACE-BEAM-DEPTH-OVERALL
+        aspect: faces
+        item: RC-09
+        says: "A printed beam depth is overall; only the part below the slab is the beam's concrete."
+        rule: {key: beam_depth_includes_slab, scope: {}, value: 1}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-19", reading: N1}
+      - id: FACE-FOOTING-FORMWORK
+        aspect: faces
+        item: RF-06
+        says: "Every footing is shuttered and its sides are counted."
+        rule: {key: footing_formwork, scope: {}, value: 1}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: S14}
+      - id: FACE-STAIR-SOFFIT-ONLY
+        aspect: faces
+        item: RF-10
+        says: "A stair is shuttered on its base slab (the waist soffit); the steps are built on it."
+        rule: {key: stair_formwork_soffit_only, scope: {}, value: 1}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-19", reading: S12}
+      - id: FACE-TANK-BASE-FORMWORK
+        aspect: faces
+        item: RF-10
+        says: "The soffit of a tank's base slab is shuttered."
+        rule: {key: tank_base_formwork, scope: {}, value: 1}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: v4-N2}
+      - id: FACE-PLASTER-PER-FLOOR
+        aspect: faces
+        item: PL-02
+        says: "Outer and inner plaster are counted once per floor, not once for the full height."
+        rule: {key: plaster.external_height_basis, scope: {}, value: PER_FLOOR}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-19", reading: S4}
+      - id: FACE-TERMITE-FOOTPRINT
+        aspect: faces
+        item: DP-04
+        says: "Anti-termite is under the foundation and under all the floors, on the wall footprint; the sides of the excavation are not treated."
+        rule: {key: termite.scope, scope: {}, value: FLOOR_AND_BEDS}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: Q25}
+      - id: FACE-BOUNDARY-WITH-HOUSE
+        aspect: faces
+        item: PL-05
+        says: "The 4.5 in back and front walls of the plot are plastered on both faces among the walls of the building; the sheet has no boundary wall line."
+        rule: {key: finish.boundary_walls, scope: {}, value: WITH_HOUSE}
+        source: {kind: WORKBOOK, qs: "M. Junaid", workbook: BOQ_Worksheet_Map.xlsx, sheet: Plaster, cell: "B81:B82", confirmed: false}
+    
+      - id: HEIGHT-BRICK-BETWEEN-BEAMS
+        aspect: heights
+        item: MS-01
+        says: "A brick wall is the top of the plinth beam to the underside of the roof beam."
+        rule: {key: wall_height_basis, scope: {}, value: BETWEEN_BEAMS}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-26", reading: R1}
+      - id: HEIGHT-SLAB-6IN
+        aspect: heights
+        item: RC-10
+        says: "A slab is 6 in where none is printed."
+        rule: {key: slab_thickness_mm, scope: {}, value: 152.4}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-26", reading: R3}
+      - id: HEIGHT-FOOTING-9IN
+        aspect: heights
+        item: RC-01
+        says: "A footing with only a symbol is 0.75 ft thick."
+        rule: {key: footing_depth_mm, scope: {}, value: 228.6}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-19", reading: X4}
+      - id: HEIGHT-PCC-3IN
+        aspect: heights
+        item: EW-13
+        says: "The PCC bed under a foundation is 3 in thick."
+        rule: {key: pcc_thickness_mm, scope: {}, value: 76.2}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: Q23}
+      
+      - id: WASTE-STEEL-5PCT
+        aspect: wastage
+        item: RF-01
+        says: "5 percent extra on the steel for wastage."
+        rule: {key: steel_wastage_pct, scope: {}, value: 5.0}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: S15}
+      - id: LAP-SLAB-STEEL-RULE
+        aspect: laps
+        item: RF-02
+        says: "Slab steel by the rule of thumb of 1.5 kg per sq ft where the slab bars are not fully printed (a workbook of his still holds 1.6)."
+        rule: {key: slab_steel_kg_per_m2, scope: {}, value: 16.1459}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: S16}
+        also_seen:
+          - {value: 17.2223, workbook: BOQ_Worksheet_Map.xlsx, sheet: "Steel Summary", cell: J1}
+      - id: WASTE-NO-SWELL
+        aspect: wastage
+        item: EW-06
+        says: "Back fill has no swell and no compaction extra."
+        rule: {key: earth_swell_pct, scope: {}, value: 0.0}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: Q24}
+      - id: WASTE-NO-COMPACTION
+        aspect: wastage
+        item: EW-09
+        says: "Back fill has no swell and no compaction extra."
+        rule: {key: fill_compaction_pct, scope: {}, value: 0.0}
+        source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: Q24}
+  
+      - id: SPACE-TERMITE-STRIPS
+        aspect: working_space
+        item: DP-04
+        says: "Termite strips are 3 ft under the outer walls, 3.5 ft under the inner 9 in walls and 1.5 ft under the 4.5 in walls."
+        rule: {key: finish.strip_widths_mm, scope: {item: termite_strip}, value: {outer: 914.4, inner: 1066.8, thin: 457.2}}
+        source: {kind: WORKBOOK, qs: "M. Junaid", workbook: BOQ_Worksheet_Map.xlsx, sheet: Termite, cell: "F10, F21, F25", confirmed: false}
+      - id: SPACE-PCC-STRIPS
+        aspect: working_space
+        item: EW-13
+        says: "PCC strips are 3.5 ft under the outer walls, 4 ft under the inner 9 in walls and 1.5 ft under the 4.5 in walls."
+        rule: {key: finish.strip_widths_mm, scope: {item: pcc_strip}, value: {outer: 1066.8, inner: 1219.2, thin: 457.2}}
+        source: {kind: WORKBOOK, qs: "M. Junaid", workbook: BOQ_Worksheet_Map.xlsx, sheet: "PCC 1;4;8", cell: "F9, F20, F24", confirmed: false}
+  
+      - id: PROJ-EXTERNAL-STAIR
+        aspect: projections
+        item: RC-17
+        says: "A stair outside the building is in none of the stair blocks of the workbook, so it is left out of the stair concrete."
+        rule: {key: finish.stair_external, scope: {}, value: EXCLUDE}
+        source: {kind: WORKBOOK, qs: "M. Junaid", workbook: BOQ_Worksheet_Map.xlsx, sheet: "Concrete Work", cell: "G62:G66, G114:G118", confirmed: false}
+
+open:
+  - {id: OPEN-BRICK-MIN-OPENING, aspect: deductions, item: MS-01, question: "Smallest opening deducted from brickwork", trace: "0.1 m2 (brick_opening_min_m2)", standard: "Standard: IS 1200 (brickwork), assumed", asked: "Q28, R6"}
+  - {id: OPEN-PLASTER-MIN-OPENING, aspect: deductions, item: PL-01, question: "Smallest opening deducted from plaster", trace: "0.5 m2 (plaster_opening_min_m2)", standard: "Standard: IS 1200 (plastering), assumed", asked: "Q28, R6"}
+  - {id: OPEN-STEEL-LAPS, aspect: laps, item: RF-02, question: "Lap length, hook and cover allowance in the steel weight", trace: "the drawing's own notes where printed, the flagged standard values where not", standard: "Standard: IS 456 and IS 2502, assumed", asked: "S15"}
+  - {id: OPEN-PCC-PROJECTION, aspect: working_space, item: EW-13, question: "Projection of the PCC bed beyond the footing", trace: "100 mm a side", standard: null, asked: "Q23"}
+  - {id: OPEN-ROOF-CHAMFER, aspect: projections, item: DP-11, question: "Size of the small chamfer at the parapet", trace: "not measured", standard: null, asked: "R12"}
+  - {id: OPEN-TANK-SLABS, aspect: heights, item: RC-18, question: "Tank slab thickness: 6 in on the sheet, 8 in answered", trace: "6 in top, 8 in bottom (tank_top_slab_mm, tank_bottom_slab_mm)", standard: null, asked: "S11"}
+
+building_facts:
+  - neck_height_mm
+  - basement_wall_height_mm
+  - basement_floor_to_floor_mm
+  - basement_dig_mm
+  - trench_depth_mm
+  - footing_below_ground_mm
+  - fill_depth_mm
+  - beam_depth_mm
+  - plinth_beam_depth_mm
+  - boundary_wall_thickness_mm
+
+choices:
+  - finish.floor_item
+  - finish.ceiling_includes
+  - finish.facade_item
+  - finish.sill_item
+  - finish.stopper_item
+  - finish.pcc_under
+  - finish.site_item
+  - finish.room_type
+  - electrical.work_item

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {useAISettings, useMembers, useOrganization, useRoles, useUpdateAISettings, useUpdateOrganization,
 } from "../hooks";
 import { AISettingsCard } from "../components/AISettingsCard";
+import { LearningConsentCard } from "../components/LearningConsentCard";
 import { OrganizationForm } from "../components/OrganizationForm";
 import { OrganizationHeader } from "../components/OrganizationHeader";
 import {ErrorState, LoadingState, PageHeader, Panel, PanelHeader, SectionDivider, StatCard, useToast
@@ -51,6 +52,8 @@ export function OrganizationPage() {
 
   const aiEnabled =
     aiSettingsQuery.data?.ai_enabled ?? organization.ai_enabled;
+
+  const learningConsent = aiSettingsQuery.data?.learning_consent ?? "OFF";
 
   return (
     <div className="space-y-7">
@@ -140,8 +143,34 @@ export function OrganizationPage() {
                   }),
               },
             )
-          }
+         }
         />
+
+        <div className="mt-4">
+          <LearningConsentCard
+            value={learningConsent}
+            canManage={canManage}
+            isUpdating={updateAISettings.isPending}
+            onChange={(choice) =>
+              updateAISettings.mutate(
+                { learning_consent: choice },
+                {
+                  onSuccess: () =>
+                    showToast({
+                      tone: "success",
+                      title: t("org.learning.updatedToast"),
+                    }),
+                  onError: () =>
+                    showToast({
+                      tone: "error",
+                      title: t("org.learning.errorTitle"),
+                      description: t("org.aiUpdateErrorFallback"),
+                    }),
+                },
+              )
+            }
+          />
+        </div>
       </section>
 
       <section>

@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
-from app.modules.drawings_boq.takeoff.flow.schemas import FlowStatus, FlowBoqResponse, SeenRequest
+from app.modules.drawings_boq.takeoff.flow.schemas import AccuracyReport, FlowStatus, FlowBoqResponse, SeenRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies.permissions import require_permission
 from app.core.database import get_db
@@ -24,6 +24,11 @@ async def flow_status(project_id: UUID, profile: str | None = Query(None, descri
 async def flow_boq(project_id: UUID, profile: str | None = Query(None), rate_book_id: UUID | None = Query(None, description="One rate book; the default stack when omitted."),
     current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db)):
   return await FlowService(session).boq(_org(current_user), project_id, profile, rate_book_id)
+
+@router.get("/projects/{project_id}/flow/accuracy", response_model=AccuracyReport)
+async def flow_accuracy(project_id: UUID, profile: str | None = Query(None), rate_book_id: UUID | None = Query(None),
+    current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db)):
+  return await FlowService(session).accuracy(_org(current_user), project_id, profile, rate_book_id)
 
 @router.get("/projects/{project_id}/flow/export/{kind}")
 async def flow_export(project_id: UUID, kind: str, profile: str | None = Query(None), rate_book_id: UUID | None = Query(None),

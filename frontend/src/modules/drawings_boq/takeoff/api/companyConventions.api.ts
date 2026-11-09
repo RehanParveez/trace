@@ -1,5 +1,6 @@
 import { apiClient } from "../../../../shared/api/client";
 import type { CompanyConventions, ConventionsUpdate, ProjectOverridesUpdate } from "../types/companyConventions.types";
+import type { QsMethodChoice, QsMethodResult, QsMethods } from "../types/qsMethods.types";
 
 const BASE = "/drawings-boq/company-conventions";
 
@@ -15,5 +16,11 @@ export const companyConventionsApi = {
   },
   async adoptQs(): Promise<CompanyConventions> {
     return (await apiClient.post<CompanyConventions>(`${BASE}/adopt-qs`)).data;
+  },
+  async qsMethods(): Promise<QsMethods> {
+    return (await apiClient.get<QsMethods>(`${BASE}/qs-methods`)).data;
+  },
+  async chooseQsMethod(body: QsMethodChoice): Promise<QsMethodResult> {
+    return (await apiClient.put<QsMethodResult>(`${BASE}/qs-method`, body)).data;
   },
 };

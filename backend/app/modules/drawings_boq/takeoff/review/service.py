@@ -91,7 +91,7 @@ class ReviewService(QuestionsService):
   async def review(self, org: UUID, project_id: UUID, item: str | None = None) -> dict:
     return self._view(project_id, await self._built(org, project_id), item)
 
-  async def act(self, org: UUID, user_id: UUID, project_id: UUID, key: str, action: str, value: str | None) -> dict:
+  async def act(self, org: UUID, user_id: UUID, project_id: UUID, key: str, action: str, value: str | None, reason: str | None = None) -> dict:
     built = await self._built(org, project_id)
     row = next((r for r in built["rows"] if r["key"] == key), None)
     
@@ -106,8 +106,12 @@ class ReviewService(QuestionsService):
       raise TraceException(why, status_code=422, code="REVIEW_ACTION_INVALID")
     touched: list = []
     if row["kind"] == RW.AI_CANDIDATE:
+      reason, bad = LR.check(action, reason)
+      if bad:
+        raise TraceException(bad, status_code=422, code="REVIEW_REASON_INVALID")
       home = next((d for d in drawings if str(d.id) == row["drawing_id"]), drawings[0])
       home.ingestion_meta = store.review_put(home.ingestion_meta, key, None if action == WITHDRAW else action, stored, user_id)
+      await LS.note_review(self.session, org=org, user_id=user_id, project_id=project_id, drawing=home, row=row, action=action, stored=stored, reason=reason)
     elif key.startswith("fact."):
       if action == WITHDRAW:
         raise TraceException("A figure settled between the sheets is changed by choosing another value.", status_code=422, code="REVIEW_ACTION_INVALID")

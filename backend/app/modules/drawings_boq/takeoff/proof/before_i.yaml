@@ -1,0 +1,725 @@
+bench:
+- kind: set
+  run: PRODUCT
+  set: 191c
+  stats:
+    answer_no_number: 0
+    applicable: 272
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 4.8
+    not_read: 259
+    rows: 337
+    within_10: 0
+- group: structure
+  kind: group
+  run: PRODUCT
+  set: 191c
+  stats:
+    answer_no_number: 0
+    applicable: 64
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 9.4
+    not_read: 58
+    rows: 101
+    within_10: 0
+- group: architecture_and_services
+  kind: group
+  run: PRODUCT
+  set: 191c
+  stats:
+    answer_no_number: 0
+    applicable: 208
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 3.4
+    not_read: 201
+    rows: 236
+    within_10: 0
+- kind: set
+  run: PRODUCT
+  set: plot1
+  stats:
+    answer_no_number: 0
+    applicable: 288
+    asked: 49
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 22.2
+    not_read: 224
+    rows: 353
+    within_10: 0
+- group: structure
+  kind: group
+  run: PRODUCT
+  set: plot1
+  stats:
+    answer_no_number: 0
+    applicable: 82
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 11.0
+    not_read: 73
+    rows: 120
+    within_10: 0
+- group: architecture_and_services
+  kind: group
+  run: PRODUCT
+  set: plot1
+  stats:
+    answer_no_number: 0
+    applicable: 206
+    asked: 49
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 26.7
+    not_read: 151
+    rows: 233
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Concrete and RCC members
+  stats:
+    answer_no_number: 0
+    applicable: 35
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 22.9
+    not_read: 27
+    rows: 67
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Damp proofing, waterproofing, termite, insulation and roof
+  stats:
+    answer_no_number: 0
+    applicable: 44
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 44
+    rows: 49
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Doors, windows, glazing, railings and metalwork
+  stats:
+    answer_no_number: 0
+    applicable: 48
+    asked: 1
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 10.4
+    not_read: 43
+    rows: 52
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Earthwork and substructure
+  stats:
+    answer_no_number: 0
+    applicable: 50
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 50
+    rows: 57
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Electrical and low voltage
+  stats:
+    answer_no_number: 0
+    applicable: 56
+    asked: 20
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 39.3
+    not_read: 34
+    rows: 58
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: External works
+  stats:
+    answer_no_number: 0
+    applicable: 34
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 34
+    rows: 34
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Floors, skirting and stair finishes
+  stats:
+    answer_no_number: 0
+    applicable: 66
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 10.6
+    not_read: 59
+    rows: 68
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Items that are not read from drawings
+  stats:
+    answer_no_number: 0
+    applicable: 26
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 26
+    rows: 26
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Kitchen, wardrobes, fixtures and joinery
+  stats:
+    answer_no_number: 0
+    applicable: 16
+    asked: 1
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 6.2
+    not_read: 15
+    rows: 16
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Masonry
+  stats:
+    answer_no_number: 0
+    applicable: 46
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 15.2
+    not_read: 39
+    rows: 50
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Plaster, wall and ceiling finishes, paint
+  stats:
+    answer_no_number: 0
+    applicable: 70
+    asked: 1
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 1.4
+    not_read: 69
+    rows: 72
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Plaza and commercial additions
+  stats:
+    answer_no_number: 0
+    applicable: 0
+    asked: 0
+    assumed: 0
+    assumed_pct: null
+    compared: 0
+    coverage: null
+    not_read: 0
+    rows: 40
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Plumbing, drainage, water supply and sanitary
+  stats:
+    answer_no_number: 0
+    applicable: 54
+    asked: 26
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 48.1
+    not_read: 28
+    rows: 54
+    within_10: 0
+- kind: section
+  run: PRODUCT
+  section: Reinforcement and formwork
+  stats:
+    answer_no_number: 0
+    applicable: 15
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 15
+    rows: 47
+    within_10: 0
+- kind: set
+  run: PROOF
+  set: 191c
+  stats:
+    answer_no_number: 0
+    applicable: 272
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 5.1
+    not_read: 258
+    rows: 337
+    within_10: 0
+- group: structure
+  kind: group
+  run: PROOF
+  set: 191c
+  stats:
+    answer_no_number: 0
+    applicable: 64
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 9.4
+    not_read: 58
+    rows: 101
+    within_10: 0
+- group: architecture_and_services
+  kind: group
+  run: PROOF
+  set: 191c
+  stats:
+    answer_no_number: 0
+    applicable: 208
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 3.8
+    not_read: 200
+    rows: 236
+    within_10: 0
+- kind: set
+  run: PROOF
+  set: plot1
+  stats:
+    answer_no_number: 0
+    applicable: 288
+    asked: 49
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 22.2
+    not_read: 224
+    rows: 353
+    within_10: 0
+- group: structure
+  kind: group
+  run: PROOF
+  set: plot1
+  stats:
+    answer_no_number: 0
+    applicable: 82
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 11.0
+    not_read: 73
+    rows: 120
+    within_10: 0
+- group: architecture_and_services
+  kind: group
+  run: PROOF
+  set: plot1
+  stats:
+    answer_no_number: 0
+    applicable: 206
+    asked: 49
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 26.7
+    not_read: 151
+    rows: 233
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Concrete and RCC members
+  stats:
+    answer_no_number: 0
+    applicable: 35
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 22.9
+    not_read: 27
+    rows: 67
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Damp proofing, waterproofing, termite, insulation and roof
+  stats:
+    answer_no_number: 0
+    applicable: 44
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 44
+    rows: 49
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Doors, windows, glazing, railings and metalwork
+  stats:
+    answer_no_number: 0
+    applicable: 48
+    asked: 1
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 10.4
+    not_read: 43
+    rows: 52
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Earthwork and substructure
+  stats:
+    answer_no_number: 0
+    applicable: 50
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 50
+    rows: 57
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Electrical and low voltage
+  stats:
+    answer_no_number: 0
+    applicable: 56
+    asked: 20
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 39.3
+    not_read: 34
+    rows: 58
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: External works
+  stats:
+    answer_no_number: 0
+    applicable: 34
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 34
+    rows: 34
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Floors, skirting and stair finishes
+  stats:
+    answer_no_number: 0
+    applicable: 66
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 10.6
+    not_read: 59
+    rows: 68
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Items that are not read from drawings
+  stats:
+    answer_no_number: 0
+    applicable: 26
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 26
+    rows: 26
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Kitchen, wardrobes, fixtures and joinery
+  stats:
+    answer_no_number: 0
+    applicable: 16
+    asked: 1
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 6.2
+    not_read: 15
+    rows: 16
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Masonry
+  stats:
+    answer_no_number: 0
+    applicable: 46
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 15.2
+    not_read: 39
+    rows: 50
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Plaster, wall and ceiling finishes, paint
+  stats:
+    answer_no_number: 0
+    applicable: 70
+    asked: 1
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 1.4
+    not_read: 69
+    rows: 72
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Plaza and commercial additions
+  stats:
+    answer_no_number: 0
+    applicable: 0
+    asked: 0
+    assumed: 0
+    assumed_pct: null
+    compared: 0
+    coverage: null
+    not_read: 0
+    rows: 40
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Plumbing, drainage, water supply and sanitary
+  stats:
+    answer_no_number: 0
+    applicable: 54
+    asked: 26
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 50.0
+    not_read: 27
+    rows: 54
+    within_10: 0
+- kind: section
+  run: PROOF
+  section: Reinforcement and formwork
+  stats:
+    answer_no_number: 0
+    applicable: 15
+    asked: 0
+    assumed: 0
+    assumed_pct: 0.0
+    compared: 0
+    coverage: 0.0
+    not_read: 15
+    rows: 47
+    within_10: 0
+check:
+  by_gate:
+    14:
+      checks: 1
+      notes: []
+      ok: true
+    15:
+      checks: 1
+      notes: []
+      ok: true
+    16:
+      checks: 1
+      notes: []
+      ok: true
+    17:
+      checks: 1
+      notes: []
+      ok: true
+    18:
+      checks: 1
+      notes: []
+      ok: true
+    19:
+      checks: 1
+      notes: []
+      ok: true
+    20:
+      checks: 1
+      notes: []
+      ok: true
+  checks: 23
+  failed: 0
+  found: true
+  green: true
+  missing: []
+  passed: true
+  red: []
+offices:
+  A:
+    matched: 423
+    sets:
+    - bbs_156
+    - jakhar
+    silent_wrong: 45
+    truth: 471
+  B:
+    matched: 1202
+    sets:
+    - 201cd
+    - 2053c
+    - 350c
+    - 909a-elec
+    - 909a-plumb
+    - 925b
+    - 959n
+    silent_wrong: 269
+    truth: 1478
+  C:
+    matched: 789
+    sets:
+    - 191c-arch
+    - 191c-str
+    silent_wrong: 153
+    truth: 1226
+  D:
+    matched: 314
+    sets:
+    - plot1
+    silent_wrong: 51
+    truth: 392
+  E:
+    matched: 129
+    sets:
+    - 652d
+    silent_wrong: 43
+    truth: 129
+reading:
+  hash: ce12b90e
+  splits:
+    dev:
+      hash: ebb4a333
+      matched: 1526
+      recall: 0.7305
+      silent_wrong: 249
+      truth: 2089
+    heldout:
+      hash: 109ade24
+      matched: 1331
+      recall: 0.8283
+      silent_wrong: 312
+      truth: 1607
+regions: {}
+rows_sha: 3a919df469cf85122bc13be0521ae987af188f22fca685aa4103156f5816ade2
+scores:
+  191c:
+    engine_digest: 813b9c0c70ce69e5
+    hash: baedf68ba10f396f
+    invariants_failing: 0
+    line_status:
+      ALLOWANCE: 7
+      EXTRA: 15
+      MATCH: 1
+      NEAR: 1
+      NO_TRUTH: 47
+    lines: 39
+    safe_coverage_pct: 7.9
+    safe_precision_pct: 63.6
+    safe_rows: 22
+    status: SCORED
+    with_a_number: 39
+    within_10: 13
+    within_5: 8
+  IsbP:
+    engine_digest: 3977f8c2b5d0e304
+    hash: 0ace0d3366c08653
+    invariants_failing: 0
+    line_status:
+      EXTRA: 7
+    lines: 0
+    safe_coverage_pct: 0.0
+    safe_precision_pct: null
+    safe_rows: 0
+    status: SCORED
+    with_a_number: 0
+    within_10: 0
+    within_5: 0
+  plot1:
+    engine_digest: 3ea05b7440797831
+    hash: 9cd95179d0d1c556
+    invariants_failing: 0
+    line_status:
+      DIFF: 2
+      EXTRA: 15
+      MATCH: 15
+      NEAR: 5
+      NO_TRUTH: 2
+    lines: 24
+    safe_coverage_pct: 18.5
+    safe_precision_pct: 100.0
+    safe_rows: 60
+    status: SCORED
+    with_a_number: 24
+    within_10: 17
+    within_5: 12
+stages:
+  dev:
+    by_stage:
+      no stage: 738
+    not_matched: 738
+    truth: 2089
+  heldout:
+    by_stage:
+      no stage: 573
+    not_matched: 573
+    truth: 1607
+truth_checked: {}

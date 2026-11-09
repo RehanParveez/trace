@@ -1,16 +1,16 @@
 {
- "cases": {
+  "cases": {
   "191c": {
-   "engine": "813b9c0c70ce69e5",
-   "hash": "baedf68ba10f396f"
+   "engine": "9e859b9643d6b033",
+   "hash": "1237e74b05bc1993"
   },
   "IsbP": {
-   "engine": "ed1b921e51f6eb87",
-   "hash": "3bb16656905f8ec4"
+   "engine": "3977f8c2b5d0e304",
+   "hash": "0ace0d3366c08653"
   },
   "plot1": {
-   "engine": "3ea05b7440797831",
-   "hash": "9cd95179d0d1c556"
+   "engine": "1b65c9f1ec126f0f",
+   "hash": "1918c6bfd0c3f685"
   }
  },
  "note": "The score hash and the engine output of each case. proof.score prints unchanged or MOVED against them; proof.precommit fails on MOVED. Written by proof.score --pin-baseline (fills a case with no pin) or --repin (replaces)."

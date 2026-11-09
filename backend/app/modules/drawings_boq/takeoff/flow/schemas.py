@@ -83,3 +83,18 @@ class FlowStatus(BaseModel):
 
 class SeenRequest(BaseModel):
   step: Literal["review", "boq"]
+
+class AccuracyReport(BaseModel):
+  title: str
+  intro: str
+  project: dict
+  generated: str | None = None
+  profile: str | None = None
+  coverage: dict
+  money: dict
+  confidence: dict
+  questions: dict
+  assumptions: dict
+  check_first: dict
+  track_record: dict
+  footer: str

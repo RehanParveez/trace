@@ -44,6 +44,7 @@ export interface ReviewRow {
   unquantified: number;
   touches: string[];
   actions: ReviewAction[];
+  reasons?: Record<string, string[]>;
   state: ReviewState;
   decision: ReviewDecision | null;
   default: Record<string, unknown> | null;
@@ -68,6 +69,7 @@ export interface ReviewResponse {
 export interface ReviewActionBody {
   action: ReviewActionName | "withdraw";
   value?: string | null;
+  reason?: string | null;
 }
 
 export interface ReviewActionResponse extends ReviewResponse {

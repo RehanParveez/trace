@@ -1,0 +1,19 @@
+limits:
+  check_first: 10
+  open_questions: 20
+  not_read_names_per_section: 12
+  assumptions: 30
+text:
+  title: "How much of this bill to trust"
+  intro: "Quantities are read from the drawings. This page says how much of the money was measured, how much rests on assumptions, how sure Trace is, and what to check first."
+  not_read: "{n} item(s) in {s} section(s) could not be read from these drawings and are not in the quantities. They are counted by section above and named below, not hidden."
+  confidence_not_shown: "Confidence per line is not shown. It is shown only after Trace has been checked against drawings it had not seen: High was right {right} of {items} times out of sample, and the rule is {need} items at {pct}% or better."
+  confidence_not_shown_uncalibrated: "Confidence per line is not shown: Trace has not yet been calibrated against enough checked drawings."
+  ranked_money_low: "Ranked by the money at Low confidence."
+  ranked_money_assumed: "Ranked by the money that rests on assumed inputs, because confidence is not shown."
+  ranked_no_rates: "No rates are loaded, so there is no money to rank by. Ranked by what rests on assumptions, then by open questions."
+  no_rates: "No rates are loaded in this view, so money is not computed. Shares below are by number of items and are labelled so."
+  track_none: "No track record: the benchmark has not scored a drawing from an office Trace had not seen. Nothing is claimed."
+  track_some: "On {sets} drawing(s) from {offices} office(s) that Trace had not seen, scored on {when}: {within} of {compared} lines were within 10% of the QS."
+  track_never_dev: "Only drawings entered as first sight are counted. Drawings Trace was built on are never used for this figure."
+  footer: "Prepared with Trace. Every figure on this page comes from the project's own reading and the benchmark's records."

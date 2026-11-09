@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { takeoffKeys } from "../../hooks/useTakeoff";
 import { flowApi } from "../api/flow.api";
-import type { ExportKind, FlowBoq, FlowStatus, RateBookOption, SeenStep } from "../types/flow.types";
+import type { AccuracyReport, ExportKind, FlowBoq, FlowStatus, RateBookOption, SeenStep } from "../types/flow.types";
 
 export const flowKeys = {
   all: [...takeoffKeys.all, "flow"] as const,
   status: (projectId: string, profile: string | null) => [...takeoffKeys.all, "flow", "status", projectId, profile ?? ""] as const,
   boq: (projectId: string, profile: string | null, book: string | null) => [...takeoffKeys.all, "flow", "boq", projectId, profile ?? "", book ?? ""] as const,
+  accuracy: (projectId: string, profile: string | null, book: string | null) => [...takeoffKeys.all, "flow", "accuracy", projectId, profile ?? "", book ?? ""] as const,
   books: () => [...takeoffKeys.all, "flow", "rate-books"] as const,
 };
 
@@ -25,6 +26,14 @@ export function useFlowBoq(projectId: string | undefined, profile: string | null
   return useQuery<FlowBoq>({
     queryKey: flowKeys.boq(projectId ?? "", profile, rateBookId),
     queryFn: () => flowApi.boq(projectId as string, profile, rateBookId),
+    enabled: Boolean(projectId) && enabled,
+  });
+}
+
+export function useFlowAccuracy(projectId: string | undefined, profile: string | null, rateBookId: string | null, enabled: boolean) {
+  return useQuery<AccuracyReport>({
+    queryKey: flowKeys.accuracy(projectId ?? "", profile, rateBookId),
+    queryFn: () => flowApi.accuracy(projectId as string, profile, rateBookId),
     enabled: Boolean(projectId) && enabled,
   });
 }

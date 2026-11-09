@@ -192,6 +192,19 @@ def line_overlap(truth: list, read: list, offset_pt: float) -> float:
   b = sum(1 for p in _along(read) if _to_line(p, truth) <= offset_pt) / (SAMPLES + 1)
   return min(a, b)
 
+def on_share_each(poly: list, lines: list) -> float:
+  if len(poly) < 2 or not lines:
+    return 0.0
+  return sum(1 for p in _along(poly) if any(_to_line(p, run) <= off for run, off in lines)) / (SAMPLES + 1)
+
+def cover_classes() -> tuple:
+  return tuple(rules()["cover"]["classes"])
+
+def on_share(poly: list, others: list, offset_pt: float) -> float:
+  if len(poly) < 2 or not others:
+    return 0.0
+  return sum(1 for p in _along(poly) if any(_to_line(p, o) <= offset_pt for o in others)) / (SAMPLES + 1)
+
 def line_offset_pt(page, thickness_mm) -> float:
   share = rules()["line"]["max_offset_thickness_share"]
   if page is not None and page.mm_per_pt and thickness_mm:

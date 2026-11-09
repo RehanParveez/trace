@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { companyConventionsApi } from "../api/companyConventions.api";
 import type { ConventionsUpdate, ProjectOverridesUpdate } from "../types/companyConventions.types";
+import type { QsMethodChoice } from "../types/qsMethods.types";
 
 export const companyConventionKeys = { all: ["company-conventions"] as const, project: (projectId: string) => ["company-conventions", "project", projectId] as const };
 
@@ -29,5 +30,19 @@ export function useAdoptQsConventions() {
   return useMutation({
     mutationFn: () => companyConventionsApi.adoptQs(),
     onSuccess: (data) => qc.setQueryData(companyConventionKeys.all, data),
+  });
+}
+
+export const qsMethodKeys = { all: ["company-conventions", "qs-methods"] as const };
+
+export function useQsMethods(enabled = true) {
+  return useQuery({ queryKey: qsMethodKeys.all, queryFn: () => companyConventionsApi.qsMethods(), enabled });
+}
+
+export function useChooseQsMethod() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: QsMethodChoice) => companyConventionsApi.chooseQsMethod(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: companyConventionKeys.all }),
   });
 }

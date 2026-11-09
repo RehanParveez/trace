@@ -75,13 +75,23 @@ def _name_after(last: _W, ws: list) -> tuple:
     words.pop()
   return words
 
+def _name_before(first: _W, ws: list) -> _W | None:
+  best = None
+  for x in ws:
+    if x is first or x.angle != first.angle or abs(x.v - first.v) > SAME_LINE * first.size or x.u >= first.u:
+      continue
+    gap = (first.u - first.half) - (x.u + x.half)
+    if -0.3 * first.size <= gap <= GAP_SIZES * first.size and _NAME_BEFORE.match((x.w.text or "").strip()) and (best is None or x.u > best.u):
+      best = x
+  return best
+
 def _box(parts: list) -> list:
   xs0, ys0 = min(p.w.x0 for p in parts), min(p.w.y0 for p in parts)
   xs1, ys1 = max(p.w.x1 for p in parts), max(p.w.y1 for p in parts)
   return [round((xs0 + xs1) / 2, 1), round((ys0 + ys1) / 2, 1)]
 
-def _mark(sign: str, value: str, name: list) -> str:
-  return f"{sign} {value}" + (" " + " ".join(n.w.text.strip() for n in name) if name else "")
+def _mark(sign: str, value: str, name: list, before: str = "") -> str:
+  return (before + " " if before else "") + f"{sign} {value}" + (" " + " ".join(n.w.text.strip() for n in name) if name else "")
 
 def marks_of(words: list) -> list:
   ws = _upright(words)
@@ -116,7 +126,8 @@ def marks_of(words: list) -> list:
     glued = rest is a and sign in SIGNS and text not in SIGNS
     signed = -inches if sign == "-" else inches
     shown = (rest.w.text.strip() if sign in SIGNS and rest is not a else _GLUED.search(text).group("v"))
-    mark = _mark("±" if sign == "+/-" else sign, shown, name)
+    pre = _name_before(a, ws)
+    mark = _mark("±" if sign == "+/-" else sign, shown, name, (pre.w.text or "").strip() if pre is not None else "")
     at = _box(parts)
     
     if glued and not name and len(text) > 0:

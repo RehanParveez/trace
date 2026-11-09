@@ -22,6 +22,22 @@ export const SOURCE_TONE: Record<ReviewSource, "green" | "gold" | "blue"> = {
   ASSUMED: "gold",
 };
 
+export const REASON_TEXT: Record<string, string> = {
+  WRONG_NUMBER: "The number is wrong",
+  WRONG_UNIT: "The unit is wrong",
+  WRONG_NAME: "The name is wrong",
+  WRONG_FLOOR: "It belongs to another floor",
+  NOT_ON_DRAWING: "The drawing does not say this",
+  ALREADY_COUNTED: "It is already counted",
+  NOT_FOR_THIS_JOB: "It is not for this job",
+  DRAWING_IS_WRONG: "The drawing itself is wrong",
+  OTHER: "Another reason",
+};
+
+export function reasonsFor(row: ReviewRow, action: "correct" | "reject"): string[] {
+  return row.reasons?.[action] ?? [];
+}
+
 export function moneyText(value: number | null): string {
   return value === null ? "No rate loaded" : formatCurrency(value);
 }

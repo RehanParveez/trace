@@ -6,6 +6,9 @@ line:
   max_offset_thickness_share: 0.5
 area:
   min_iou: 0.8
+cover:
+  classes: [WALL, PARAPET, BOUNDARY_WALL]
+  min_share: 0.8
 fact:
   length_in: 0.5
   ratio: 0.001

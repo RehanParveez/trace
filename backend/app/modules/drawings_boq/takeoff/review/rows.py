@@ -4,6 +4,7 @@ from app.modules.drawings_boq.takeoff.run import completeness as RC
 from app.modules.drawings_boq.takeoff.questions import keys as QK
 from app.modules.drawings_boq.takeoff.questions import engine as QE
 from app.modules.drawings_boq.takeoff.review import feeds as FD
+from app.modules.drawings_boq.takeoff.learning import reasons as LR
 
 AI_CANDIDATE, READING, CONFLICT, QUESTION = "AI_CANDIDATE", "READING", "CONFLICT", "QUESTION"
 PRINTED, AI_READ, ASSUMED = "PRINTED", "AI_READ", "ASSUMED"
@@ -143,7 +144,7 @@ def _legend_rows(read: dict, review: dict, by_el: dict, rates: dict | None) -> l
 def _ai_row(key: str, text: str, read: dict, quote: str | None, entries: list, review: dict, rates: dict | None) -> dict:
   return _row(key=key, kind=AI_CANDIDATE, item=text, prompt=f"The AI read this from sheet {read['page_no']}. Take it, correct it, or leave it out?", source=AI_READ, entries=entries, rates=rates,
     actions=[_action(ACCEPT), _action(CORRECT), _action(REJECT)], decision=_decision(review.get(key)), pages=[read["page_no"]], crop_url=AI_CROP.format(read["id"]), quote=quote,
-    extra={"read_id": str(read["id"]), "task": read["task"], "drawing_id": str(read["drawing_id"])})
+    extra={"read_id": str(read["id"]), "task": read["task"], "drawing_id": str(read["drawing_id"]), "reasons": {a: list(LR.allowed(a)) for a in (CORRECT, REJECT)}})
 
 def _fact_row(c: dict) -> dict:
   key = f"fact.{c['drawing_id']}.{c['id']}"

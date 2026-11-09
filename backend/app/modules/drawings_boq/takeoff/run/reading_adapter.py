@@ -239,6 +239,12 @@ def items_of(rows: list) -> SetRead:
     if model.get("regions"):
       out.regions[sheet] = list(model["regions"])
 
+    walls_cache: list = []
+    def sheet_walls(row=row, cache=walls_cache):
+      if not cache:
+        cache.append(WPC.sheet_walls([x for x in row.get("candidates") or [] if _live(x) and class_of(x) == V.ElementClass.WALL], row.get("mm_per_pt")) if WPC.junctions_enabled() else [])
+      return cache[0]
+
     for c in row.get("candidates") or []:
       if not _live(c):
         continue
@@ -246,8 +252,6 @@ def items_of(rows: list) -> SetRead:
       if cls is None:
         out.unmapped[K.kind_of(c)] += 1
         continue
-      if cls == V.ElementClass.WALL and RPW.is_parapet(c):
-        cls = V.ElementClass.PARAPET
       if cls == V.ElementClass.WALL and RPW.is_parapet(c):
         cls = V.ElementClass.PARAPET
 
@@ -258,14 +262,8 @@ def items_of(rows: list) -> SetRead:
       reasons = [r for r in RS.reasons_of(c) if r in V.Reason.names()]
       mark = None if c.tag in (None, "") else str(c.tag)
       join = (c.facts or {}).get(JOIN_OF.get(c.category, "")) if c.category in JOIN_OF else None
-      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.enabled():
-        parts = WPC.pieces_of(c, row.get("mm_per_pt"))
-        if len(parts) > 1:
-          for part in parts:
-            out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom={"polyline": part}, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))
-          continue
-      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.enabled():
-        parts = WPC.pieces_of(c, row.get("mm_per_pt"))
+      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.active():
+        parts = WPC.pieces_of(c, row.get("mm_per_pt"), sheet_walls())
         if len(parts) > 1:
           for part in parts:
             out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom={"polyline": part}, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))

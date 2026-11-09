@@ -22,4 +22,4 @@ async def project_review(project_id: UUID, item: str | None = Query(None, descri
 
 @router.post("/projects/{project_id}/takeoff/review/{key:path}/action", response_model=ReviewActionResponse)
 async def act_on_row(project_id: UUID, key: str, payload: ReviewActionRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db)):
-  return await ReviewService(session).act(_org(current_user), current_user.id, project_id, key, payload.action, payload.value)
+  return await ReviewService(session).act(_org(current_user), current_user.id, project_id, key, payload.action, payload.value, payload.reason)

@@ -1,22 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button } from "../../../../organizations/components/OrganizationUi";
 import type { ReviewAction, ReviewRow } from "../types/review.types";
-import { KIND_TEXT, lineQuantity, moneyText, SOURCE_TEXT, SOURCE_TONE } from "../utils/review";
+import { KIND_TEXT, lineQuantity, moneyText, REASON_TEXT, reasonsFor, SOURCE_TEXT, SOURCE_TONE } from "../utils/review";
 import { ReviewCrop } from "./ReviewCrop";
 
 interface Props {
   row: ReviewRow;
   canEdit: boolean;
   busy: boolean;
-  onAct: (action: ReviewAction["action"] | "withdraw", value: string | null) => void;
+  onAct: (action: ReviewAction["action"] | "withdraw", value: string | null, reason?: string | null) => void;
 }
 
 const label = "text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]";
 
-function CorrectBox({ spec, busy, onSend }: { spec: ReviewAction; busy: boolean; onSend: (value: string) => void }) {
+function ReasonSelect({ reasons, value, onChange, testId }: { reasons: string[]; value: string; onChange: (value: string) => void; testId: string }) {
+  const { t } = useTranslation();
+  if (reasons.length === 0) return null;
+  return (
+    <select className="min-h-9 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-[13px]" value={value} onChange={(e) => onChange(e.target.value)} aria-label={t("boq.review.why", "Why? (optional)")} data-testid={testId}>
+      <option value="">{t("boq.review.why", "Why? (optional)")}</option>
+      {reasons.map((r) => <option key={r} value={r}>{t(`boq.review.reason.${r}`, REASON_TEXT[r] ?? r)}</option>)}
+    </select>
+  );
+}
+
+function CorrectBox({ spec, busy, reasons, onSend }: { spec: ReviewAction; busy: boolean; reasons: string[]; onSend: (value: string, reason: string | null) => void }) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
+  const [reason, setReason] = useState("");
   return (
     <div className="flex flex-wrap items-center gap-2">
       {spec.choices.length > 0 ? (
@@ -27,7 +39,8 @@ function CorrectBox({ spec, busy, onSend }: { spec: ReviewAction; busy: boolean;
       ) : (
         <input className="min-h-9 w-40 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-[13px]" value={value} onChange={(e) => setValue(e.target.value)} placeholder={t("boq.review.value", "Value")} data-testid="review-value" />
       )}
-      <Button size="sm" disabled={busy || value.trim() === ""} onClick={() => onSend(value.trim())}>{t("boq.review.correct", "Correct")}</Button>
+      <ReasonSelect reasons={reasons} value={reason} onChange={setReason} testId="review-correct-reason" />
+      <Button size="sm" disabled={busy || value.trim() === ""} onClick={() => onSend(value.trim(), reason || null)}>{t("boq.review.correct", "Correct")}</Button>
     </div>
   );
 }
@@ -36,6 +49,8 @@ export function ReviewPanel({ row, canEdit, busy, onAct }: Props) {
   const { t } = useTranslation();
   const fixed = row.actions.filter((a) => a.action !== "correct");
   const correct = row.actions.find((a) => a.action === "correct");
+  const [rejectReason, setRejectReason] = useState("");
+  useEffect(() => setRejectReason(""), [row.key]);
   return (
     <aside className="space-y-4 rounded-[8px] border border-[var(--color-border)] p-4" data-testid="review-panel">
       <div className="flex flex-wrap items-center gap-2">
@@ -75,13 +90,14 @@ export function ReviewPanel({ row, canEdit, busy, onAct }: Props) {
         <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
           <div className="flex flex-wrap gap-2">
             {fixed.map((a) => (
-              <Button key={a.action} size="sm" variant={a.action === "reject" ? "danger" : "primary"} disabled={busy} onClick={() => onAct(a.action, a.value)} data-testid={`review-${a.action}`}>
+              <Button key={a.action} size="sm" variant={a.action === "reject" ? "danger" : "primary"} disabled={busy} onClick={() => onAct(a.action, a.value, a.action === "reject" ? rejectReason || null : null)} data-testid={`review-${a.action}`}>
                 {a.action === "accept" ? t("boq.review.accept", "Accept") : t("boq.review.reject", "Reject")}
               </Button>
             ))}
+            {fixed.some((a) => a.action === "reject") ? <ReasonSelect reasons={reasonsFor(row, "reject")} value={rejectReason} onChange={setRejectReason} testId="review-reject-reason" /> : null}
             {row.decision ? <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAct("withdraw", null)}>{t("boq.review.withdraw", "Take the decision back")}</Button> : null}
           </div>
-          {correct ? <CorrectBox spec={correct} busy={busy} onSend={(v) => onAct("correct", v)} /> : null}
+          {correct ? <CorrectBox key={row.key} spec={correct} busy={busy} reasons={reasonsFor(row, "correct")} onSend={(v, why) => onAct("correct", v, why)} /> : null}
         </div>
       ) : null}
     </aside>

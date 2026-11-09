@@ -1,0 +1,5 @@
+# Conventions of the rule miner. They are choices, not measurements: no checked correction existed when they were set.
+min_sources: 2        # a pattern is proposed only when this many different companies (or offices, for the benchmark) show it
+min_count: 3          # and at least this many corrections show it
+max_top_share: 0.8    # and no one source gives more than this share of them
+replay_precision: 0.8 # a plain remap of a reading to the corrected value is safe when it would have been right this often

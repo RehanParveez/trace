@@ -53,9 +53,10 @@ export const EXPORT_TEXT: Record<ExportKind, string> = {
   xlsx: "Workbook (xlsx)",
   priced_pdf: "Priced BOQ (PDF)",
   client_pdf: "Client report (PDF)",
+  accuracy_pdf: "Accuracy report (PDF)",
 };
 
-export const EXPORTS: ExportKind[] = ["xlsx", "priced_pdf", "client_pdf"];
+export const EXPORTS: ExportKind[] = ["xlsx", "priced_pdf", "client_pdf", "accuracy_pdf"];
 
 export function moneyOrDash(value: number | null): string {
   return value === null ? "-" : formatCurrency(value);

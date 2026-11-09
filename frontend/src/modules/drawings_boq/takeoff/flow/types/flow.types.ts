@@ -2,8 +2,9 @@ export type StepKey = "upload" | "read" | "quantities" | "review" | "boq" | "exp
 export type StepState = "DONE" | "OPEN" | "RUNNING" | "FAILED" | "READY";
 export type LineState = "MEASURED" | "ASSUMED" | "PART_ASSUMED";
 export type ProfileSource = "REQUEST" | "COMPANY" | "DEFAULT";
-export type ExportKind = "xlsx" | "priced_pdf" | "client_pdf";
+export type ExportKind = "xlsx" | "priced_pdf" | "client_pdf" | "accuracy_pdf";
 export type SeenStep = "review" | "boq";
+export type Confidence = "High" | "Medium" | "Low";
 
 export interface FlowStep {
   key: StepKey;
@@ -134,4 +135,112 @@ export interface RateBookOption {
   code: string;
   name?: string | null;
   status?: string;
+}
+
+export type AccuracyBand = "High" | "Medium" | "Low" | "Not banded";
+export type AccuracyBasis = "MONEY" | "COUNT";
+export type RankedBy = "LOW_CONFIDENCE_MONEY" | "LOW_CONFIDENCE_COUNT" | "ASSUMED_MONEY" | "ASSUMED_NO_RATES";
+
+export interface AccuracyCoverage {
+  sections: CoverageRow[];
+  total: { MEASURED: number; ASSUMED: number; ASKED: number; NOT_READ: number; total: number; with_quantity_pct: number };
+  not_read_sections: string[];
+  not_read_items: Array<{ section: string; items: string[]; more: number }>;
+  note: string | null;
+}
+
+export interface AccuracyMoney {
+  priced: boolean;
+  basis: AccuracyBasis;
+  lines: number;
+  priced_lines: number;
+  unpriced_lines: number;
+  total: number | null;
+  measured: number | null;
+  assumed: number | null;
+  assumed_pct: number | null;
+  note: string | null;
+  assumed_lines: number | null;
+  measured_lines: number | null;
+}
+
+export interface AccuracyBandRow {
+  band: AccuracyBand;
+  lines: number;
+  amount: number | null;
+  pct: number;
+}
+
+export interface AccuracyConfidence {
+  shown: boolean;
+  why: string | null;
+  bands: AccuracyBandRow[];
+  basis: AccuracyBasis | null;
+  calibrated: Record<string, number | string | null> | null;
+}
+
+export interface AccuracyQuestion {
+  key: string;
+  item: string | null;
+  prompt: string | null;
+  page: number | null;
+  effect_rs: number | null;
+  touches: number;
+  crop_url: string | null;
+}
+
+export interface AccuracyCheckLine {
+  code: string;
+  description: string | null;
+  floor: string | null;
+  unit: string | null;
+  qty: number | null;
+  amount: number | null;
+  band: Confidence | null;
+  why: string | null;
+  assumed_amount: number | null;
+  assumed_share: number | null;
+  open_rows: number;
+  pages: number[];
+  crop_url: string | null;
+}
+
+export interface AccuracyTrackSet {
+  set: string;
+  office: string | null;
+  date: string | null;
+  commit: string | null;
+  within_10: number;
+  compared: number;
+}
+
+export interface AccuracyTrack {
+  state: "MEASURED" | "NOT_MEASURED";
+  text: string;
+  rule: string;
+  offices: number;
+  registered_offices: number;
+  first_sight_sets: number;
+  scored_sets: number;
+  unscored_sets: string[];
+  within_10: number | null;
+  compared: number | null;
+  dates: string[];
+  sets: AccuracyTrackSet[];
+}
+
+export interface AccuracyReport {
+  title: string;
+  intro: string;
+  project: { id?: string; name?: string | null; case?: string };
+  generated: string | null;
+  profile: string | null;
+  coverage: AccuracyCoverage;
+  money: AccuracyMoney;
+  confidence: AccuracyConfidence;
+  questions: { open: number; money: number | null; unvalued: number; rows: AccuracyQuestion[]; more: number };
+  assumptions: { count: number; more: number; rows: Array<{ input: string; value: number | string | null; unit: string | null; range: number[] | null; source: string | null; items: number; floors: string[] }> };
+  check_first: { ranked_by: RankedBy; text: string; pool: number; lines: AccuracyCheckLine[] };
+  track_record: AccuracyTrack;
+  footer: string;
 }

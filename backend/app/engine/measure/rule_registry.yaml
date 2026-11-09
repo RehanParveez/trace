@@ -294,9 +294,9 @@
     - {office: C, sets: 1, metric: "reading: truth walls matched by a read run (28 of 48; off: 24 of 48)", value: 4, pack: CV-8b, met: true}
     - {office: D, sets: 1, metric: "reading: truth walls matched by a read run (27 of 61; off: 29 of 61); the truth keeps three long walls whole across their doors", value: -2, pack: CV-8b, met: false}
     - {office: A, sets: 1, metric: "reading: wall runs of the set cut at doors (the set's truth has no wall rows, so nothing is scored)", value: 0, pack: CV-8b, met: false}
-    - {office: B, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 69 of 87 (right value 69), true 57 of 75 read; off: matched 25 of 87", value: 69, pack: GX-2, met: false}
-    - {office: C, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 20 of 48 (right value 20), true 20 of 64 read; off: matched 24 of 48", value: 20, pack: GX-2, met: false}
-    - {office: D, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 19 of 61 (right value 19), true 19 of 108 read; off: matched 29 of 61", value: 19, pack: GX-2, met: false}
+    - {office: B, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 86 of 87 (right value 86), true 87 of 89 read; off: matched 86 of 87", value: 86, pack: GX-5, met: true}
+    - {office: C, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 43 of 48 (right value 43), true 49 of 64 read; off: matched 43 of 48", value: 43, pack: GX-5, met: false}
+    - {office: D, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 53 of 61 (right value 53), true 72 of 108 read; off: matched 54 of 61", value: 53, pack: GX-5, met: false}
   notes: A straight wall run the reader has drawn through its doors is reported as the pieces between the door gaps. A gap counts as a door when its printed width is within 15 percent of the width of a door opening the run carries. A gap that matches a window or no opening is closed because a window does not end a wall on a plan. A piece shorter than the wall thickness is left out. A run that is not one straight line, or has no door gap, is reported whole.
 - id: WALL_PIECES_AT_JUNCTIONS
   module: takeoff/extract/wall_pieces.py
@@ -308,9 +308,9 @@
   default: off
   status: CANDIDATE
   evidence:
-    - {office: B, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 69 of 87 (right value 69), true 57 of 75 read; off: matched 25 of 87", value: 69, pack: GX-2, met: false}
-    - {office: C, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 20 of 48 (right value 20), true 20 of 64 read; off: matched 24 of 48", value: 20, pack: GX-2, met: false}
-    - {office: D, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 19 of 61 (right value 19), true 19 of 108 read; off: matched 29 of 61", value: 19, pack: GX-2, met: false}
+    - {office: B, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 86 of 87 (right value 86), true 87 of 89 read; off: matched 86 of 87", value: 86, pack: GX-5, met: true}
+    - {office: C, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 43 of 48 (right value 43), true 49 of 64 read; off: matched 43 of 48", value: 43, pack: GX-5, met: false}
+    - {office: D, sets: 1, metric: "reading score, class WALL, every reading rule on: matched 53 of 61 (right value 53), true 72 of 108 read; off: matched 54 of 61", value: 53, pack: GX-5, met: false}
   notes: A straight wall run the reader has drawn through the places where another wall run meets or crosses it is reported as the pieces between those places, each gap as long as the drawn thickness of the run that meets it. A run meets another when the end of the other lies within one wall thickness of its line, or the other crosses it, and the two are at least 20 degrees from parallel. A piece shorter than the wall thickness is left out. A run that is not one straight line is reported whole.
 - id: PARAPET_FROM_ROOF_PLAN
   module: takeoff/extract/roof_plan_walls.py
@@ -324,8 +324,8 @@
   evidence:
     - {office: C, sets: 1, metric: "reading: truth parapets matched (6 of 12; off: 0 of 12), wall pairs unchanged at 24 of 48", value: 6, pack: CV-8b, met: true}
     - {office: D, sets: 1, metric: "reading: truth parapets matched (0 of 11; the roof-wall stage finds no outline on the set, so nothing changes)", value: 0, pack: CV-8b, met: false}
-    - {office: C, sets: 1, metric: "reading score, class PARAPET, every reading rule on: matched 7 of 12 (right value 7), true 7 of 12 read; off: matched 0 of 12", value: 7, pack: GX-2, met: false}
-    - {office: D, sets: 1, metric: "reading score, class PARAPET, every reading rule on: matched 0 of 11 (right value 0), true 0 of 0 read; off: matched 0 of 11", value: 0, pack: GX-2, met: false}
+    - {office: C, sets: 1, metric: "reading score, class PARAPET, every reading rule on: matched 8 of 12 (right value 8), true 11 of 12 read; off: matched 0 of 12", value: 8, pack: GX-5, met: true}
+    - {office: D, sets: 1, metric: "reading score, class PARAPET, every reading rule on: matched 0 of 11 (right value 0), true 0 of 0 read; off: matched 0 of 11", value: 0, pack: GX-5, met: false}
   notes: A wall run that the roof-wall stage has judged to be a parapet is reported as a parapet and not as a wall. The judgement is the stage's own and is not widened here, so a plan on which the stage found no outline reports no parapet.
 - id: LEVEL_MARK_ITEMS
   module: takeoff/extract/level_marks.py
@@ -340,10 +340,10 @@
     - {office: C, sets: 1, metric: "reading: truth level marks matched by mark and place (35 of 35; off: 0 of 35), none invented on a sheet the truth lists", value: 35, pack: CV-9b, met: true}
     - {office: D, sets: 1, metric: "reading: truth level marks matched by mark and place (43 of 43; off: 0 of 43), none invented", value: 43, pack: CV-9b, met: true}
     - {office: A, sets: 1, metric: "reading: level marks made on the set (0; the set prints no mark in this form)", value: 0, pack: CV-9b, met: false}
-    - {office: B, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 2 of 21 (right value 2), true 0 of 5 read; off: matched 0 of 21", value: 2, pack: GX-2, met: false}
-    - {office: C, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 35 of 35 (right value 35), true 35 of 35 read; off: matched 0 of 35", value: 35, pack: GX-2, met: true}
-    - {office: D, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 43 of 43 (right value 43), true 43 of 43 read; off: matched 0 of 43", value: 43, pack: GX-2, met: true}
-  notes: A level mark is a sign and a height in feet and inches, or in inches alone, printed as two words or as one word that ends in the mark. The reader takes the words of a sheet in each of the four directions of text. The place is the middle of the mark, and the mark is the sign and the height followed by the name of the level when the same line goes on to print one that ends in LEV, LEV. or LEVEL. A name printed before the height is not part of the mark. A sheet with no drawing role keeps none.
+    - {office: B, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 21 of 21 (right value 21), true 5 of 5 read; off: matched 0 of 21", value: 21, pack: GX-5, met: true}
+    - {office: C, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 35 of 35 (right value 35), true 35 of 35 read; off: matched 0 of 35", value: 35, pack: GX-5, met: true}
+    - {office: D, sets: 1, metric: "reading score, class LEVEL, every reading rule on: matched 43 of 43 (right value 43), true 43 of 43 read; off: matched 0 of 43", value: 43, pack: GX-5, met: true}
+  notes: A level mark is a sign and a height in feet and inches, or in inches alone, printed as two words or as one word that ends in the mark. The reader takes the words of a sheet in each of the four directions of text. The place is the middle of the mark, and the mark is the sign and the height followed by the name of the level when the same line goes on to print one that ends in LEV, LEV. or LEVEL. A dotted level name printed just before the sign on the same line (R.L., F.L., P.L., N.G.L.) is part of the mark; any other word before the height is not. A sheet with no drawing role keeps none.
 - id: FOOTING_RUNS_FROM_GRID
   module: takeoff/extract/footing_strips.py
   kind: READING
