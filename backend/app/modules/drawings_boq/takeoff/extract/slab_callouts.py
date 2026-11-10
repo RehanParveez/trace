@@ -76,6 +76,16 @@ def panels_of(row: dict) -> list:
         out.append({"view": view.get("key"), "n": i + 1, "mark": p.get("mark"), "void": bool(p.get("void")), "face": Polygon(ring)})
   return out
 
+def table_of(row: dict) -> list:
+  graph = (row.get("stats") or {}).get("slab_panel_graph") or {}
+  out = []
+  for view in graph.get("views") or []:
+    for i, p in enumerate(view.get("panels") or []):
+      calls = [{"bar": c["bar"], "spacing_in": c["spacing_in"], "axis": c["axis"], "role": c.get("role")} for c in p.get("callouts") or []]
+      if calls and not p.get("void"):
+        out.append({"view": view.get("key"), "n": i + 1, "spans": p.get("spans"), "x_ft": p.get("clear_span_x_ft"), "y_ft": p.get("clear_span_y_ft"), "flags": list(p.get("flags") or []), "callouts": calls})
+  return out
+
 def bind(callouts: list, panels: list) -> dict:
   from shapely.geometry import Point
   bound, loose = 0, 0
@@ -108,6 +118,6 @@ def apply(rows: list) -> int:
     if key is None and not captionless_plan(meta, got):
       continue
     callouts = [dict(c) for c in got["callouts"]]
-    meta[META_KEY] = {"view": key, "callouts": callouts, "alternate": len(got.get("alternate") or []), "binding": bind(callouts, panels_of(row))}
+    meta[META_KEY] = {"view": key, "callouts": callouts, "alternate": len(got.get("alternate") or []), "binding": bind(callouts, panels_of(row)), "panels": table_of(row)}
     made += len(got["callouts"])
   return made

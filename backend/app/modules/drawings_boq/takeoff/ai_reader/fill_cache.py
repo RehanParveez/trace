@@ -1,8 +1,11 @@
 from __future__ import annotations
 import argparse
 import asyncio
+import datetime
+import os
 import sys
 import time
+from app.modules.ai_requests import cap as CAP
 from app.modules.ai_requests.models import AIProvider
 from app.modules.drawings_boq.takeoff.ai_reader import candidate as CAND
 from app.modules.drawings_boq.takeoff.ai_reader import reader as RD
@@ -17,6 +20,9 @@ from app.modules.drawings_boq.takeoff.ai_reader import regions as RG
 from app.modules.drawings_boq.takeoff.ai_reader import prompts as P
 from app.modules.drawings_boq.takeoff.ai_reader import schedule as SCH
 from app.modules.drawings_boq.takeoff.prep.extract import open_document
+from app.modules.drawings_boq.takeoff.ai_reader import cost as COST
+
+CAPPED = 3
 
 def pages_of(spec: str | None, total: int) -> list:
   if not spec:
@@ -40,11 +46,12 @@ def entry_of(*, record: dict, sha: str, page: int, provider: AIProvider, region:
   
   return {"cache_key": record["cache_key"], "task": record["task"], "pdf_sha256": sha, "page": page, "region": region, "prompt_version": record["prompt_version"],
     "variant": shown.get("variant") or record["prompt_version"], "examples": shown or None,
+    "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
     "model": record["model"], "provider": provider.value, "seconds": record["seconds"], "input_tokens": record["input_tokens"], "output_tokens": record["output_tokens"],
     "status": record["status"], "problems": record["problems"], "error": record["error"], "answer": value, "validators": record["validators"], "candidate": candidate}
 
 async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: str | None, force: bool, max_tokens: int, timeout_s: float | None, task: str = RD.TASK, mode: str = LG.WEAK,
-    prompt_name: str | None = None, bank: list | None = None, office=None, leave_out_office: bool = False) -> dict:
+    prompt_name: str | None = None, bank: list | None = None, office=None, leave_out_office: bool = False, spend_root: str | None = None) -> dict:
   with open(pdf, "rb") as fh:
     contents = fh.read()
   sha = CACHE.pdf_sha256(contents)
@@ -54,12 +61,20 @@ async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: s
   
   region, version, reading = {RD.TASK: (RG.sheet_region(), C.PROMPT_VERSION, RD.read_sheet), NT.TASK: (RG.note_region(), NT.PROMPT_VERSION, NT.read_notes),
     SCH.TASK: (RG.schedule_region(), SCH.PROMPT_VERSION, SCH.read_schedules), LG.TASK: (LG.region(mode), LG.PROMPT_VERSION, None)}[task]
-  stats = {"pages": 0, "asked": 0, "cached": 0, "failed": 0, "seconds": 0.0, "input_tokens": 0, "output_tokens": 0}
+  stats = {"pages": 0, "asked": 0, "cached": 0, "failed": 0, "seconds": 0.0, "input_tokens": 0, "output_tokens": 0, "capped": None}
+  capped = provider == AIProvider.ANTHROPIC
+  spent = COST.cache_spent_usd(spend_root or os.path.dirname(os.path.abspath(out))) if capped else 0.0
 
   async def ask(prompt: str, png: bytes, images: list):
+    nonlocal spent
     started = time.monotonic()
+    refusal = CAP.check(spent, model, max_tokens) if capped else None
+    if refusal:
+      stats["capped"] = refusal
+      return AIRunResult(success=False, error_message=refusal, model=model, provider=provider.value, seconds=0.0)
     try:
       raw, parsed, usage = await AIOrchestratorService._call_provider(provider, model, prompt, [(png, "image/png"), *[(extra, "image/png") for extra in images]], max_tokens, timeout_s)
+      spent += CAP.usd(model, usage.get("input_tokens"), usage.get("output_tokens"))
       return AIRunResult(success=True, parsed_output=parsed, raw_response=raw, input_tokens=usage.get("input_tokens"), output_tokens=usage.get("output_tokens"),
         model=model, provider=provider.value, seconds=time.monotonic() - started)
     except Exception as exc:
@@ -86,6 +101,10 @@ async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: s
     stats["seconds"] += record["seconds"] or 0.0
     stats["input_tokens"] += record["input_tokens"] or 0
     stats["output_tokens"] += record["output_tokens"] or 0
+    if record["status"] == RD.FAILED and stats["capped"]:
+      stats["asked"] -= 1
+      print(f"page {page}: not asked: {record['error']}", file=sys.stderr)
+      break
     if record["status"] == RD.FAILED:
       stats["failed"] += 1
       print(f"page {page}: failed: {record['error']}", file=sys.stderr)
@@ -130,6 +149,9 @@ def main(argv: list | None = None) -> int:
   stats = asyncio.run(fill(pdf=args.pdf, out=args.out, provider=provider, model=model, pages=args.pages, force=args.force, max_tokens=args.max_tokens, timeout_s=args.timeout, task=args.task, mode=args.mode,
     prompt_name=args.prompt, bank=bank, office=args.office, leave_out_office=args.leave_out_office))
   print(f"{provider.value} {model}: {stats['pages']} page(s), {stats['asked']} asked, {stats['cached']} already cached, {stats['failed']} failed, {stats['seconds']} s, {stats['input_tokens']} input and {stats['output_tokens']} output tokens")
+  if stats["capped"]:
+    print(f"stopped: {stats['capped']}", file=sys.stderr)
+    return CAPPED
   return 0 if not stats["failed"] else 1
 
 if __name__ == "__main__":

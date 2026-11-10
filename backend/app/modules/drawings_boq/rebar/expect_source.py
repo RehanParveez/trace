@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from app.engine.measure import rebar_expect as RX
 from decimal import Decimal as D
+from app.modules.drawings_boq.rebar import slab_bars as SB
 from app.modules.drawings_boq.rebar.member_source import candidate_dict, norm_mark, sheet_floor
 from app.modules.drawings_boq.takeoff.model.storeys import heights_ft as storey_heights_ft
 
@@ -118,6 +119,17 @@ def build_jobs(sheets: list, candidates: dict, decisions: dict) -> list:
       if fl in heights:
         ins.append(RX.defaulted("height_ft", D(str(heights[fl])), "decision storeys", None))
       add("COLUMN", str(c["mark"]), fl, RX.column, ins, page=page)
+    for panel in (meta.get("slab_callout_items") or {}).get("panels") or []:
+      mesh = SB.mesh_of(panel)
+      if mesh["main"] is None or mesh["dist"] is None:
+        continue
+      
+      src = _where(meta, page, f"slab panel {panel['n']}")
+      ins = [RX.derived("lx_ft", D(str(mesh["short_ft"])), src + " (clear span between the drawn beam faces)"), RX.derived("ly_ft", D(str(mesh["long_ft"])), src + " (clear span between the drawn beam faces)")]
+      for key in ("main", "dist"):
+        ins += [RX.printed(f"{key}_bar", mesh[key][0], src + " (bar string printed once on the panel)"), RX.printed(f"{key}_s_in", D(str(mesh[key][1])), src + " (bar string printed once on the panel)")]
+      ins.append(RX.missing("support_in", "the bearing of the slab on its beam is not printed"))
+      add("SLAB", f"P{panel['n']}", floor0, RX.slab_panel, ins, 1, page)
     for s in (tables.get("beam_sections") or {}).get("sections") or []:
       if not s.get("mark"):
         continue

@@ -16,6 +16,7 @@ from app.modules.drawings_boq.rebar import bbs_coverage as COV
 from app.engine.measure import rebar_expect as RX
 from app.modules.drawings_boq.rebar import bbs_decisions as DEC
 from app.modules.drawings_boq.rebar import member_match as MM
+from app.modules.drawings_boq.rebar import slab_steel as SS
 from app.modules.drawings_boq.takeoff.proof import case as CASE
 
 KIND = CIO.AUDIT_KIND
@@ -286,7 +287,7 @@ def run_audit(folder: str) -> dict:
   findings = BR.sort_findings([_finding_dict(f, i) for i, f in enumerate(found, 1)])
   floor_map = {k: list(v) for k, v in (decisions.get("bbs_floor_map") or match.floor_map or {}).items()}
   return {"document": doc, "rows": rows, "sheets": sheets, "findings": findings, "floor_map": floor_map, "decisions": decisions, "summary": BR.summarize(rows, sheets, findings),
-    "coverage": cross.totals["coverage"], "bbs_inputs": RX.bbs_inputs([e for _, e in results])}
+    "coverage": cross.totals["coverage"], "bbs_inputs": RX.bbs_inputs([e for _, e in results]), "slab_mesh": SS.summary(data["sheets"], results)}
 
 def floor_of(f: dict, floor_map: dict) -> str | None:
   floors = floor_map.get((f.get("bbs_ref") or {}).get("sheet_name") or "")

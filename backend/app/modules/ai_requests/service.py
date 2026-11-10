@@ -8,6 +8,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
+from app.modules.ai_requests import cap as CAP
 from app.modules.ai_requests.models import AIEntityType, AIProvider, AIRequest, AIRequestPurpose, AIResponse, AIResponseStatus
 from app.modules.ai_requests.repository import AIRequestRepository, AIResponseRepository
 from app.modules.identity.models import Organization
@@ -99,6 +100,10 @@ class AIOrchestratorService:
     return AIRunResult(success=False, error_message=str(exc))
 
    resolved_model = model or model_of(provider)
+   if provider == AIProvider.ANTHROPIC:
+    refusal = CAP.check(CAP.spent_usd(await self.requests.month_usage(CAP.month_start())), resolved_model, max_tokens or DEFAULT_MAX_TOKENS)
+    if refusal:
+      return AIRunResult(success=False, error_message=refusal, model=resolved_model, provider=provider.value)
    pictures = ([(image_bytes, image_mime_type or "image/png")] if image_bytes is not None else []) + [(png, "image/png") for png in (images or [])]
 
    ai_request = await self.requests.create(

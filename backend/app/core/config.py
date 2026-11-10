@@ -79,7 +79,8 @@ class Settings(BaseSettings):
   ai_usd_to_pkr: float = 280.0
   ai_anthropic_url: str = "https://api.anthropic.com/v1/messages"
   ai_tasks_enabled: str = "SHEET"
-  
+  ai_monthly_cap_usd: float = 10.0
+
   engine_v2_org_ids: str = ""
   engine_ai_shadow_org_ids: str = ""
   engine_ai_role_vote_org_ids: str = ""

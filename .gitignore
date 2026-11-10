@@ -40,6 +40,9 @@ minio-data/
 # Generated
 score_out/
 bench_out/
+bench_out/
+i_out/
+j_out/
 .claude_stage_*
 alembic/versions/*.pyc
 backend/celerybeat-schedule
@@ -48,3 +51,4 @@ Claude outputs/
 *.tgz
 *.bak*
 ai_fill_out/
+reads_cache/

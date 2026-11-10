@@ -1,21 +1,18 @@
 from __future__ import annotations
-import json
+import os
 from app.core.config import settings
+from app.modules.ai_requests import cap as CAP
+from app.modules.ai_requests.cap import MILLION, prices, usd
+from app.modules.drawings_boq.takeoff.ai_reader import cache as CACHE
 
-MILLION = 1_000_000
-
-def prices() -> dict:
-  try:
-    raw = json.loads(settings.ai_price_usd_per_million or "{}")
-  except json.JSONDecodeError:
-    return {}
-  return {str(k): (float(v[0]), float(v[1])) for k, v in raw.items() if isinstance(v, (list, tuple)) and len(v) == 2}
-
-def usd(model: str, input_tokens, output_tokens, table: dict | None = None) -> float:
-  rate = (table if table is not None else prices()).get(str(model))
-  if rate is None:
-    return 0.0
-  return (int(input_tokens or 0) * rate[0] + int(output_tokens or 0) * rate[1]) / MILLION
+def cache_spent_usd(root: str, now=None, table: dict | None = None) -> float:
+  table = prices() if table is None else table
+  rows = []
+  for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+    for e in CACHE.read_all(os.path.join(root, name)):
+      if CAP.in_month(e.get("at"), now):
+        rows.append((e.get("model"), e.get("input_tokens"), e.get("output_tokens")))
+  return CAP.spent_usd(rows, table)
 
 def summarise(rows: list, table: dict | None = None, usd_to_pkr: float | None = None) -> dict:
   table = prices() if table is None else table

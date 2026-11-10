@@ -3,7 +3,8 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.modules.ai_requests.models import AIEntityType, AIRequest, AIRequestPurpose, AIResponse,AIResponseStatus
+from datetime import datetime
+from app.modules.ai_requests.models import AIEntityType, AIProvider, AIRequest, AIRequestPurpose, AIResponse,AIResponseStatus
 
 class AIRequestRepository:
   def __init__(self, session: AsyncSession):
@@ -44,6 +45,14 @@ class AIRequestRepository:
     )
     result = await self.session.execute(query)
     return list(result.scalars().unique())
+
+  async def month_usage(self, since: datetime) -> list:
+    result = await self.session.execute(
+      select(AIRequest.model, func.coalesce(func.sum(AIRequest.input_tokens), 0), func.coalesce(func.sum(AIRequest.output_tokens), 0))
+      .where(AIRequest.provider == AIProvider.ANTHROPIC, AIRequest.created_at >= since)
+      .group_by(AIRequest.model)
+    )
+    return [(m, int(i), int(o)) for m, i, o in result.all()]
 
   async def get_usage_summary(self, organization_id: UUID) -> dict:
     result = await self.session.execute(
