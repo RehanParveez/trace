@@ -4,6 +4,7 @@ from shapely.ops import unary_union
 from app.engine.measure import rulebook as RB
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
+from app.modules.drawings_boq.takeoff.extract import roof_plan_walls as RPW
 from app.modules.drawings_boq.takeoff.prep.facts import FLOOR_ORDER
 from app.modules.drawings_boq.takeoff.model import levels as LV
 
@@ -135,7 +136,8 @@ def _label(w, name: str, height_mm: float) -> str:
 
 def apply(walls: list, rooms: list, f: float, floor_heights: dict | None, level_hint: str | None, storey_height, notes_fn, height_notes, status_fn, spec_facts: dict | None = None) -> dict:
   tally = {PARAPET: {"walls": 0, "metres": 0.0}, MUMTY: {"walls": 0, "metres": 0.0}, UNCLASSED: {"walls": 0, "metres": 0.0}, "mumty_floor": None, "mumty_mm": None, "parapet_mm": None, "levels": None}
-  todo = [w for w in walls if _live(w) and not (w.params or {}).get("height_mm")]
+  light = RPW.light_pen_on(level_hint)
+  todo = [w for w in walls if _live(w) and (not (w.params or {}).get("height_mm") or (light and (w.facts or {}).get("light_pen")))]
   if not todo:
     return tally
   kinds = classify(todo, rooms, f)

@@ -18,6 +18,7 @@ from app.modules.drawings_boq.takeoff.extract import lintel_schedule_items as LS
 from app.modules.drawings_boq.takeoff.extract import finish_spec_items as FSP
 from app.modules.drawings_boq.takeoff.extract import drain_labels as DLB
 from app.modules.drawings_boq.takeoff.extract import roof_plan_walls as RPW
+from app.modules.drawings_boq.takeoff.extract import wall_place as WP
 from app.modules.drawings_boq.takeoff.extract import wall_pieces as WPC
 from app.modules.drawings_boq.takeoff.extract import level_marks as LMK
 from app.modules.drawings_boq.takeoff.extract import tube_fixtures as TFX
@@ -254,6 +255,8 @@ def items_of(rows: list) -> SetRead:
         continue
       if cls == V.ElementClass.WALL and RPW.is_parapet(c):
         cls = V.ElementClass.PARAPET
+      elif cls == V.ElementClass.WALL and WP.is_boundary(c):
+        cls = V.ElementClass.BOUNDARY_WALL
 
       pts = [] if upright else _points(c)
       attrs = _attrs(c)
@@ -289,6 +292,8 @@ def read_case(case: dict, files: dict, budget_s: float | None = None) -> dict:
     with open(files[name], "rb") as fh:
       blobs.append((name, fh.read()))
   kw = {} if budget_s is None else {"budget_s": budget_s}
+  if notes:
+    kw["notes"] = notes
   return {name: rows for name, rows, _problems in RDR.read_set(blobs, rules=case.get("overrides"), **kw)}
 
 def read_rows(pdf_path: str) -> tuple:

@@ -24,9 +24,11 @@ from app.modules.drawings_boq.takeoff.ai_reader import cost as COST
 from app.modules.drawings_boq.takeoff.ai_reader import regions as RG
 from app.modules.drawings_boq.takeoff.ai_reader import tasks as TASKS
 from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
+from app.modules.drawings_boq.takeoff.prep import facts as DF
 from app.modules.drawings_boq.takeoff.prep import page_role as PRL
 from app.modules.ai_requests.models import AIRequestPurpose, AIEntityType, AIRequest, AIResponse
 from app.modules.drawings_boq.takeoff.ai_reader.reader import FAILED, OK, TASK, shadow_read
+from app.modules.drawings_boq.takeoff.ai_reader import switch as SW
 from app.shared.storage import download_bytes, upload_fileobj
 
 NOTE = ("The AI reads the title-block strips and the whole page of a sheet, and only to be measured against the rule reader. Its role counts in a "
@@ -42,7 +44,7 @@ def role_vote_enabled(org_id) -> bool:
 
 def note_enabled(org_id) -> bool:
   ids = {s.strip() for s in (settings.engine_ai_note_org_ids or "").split(",") if s.strip()}
-  return "*" in ids or str(org_id) in ids
+  return ("*" in ids or str(org_id) in ids) and SW.on(NT.TASK)
 
 def schedule_enabled(org_id) -> bool:
   ids = {s.strip() for s in (settings.engine_ai_schedule_org_ids or "").split(",") if s.strip()}
@@ -203,12 +205,15 @@ class AiShadowService(ExtractService):
     rows = await self._rows(org, drawing_id, NT.TASK)
     done_keys = set() if force else {r.cache_key for r in rows if r.cache_key and r.status != FAILED}
     wanted = [s for s in sheets if JOBS.note_page(s.prep_meta)]
+    ruled = DF.gather([{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts"), "ai_facts": None} for s in sheets if (s.prep_meta or {}).get("facts") is not None])["items"]
+    need = NT.need_of(NT.missing(ruled))
+    wanted = wanted if need else []
     contents = await asyncio.to_thread(source.drawing_bytes, drawing.storage_key) if wanted else b""
     sha = CACHE.pdf_sha256(contents) if wanted else ""
     region = RG.note_region()
     name = TASKS.prompt_name(NT.TASK)
     shown = await self._shown(org, NT.TASK, name, wanted, contents, sha)
-    keys = {s.id: CACHE.key(sha, s.page_no, region, NT.TASK, P.load(name)["version"], state.model, EX.state(shown.get(s.id, []))) for s in wanted}
+    keys = {s.id: CACHE.key(sha, s.page_no, region, NT.TASK, P.load(name)["version"], state.model, "|".join(x for x in (EX.state(shown.get(s.id, [])), NT.ask_state(need)) if x)) for s in wanted}
     queue = [s for s in wanted if keys[s.id] not in done_keys]
     batch = queue[:limit]
     async def ask(prompt: str, png: bytes, images: list, model: str | None = None):
@@ -222,8 +227,8 @@ class AiShadowService(ExtractService):
 
     made: list[AiShadowRead] = []
     for sheet in batch:
-      rule_items = ((sheet.prep_meta or {}).get("facts") or {}).get("items") or []
-      rec = await NT.read_notes(contents=contents, page_no=sheet.page_no, ask=ask, store_crop=store_crop, cache_key=keys[sheet.id], model=state.model, rule_items=rule_items, prompt_name=name, examples=shown.get(sheet.id, []))
+      rule_items = ruled
+      rec = await NT.read_notes(contents=contents, page_no=sheet.page_no, ask=ask, store_crop=store_crop, cache_key=keys[sheet.id], model=state.model, rule_items=rule_items, prompt_name=name, examples=shown.get(sheet.id, []), need=need)
       row = AiShadowRead(id=uuid4(), organization_id=org, project_id=drawing.project_id, drawing_id=drawing.id, sheet_id=sheet.id, page_no=sheet.page_no,
         purpose=rec["purpose"], task=rec["task"], cache_key=rec["cache_key"], model=rec["model"], validators=rec["validators"], mode="ALL", status=rec["status"],
         prompt_version=rec["prompt_version"], schema_version=rec["schema_version"], crop_key=rec["crop_key"],
@@ -240,7 +245,7 @@ class AiShadowService(ExtractService):
       stored = {r.sheet_id: r for r in reversed(rows) if r.status == OK and r.cache_key}
       again = [s for s in wanted if s.id not in {m.sheet_id for m in made} and stored.get(s.id) is not None and stored[s.id].cache_key == keys[s.id]]
       for s in again:
-        s.prep_meta = {**(s.prep_meta or {}), "ai_facts": NT.accepted_from(stored[s.id].ai_value, ((s.prep_meta or {}).get("facts") or {}).get("items") or [])}
+        s.prep_meta = {**(s.prep_meta or {}), "ai_facts": NT.accepted_from(stored[s.id].ai_value, ruled)}
       if again:
         await self.session.commit()
     return {"drawing_id": drawing.id, "mode": "ALL", "read": sum(1 for r in made if r.status != FAILED), "failed": sum(1 for r in made if r.status == FAILED),

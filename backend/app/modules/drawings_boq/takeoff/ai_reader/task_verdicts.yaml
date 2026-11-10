@@ -1,0 +1,6 @@
+rule: "first-sight money accuracy rises on two offices and falls on none"
+how: "proof.ai_switch reads the ai_money.json of a bench run made with --ai and writes the verdict; nothing else switches a task on"
+tasks:
+  NOTE_FACT: {verdict: UNDECIDED, variant: null, date: null, commit: null, offices: {}}
+  SCHEDULE_ROW: {verdict: NOT_JUDGED, reason: "the bench does not read cached schedule answers yet (AX-3a); the company list still decides"}
+  LEGEND_ENTRY: {verdict: NOT_JUDGED, reason: "the bench does not count legend symbols into money yet (AX-3a); the company list still decides"}

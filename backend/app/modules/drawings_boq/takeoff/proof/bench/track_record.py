@@ -3,6 +3,7 @@ import argparse
 import os
 import sys
 import yaml
+from app.modules.drawings_boq.takeoff.proof.bench import money as MN
 from app.modules.drawings_boq.takeoff.proof.bench import offices as OFF
 
 STORE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..", "..", "engine", "catalogue", "track_record.yaml")
@@ -36,12 +37,23 @@ def compute(history: list, sets_doc: dict, offices_doc: dict) -> dict:
     if within is None or not compared:
       continue
     
-    scored.append({**s, "date": str(got.get("date") or ""), "commit": str(got.get("commit") or ""), "within_10": within, "compared": compared})
+    entry = {**s, "date": str(got.get("date") or ""), "commit": str(got.get("commit") or ""), "within_10": within, "compared": compared}
+    money = MN.first_money(s["set"], history)
+    if money is not None:
+      entry.update({"money_run": money["run"], "money_pkr": money["money_pkr"], "within_pkr": money["within_pkr"], "money_pct": money["money_pct"], "thin": money["thin"]})
+    scored.append(entry)
   offices = sorted({s["office"] for s in scored})
   dates = sorted({s["date"] for s in scored if s["date"]})
-  return {"state": "MEASURED" if scored else "NOT_MEASURED", "history_lines": len(history), "first_sight_sets": len(entered), "scored_sets": len(scored),
+  
+  out = {"state": "MEASURED" if scored else "NOT_MEASURED", "history_lines": len(history), "first_sight_sets": len(entered), "scored_sets": len(scored),
     "unscored_sets": sorted(s["set"] for s in entered if s["set"] not in {x["set"] for x in scored}), "registered_offices": len(offices_doc.get("offices") or {}), "offices": len(offices),
     "within_10": sum(s["within_10"] for s in scored) if scored else None, "compared": sum(s["compared"] for s in scored) if scored else None, "dates": dates, "sets": scored}
+  priced = [s for s in scored if "money_pkr" in s]
+  if priced:
+    money, within = sum(s["money_pkr"] for s in priced), sum(s["within_pkr"] for s in priced)
+    out.update({"money_sets": len(priced), "money_pkr": round(money, 2), "within_pkr": round(within, 2), "money_pct": round(100.0 * within / money, 1), "money_thin_sets": sorted(s["set"] for s in priced if s["thin"]),
+      "money_by_office": {o: round(100.0 * sum(s["within_pkr"] for s in priced if s["office"] == o) / sum(s["money_pkr"] for s in priced if s["office"] == o), 1) for o in sorted({s["office"] for s in priced})}})
+  return out
 
 def current() -> dict:
   return compute(OFF.history_rows(), OFF.read_sets(), OFF.load())

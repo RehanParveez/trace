@@ -282,7 +282,7 @@ def items_of(rows: list) -> SetRead:
       out.items.extend(panel_items(sheet, (row.get("stats") or {}).get("slab_panel_graph") or {}, source))
   return out
 
-def read_case(case: dict, files: dict, budget_s: float | None = None) -> dict:
+def read_case(case: dict, files: dict, budget_s: float | None = None, notes: dict | None = None) -> dict:
   blobs = []
   for name in case["pdfs"]:
     with open(files[name], "rb") as fh:

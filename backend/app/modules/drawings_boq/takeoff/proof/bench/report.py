@@ -22,13 +22,16 @@ from app.modules.drawings_boq.takeoff.proof.bench import explained as EXD
 from app.modules.drawings_boq.takeoff.proof import offices as OFC
 from app.modules.drawings_boq.takeoff.proof.bench import failures as FL
 from app.modules.drawings_boq.takeoff.proof.bench import reads as RD
+from app.modules.drawings_boq.takeoff.proof.bench import ai_money as AM
+from app.modules.drawings_boq.takeoff.proof.bench import money as MN
+from app.modules.drawings_boq.takeoff.proof.bench import offices as OFF
 from app.modules.drawings_boq.takeoff.proof.bench import rows as RW
 from app.modules.drawings_boq.takeoff.proof.reading import sets as RS
 from app.modules.drawings_boq.takeoff.questions import answers as AN
 
 PRODUCT, PROOF, METHOD, ONE_RUN = "PRODUCT", "PROOF", "PRODUCT_METHOD", "PROOF_ON_PRODUCT_LINES"
 HISTORY = os.path.join(ST.HERE, "history.csv")
-HISTORY_HEAD = ["date", "commit", "set", "run", "coverage_pct", "within_10", "compared", "silent", "ai_cost_pkr", "rows_sha"]
+HISTORY_HEAD = ["date", "commit", "set", "run", "coverage_pct", "within_10", "compared", "silent", "ai_cost_pkr", "rows_sha"] + MN.FIELDS
 
 def engine_lines(score_dir: str | None, name: str) -> list | None:
   if not score_dir:
@@ -167,6 +170,8 @@ def render(ctx: dict) -> str:
     body.append([c["name"], f"{p['within_10']} of {p['compared']}", "-" if m is None else f"{m['within_10']} of {m['compared']}", "-" if o is None else f"{o['within_10']} of {o['compared']}", f"{q['within_10']} of {q['compared']}"])
   if body:
     L += ["Within 10% of the answer file, rows that have both a Trace number and an answer:", ""] + table(["Set", "Product", "Product + method", "Proof on product lines", "Proof (score lines)"], body) + [""]
+  L += MN.lines_for(ctx["cases"], ctx["rates"], fmt, table)
+  L += AM.lines_for(ctx.get("ai_records") or [])
   L += ["## By section group and split", ""]
   
   body = []
@@ -196,7 +201,8 @@ def render(ctx: dict) -> str:
   L += [f"{len(ctx['failures'])} groups in all; the full list with items and example pages is in failures.json. Money is the answer-file quantity times a rate from `rates.yaml`; items with no rate are counted as unpriced, never guessed.", ""]
   L += ["## Checks", "", f"- Silent entries over all sets: product {ctx['silent_total'][PRODUCT]}, proof {ctx['silent_total'][PROOF]}, product plus method and proof on product lines {ctx['silent_extra']} (must be 0).",
     f"- Stages failed: {ctx['failed_stages'] or 'none'}.", f"- Answers whose element has no ledger entry: {ctx['lost_answers'] or 'none'}.", f"- Answer items left out of the rows because no person has confirmed their mapping: {', '.join(f'{k} {v}' for k, v in ctx['unconfirmed'].items() if v) or 'none'}.",
-    f"- {PA.bench_line()}", f"- {EXD.hit_line(EXD.load())}", f"- {OFC.first_sight_line()}"]
+     f"- {PA.bench_line()}", f"- {EXD.hit_line(EXD.load())}", f"- {OFC.first_sight_line()}"]
+  L += [f"- First-sight money, {ln}" for ln in MN.first_sight_lines(OFF.history_rows(), OFF.read_sets(), OFF.load())]
   for name, a in ctx["agreement"].items():
     L.append(f"- {name}: {a['compared']} answers-pass line(s) compared with the bench rows, {a['identical']} identical, {a['not_compared']} not compared (several elements or lines per element; {a['no_floor_row']} on a floor the ledger holds no row for)" + (f"; differences: {'; '.join(a['differences'][:5])}" if a["differences"] else "") + ".")
   L += ["", ctx["notes"], ""]
@@ -213,7 +219,26 @@ def write_rows(path: str, rows: list) -> str:
     fh.write(body)
   return hashlib.sha256("".join(line(r, SECOND_COLUMN) for r in rows).encode("utf-8")).hexdigest()
 
+def widen_history(path: str) -> int:
+  if not os.path.isfile(path) or os.path.getsize(path) == 0:
+    return 0
+  with open(path, encoding="utf-8", newline="") as fh:
+    rows = list(csv.reader(fh))
+  head = rows[0]
+  if head == HISTORY_HEAD:
+    return 0
+  if head != HISTORY_HEAD[:len(head)]:
+    raise ValueError(f"{path} has a header this benchmark does not know: {','.join(head)}")
+  pad = [""] * (len(HISTORY_HEAD) - len(head))
+  with open(path, "w", encoding="utf-8", newline="") as fh:
+    w = csv.writer(fh, lineterminator="\n")
+    w.writerow(HISTORY_HEAD)
+    for r in rows[1:]:
+      w.writerow(r + pad)
+  return len(rows) - 1
+
 def append_history(path: str, lines: list) -> None:
+  widen_history(path)
   new = not os.path.isfile(path) or os.path.getsize(path) == 0
   with open(path, "a", encoding="utf-8", newline="") as fh:
     w = csv.writer(fh, lineterminator="\n")
@@ -222,10 +247,24 @@ def append_history(path: str, lines: list) -> None:
     for r in lines:
       w.writerow(r)
 
+def history_lines(today: str, commit: str, cases: list, rows_sha: str) -> list:
+  out = []
+  for c in cases:
+    for label in (PRODUCT, METHOD, PROOF):
+      if label == METHOD and not c["method"]:
+        continue
+      s = c["method"] if label == METHOD else c["stats"][label]["all"]
+      silent = c["method"]["silent"] if label == METHOD else c["silent"][label]
+      view = c["money"]["by_run"].get(label)
+      out.append([today, commit, c["name"], label, fmt(s["coverage"]), s["within_10"], s["compared"], silent, c["ai"]["pkr"], rows_sha[:16]] + (MN.history_fields(view) if view else [""] * len(MN.FIELDS)))
+  return out
+
 def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None, product_score_dir: str | None = None, only: list | None = None, reads_cache: str | None = None,
-  history: str | None = HISTORY, failures_run: str = PRODUCT, top: int = 20) -> int:
+  history: str | None = HISTORY, failures_run: str = PRODUCT, top: int = 20, ai: str | None = None) -> int:
   doc = ST.load()
   bad = ST.problems(doc)
+  ai_task, ai_variant = AM.parse(ai) if ai else (None, None)
+  ai_records: list = []
   
   if bad:
     for b in bad:
@@ -241,6 +280,7 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
   silent_extra = 0
   agreements, pdfs = {}, 0
   unconfirmed: dict = {}
+  rates = FL.read_yaml("rates.yaml")
   for name in sorted(doc["sets"]):
     if only and name not in only:
       continue
@@ -297,6 +337,7 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
     if method_rows:
       m = run_once(product_plain, RD.product_lines(case, found, reads_cache, method_rows), [], {})
       m_rows, _info = RW.rows_of(name, office, splits, group_of_section, METHOD, m["state"]["ledger"], answers_doc, product_plain, m["state"]["evidence"], case["pdfs"])
+      rows_by_run[METHOD] = m_rows
       failed += [f"{name} {METHOD}: {s}" for s in m["failed"]]
       silent_extra += len(m["silent"])
       ms = stats(m_rows)
@@ -310,7 +351,23 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
       silent_extra += len(o["silent"])
       os_ = stats(o_rows)
       one = {"coverage": os_["coverage"], "within_10": os_["within_10"], "compared": os_["compared"], "questions": len(o["open"]), "silent": len(o["silent"])}
-    cases.append({"name": name, "pdfs": list(case["pdfs"]), "office": office, "splits": splits, "has_answers": bool(answers_doc), "stats": stats_by_run, "questions": questions, "silent": silent, "ai": ai_cost(folder), "method": method, "one_run": one})
+    views = {label: MN.of_set(rows, answers_doc, rates) for label, rows in rows_by_run.items()} if answers_doc else {}
+    headline = METHOD if METHOD in rows_by_run else PRODUCT
+    money = {"run": headline, "headline": views.get(headline), "proof": views.get(PROOF), "by_run": views}
+    if ai_task and answers_doc:
+      notes = AM.cached(folder, ai_task, ai_variant)
+      if notes:
+        tag = AM.tag_of(ai_task, ai_variant, notes)
+        on_plain = RD.plain_of(case, found, False, reads_cache, notes, tag)
+        on_run = run_once(on_plain, RD.product_lines(case, found, reads_cache, method_rows or None, notes, tag), [], {})
+        on_rows, _info = RW.rows_of(name, office, splits, group_of_section, METHOD if method_rows else PRODUCT, on_run["state"]["ledger"], answers_doc, on_plain, on_run["state"]["evidence"], case["pdfs"])
+        on_view = MN.of_set(on_rows, answers_doc, rates)
+        failed += [f"{name} AI {ai_task}: {x}" for x in on_run["failed"]]
+        ai_records.append(AM.record(name=name, office=office, task=ai_task, variant=ai_variant, off=views.get(headline), on=on_view, rows_off=RD.product_rows(case, found, reads_cache), rows_on=RD.product_rows(case, found, reads_cache, notes, tag),
+          pages=sum(len(v) for v in notes.values())))
+      else:
+        ai_records.append(AM.record(name=name, office=office, task=ai_task, variant=ai_variant, off=views.get(headline), on=None, rows_off=RD.product_rows(case, found, reads_cache), rows_on=None, pages=0))
+    cases.append({"name": name, "pdfs": list(case["pdfs"]), "office": office, "splits": splits, "has_answers": bool(answers_doc), "stats": stats_by_run, "questions": questions, "silent": silent, "ai": ai_cost(folder), "method": method, "one_run": one, "money": money})
     print(f"{name}: product coverage {fmt(stats_by_run[PRODUCT]['all']['coverage'])}%, proof {fmt(stats_by_run[PROOF]['all']['coverage'])}%, silent {silent[PRODUCT]}/{silent[PROOF]}", flush=True)
   os.makedirs(out_dir, exist_ok=True)
   rows_sha = write_rows(os.path.join(out_dir, "rows.jsonl"), all_rows)
@@ -327,14 +384,18 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
     "Sets with no answer file have no within-10% count. Scoring needs the answer file of BX-1; only the sets that have one can show accuracy.")
   commit = commit_id()
   ctx = {"commit": commit, "rows_sha": rows_sha, "pdfs": pdfs, "cases": cases, "audit": audit, "groups": groups, "by_section": by_section, "failures": failure_list, "failures_run": failures_run, "top": top,
-    "silent_total": silent_total, "silent_extra": silent_extra, "failed_stages": failed, "lost_answers": lost_answers, "unconfirmed": unconfirmed, "agreement": agreements, "notes": notes}
+    "silent_total": silent_total, "silent_extra": silent_extra, "failed_stages": failed, "lost_answers": lost_answers, "unconfirmed": unconfirmed, "agreement": agreements, "notes": notes, "rates": rates}
+  ctx["ai_records"] = ai_records
   with open(os.path.join(out_dir, "bench.md"), "w", encoding="utf-8", newline="\n") as fh:
     fh.write(render(ctx))
+  if ai_task:
+    with open(os.path.join(out_dir, AM.FILE), "w", encoding="utf-8", newline="\n") as fh:
+      json.dump({"task": ai_task, "variant": ai_variant, "commit": commit, "date": datetime.date.today().isoformat(), "records": ai_records}, fh, indent=1, sort_keys=True)
+      fh.write("\n")
     
   if history:
     today = datetime.date.today().isoformat()
-    append_history(history, [[today, commit, c["name"], run_label, fmt(c["stats"][run_label]["all"]["coverage"]), c["stats"][run_label]["all"]["within_10"], c["stats"][run_label]["all"]["compared"], c["silent"][run_label], c["ai"]["pkr"], rows_sha[:16]]
-      for c in cases for run_label in (PRODUCT, PROOF)])
+    append_history(history, history_lines(today, commit, cases, rows_sha))
   print(f"{len(all_rows)} rows, rows.jsonl sha256 {rows_sha[:16]}, silent {silent_total[PRODUCT]}/{silent_total[PROOF]}, {len(failure_list)} failure groups; written to {out_dir}")
   print(EXD.hit_line(EXD.load()))
   return 1 if (silent_total[PRODUCT] or silent_total[PROOF] or silent_extra or failed or lost_answers) else 0

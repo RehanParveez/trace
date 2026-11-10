@@ -64,6 +64,8 @@ from app.modules.drawings_boq.takeoff.extract import openings_area as OA
 from app.modules.drawings_boq.takeoff.extract import earth_fill as EF
 from app.modules.drawings_boq.takeoff.extract import roof_treatment as RF
 from app.modules.drawings_boq.takeoff.extract import roof_walls as RW
+from app.modules.drawings_boq.takeoff.extract import roof_plan_walls as RPW
+from app.modules.drawings_boq.takeoff.extract import wall_place as WP
 from app.modules.drawings_boq.takeoff.extract import outdoor as OD
 from app.modules.drawings_boq.takeoff.extract import flights as FL
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
@@ -800,8 +802,8 @@ def _wall_basis(pending: list, plaster_mm: float) -> dict:
       top.notes.append(C.note("WALL_THICKNESS_BASIS", metres=out["metres"], sheet=sheet))
   return out
 
-def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False, outer_only: bool = False, wall_vocab: list | None = None, work: W.Work | None = None) -> tuple:
-  frames, runs, stats = W.detect_walls(index, f, deadline, at_grade, work)
+def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False, outer_only: bool = False, wall_vocab: list | None = None, work: W.Work | None = None, roof_light: bool = False) -> tuple:
+  frames, runs, stats = W.detect_walls(index, f, deadline, at_grade, work, roof_light)
   hatched, hatch_stats = HW.add_runs(index, frames, runs, f, ctx.get("page_unit") or 1.0)
   runs = [*runs, *hatched]
   stats.update(hatch_stats)
@@ -2057,8 +2059,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     res.notes.append(C.note("STRUCTURAL_SHEET", title=kind["title"] or (views[0]["caption"] if views else None)))
   else:
     try:
-      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, sheet_heights, ctx, deadline, imp_sheet, bool(lowest_level) or str(level_hint or "").upper() in ("GROUND", "BASEMENT"), outer_only, wall_vocab, work)
+      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, sheet_heights, ctx, deadline, imp_sheet, bool(lowest_level) or str(level_hint or "").upper() in ("GROUND", "BASEMENT"), outer_only, wall_vocab, work, RPW.light_pen_on(level_hint))
       res.candidates.extend(walls)
+      wstats["place"] = WP.apply(walls, mm_per_pt, level_hint)
       wstats["tank_walls"] = _mark_tanks(words, walls, mm_per_pt)
       _drop_tank_heights(walls)
       wstats["tank_drawings_listed"] = TS.apply(walls, tank_details or [])

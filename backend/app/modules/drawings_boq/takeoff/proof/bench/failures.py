@@ -54,6 +54,8 @@ def key_of(row: dict) -> str | None:
 
 def rate_of(element: str, rates: dict) -> float | None:
   v = (rates.get("per_item_unit") or {}).get(element)
+  if isinstance(v, dict):
+    v = v.get("rate")
   return None if v is None else float(v)
 
 def money_of(rows: list, rates: dict) -> tuple:

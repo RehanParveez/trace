@@ -9,8 +9,12 @@ SOIL_DEPTH_PARAM, SOIL_CEMENT_PARAM = "soil_stab_depth_mm", "soil_stab_cement_pc
 PCC_PROJECTION_PARAM = "pcc_projection_mm"
 LAP_PARAM = "bar_lap_dia"
 EIGHTH_MM = 3.175
-PLASTER_PARAM = "plaster_inside_mm"   
+PLASTER_PARAM = "plaster_inside_mm"
+PLASTER_OUTSIDE_PARAM = "plaster_outside_mm"
+PLASTER_CEILING_PARAM = "plaster_ceiling_mm"
 DPC_PARAM = "dpc_thickness_mm"
+ROOF_COBA_PARAM = "roof_coba_thickness_mm"
+AI_READ = "AI_READ"
 STAB_CEMENT_PARAM = "soil_stab_cement_pct"
 STAB_PRINTED_PARAM = "soil_stab_printed"
 STAB_ON_PARAM = "soil_stabilisation"
@@ -21,7 +25,10 @@ def _bar_key(dia_mm: float) -> str | None:
   return str(n) if 2 <= n <= 12 and abs(n * EIGHTH_MM - float(dia_mm)) < 0.6 else None
 
 def _note(row: dict) -> dict:
-  return {"text": row.get("text"), "pages": sorted(row.get("pages") or []), "count": int(row.get("count", 1))}
+  out = {"text": row.get("text"), "pages": sorted(row.get("pages") or []), "count": int(row.get("count", 1))}
+  if row.get("source") == AI_READ:
+    out.update({"source": AI_READ, "quote": row.get("quote"), "checks": list(row.get("checks") or [])})
+  return out
 
 def _single(rows: list, name: str, conflicts: list) -> dict | None:
   """The one row of a note, or None when two rows print different values (the conflict is listed)."""
@@ -57,7 +64,8 @@ def from_items(items: list) -> dict:
       params[name] = round(float(row["value_mm"]), 2)
       notes[name] = _note(row)
   for kind, name, scope in (("PCC_THICKNESS", PCC_PARAM, "pcc bed"), ("FILL_LAYER", FILL_PARAM, None),
-      ("PLASTER_THICKNESS", PLASTER_PARAM, "cement mortar plaster"), ("DPC_THICKNESS", DPC_PARAM, None)):
+      ("PLASTER_THICKNESS", PLASTER_PARAM, "cement mortar plaster"), ("PLASTER_THICKNESS", PLASTER_OUTSIDE_PARAM, "outside plaster"), ("PLASTER_THICKNESS", PLASTER_CEILING_PARAM, "ceiling plaster"),
+      ("DPC_THICKNESS", DPC_PARAM, None), ("ROOF_COBA_THICKNESS", ROOF_COBA_PARAM, None)):
     rows = [r for r in items or [] if r.get("kind") == kind and r.get("value_mm") is not None and (scope is None or r.get("scope") == scope)]
     row = _single(rows, name, conflicts) if rows else None
     if row is not None:

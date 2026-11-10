@@ -1,9 +1,12 @@
 from __future__ import annotations
-import re
 import asyncio
+import hashlib
+import json
+import re
 from app.modules.drawings_boq.takeoff.ai_reader import prompts as P
 from app.engine.catalogue import note_keys as NK
 from app.modules.drawings_boq.takeoff.prep import printed_params as PP
+from app.modules.drawings_boq.takeoff.ai_reader import cache as CACHE
 from app.modules.drawings_boq.takeoff.ai_reader import compare as CMP
 from app.modules.drawings_boq.takeoff.ai_reader import examples as EX
 from app.modules.drawings_boq.takeoff.ai_reader import evidence as E
@@ -12,6 +15,7 @@ from app.modules.drawings_boq.takeoff.ai_reader import picture_ink as PI
 from app.modules.drawings_boq.takeoff.ai_reader import tasks as T
 from app.modules.drawings_boq.takeoff.ai_reader import twice as TW
 from app.modules.drawings_boq.takeoff.ai_reader.schedule import sparse
+from app.modules.drawings_boq.takeoff.prep import facts as DF
 
 TASK = "NOTE_FACT"
 PURPOSE = "NOTE_FACT"
@@ -25,12 +29,62 @@ MAX_SCOPE = 40
 OK, INVALID, FAILED = "OK", "INVALID", "FAILED"
 MAX_ERROR = 500
 
-def prompt(name: str | None = None, examples: list | None = None) -> str:
+
+def prompt(name: str | None = None, examples: list | None = None, need: dict | None = None) -> str:
   lines = []
   for e in NK.keys():
-    scopes = ", ".join(e["scopes"]) if e.get("scopes") else "any member or material, in a few words"
-    lines.append(f'- {e["key"]}: {e["about"]}; unit {e["unit"]}; scope: {scopes}')
+    if need is not None and e["key"] not in need:
+      continue
+    scopes = need.get(e["key"]) if need is not None and need.get(e["key"]) else e.get("scopes")
+    shown = ", ".join(scopes) if scopes else "any member or material, in a few words"
+    lines.append(f'- {e["key"]}: {e["about"]}; unit {e["unit"]}; scope: {shown}')
   return P.render(name or PROMPT_NAME, lists="\n".join(lines), examples=EX.render(examples or [])).rstrip()
+
+def need_of(need: dict | None) -> dict | None:
+  """The keys to ask, each with the scopes still missing (None: any scope), cleaned to what note_keys.yaml knows. None asks every key."""
+  if need is None:
+    return None
+  known = {e["key"]: e for e in NK.keys()}
+  out: dict = {}
+  for key, scopes in need.items():
+    if key not in known:
+      continue
+    offered = known[key].get("scopes") or []
+    out[key] = [s for s in scopes if s in offered] if scopes else None
+  return out
+
+def ask_state(need: dict | None) -> str:
+  if need is None:
+    return ""
+  body = json.dumps({k: sorted(v) if v else None for k, v in sorted(need.items())}, sort_keys=True, separators=(",", ":"))
+  return "ask-" + hashlib.sha256(body.encode("utf-8")).hexdigest()[:8]
+
+def missing(items: list) -> dict:
+  params = set(PP.from_items(items or [])["params"])
+  kinds = {str(i.get("kind")) for i in items or []}
+  out: dict = {}
+  for e in NK.keys():
+    fills, scopes = list(e.get("fills") or []), list(e.get("scopes") or [])
+    if fills:
+      if len(fills) > 1 and len(fills) == len(scopes):
+        left = [sc for sc, f in zip(scopes, fills) if f not in params]
+        if left:
+          out[e["key"]] = left
+      elif any(f not in params for f in fills):
+        out[e["key"]] = None
+    elif e["key"] not in kinds:
+      out[e["key"]] = None
+  return out
+
+def tile_wanted(tile_text: str | None, need: dict | None) -> bool:
+  if need is None:
+    return True
+  if not need:
+    return False
+  if sparse(tile_text):
+    return True
+  hay = NK.squash(tile_text)
+  return any(w in hay for key in need for w in NK.words_of(NK.get(key)))
 
 def _text(value, limit: int) -> str | None:
   text = re.sub(r"\s+", " ", str(value or "")).strip()
@@ -101,7 +155,7 @@ def fact_checks(fact: dict, tile_text: str | None, support: tuple | None = None)
 
 def to_item(fact: dict) -> dict:
   entry = NK.get(fact["key"])
-  base = {"kind": fact["key"], "text": fact["quote"][:140], "source": SOURCE, "quote": fact["quote"]}
+  base = {"kind": fact["key"], "text": fact["quote"][:140], "source": SOURCE, "quote": fact["quote"], "checks": [dict(c) for c in fact.get("checks") or []]}
   if entry["shape"] == "LAP":
     dia = round(fact["bar"] * PP.EIGHTH_MM, 3)
     return {**base, "value_mm": millimetres(fact), "bar_dia_mm": dia, "scope": f"lap bar {fact['bar']}"}
@@ -122,14 +176,29 @@ def _same(a, b) -> bool:
     return abs(float(a) - float(b)) <= (NK.tolerance_mm() if abs(float(a)) > 40 or abs(float(b)) > 40 else 0.0)
   return str(a).lower() == str(b).lower()
 
+def fills_of(item: dict) -> list:
+  entry = NK.get(item["kind"])
+  if entry is None or entry["shape"] != "MM":
+    return []
+  fills, scopes = list(entry.get("fills") or []), list(entry.get("scopes") or [])
+  if len(fills) > 1 and len(fills) == len(scopes):
+    return [fills[scopes.index(item.get("scope"))]] if item.get("scope") in scopes else []
+  return fills
+
 def merge(rule_items: list, items: list) -> dict:
+  held = PP.from_items(rule_items or [])["params"] if rule_items else {}
   accepted, records = [], []
+  
   for item in items:
     mine = [r for r in rule_items if r.get("kind") == item["kind"] and _scope(r.get("scope")) == _scope(item.get("scope")) and _scope(r.get("where")) == _scope(item.get("where"))
       and (r.get("bar_dia_mm") is None or item.get("bar_dia_mm") is None or abs(float(r["bar_dia_mm"]) - float(item["bar_dia_mm"])) < 0.2)]
     label = f"{item['kind']}:{item.get('scope') or ''}"
     
-    if not mine:
+    taken = [p for p in fills_of(item) if p in held] if not mine and item.get("value_mm") is not None else []
+    if taken:
+      same = _same(held[taken[0]], item["value_mm"])
+      records.append({"fact_key": label, "rule_value": str(held[taken[0]]), "ai_value": str(_value(item)), "agreement": CMP.AGREE if same else CMP.DISAGREE, "quote": item["quote"]})
+    elif not mine:
       accepted.append(item)
       records.append({"fact_key": label, "rule_value": None, "ai_value": str(_value(item)), "agreement": CMP.AI_ONLY, "quote": item["quote"]})
     elif any(_same(_value(r), _value(item)) for r in mine):
@@ -152,26 +221,33 @@ def fact_signature(fact: dict) -> tuple:
   return (fact["key"], _scope(fact.get("scope")), _scope(fact.get("where")), fact.get("bar"), str(fact.get("value")), str(fact.get("unit") or "").lower())
 
 async def read_notes(*, contents: bytes, page_no: int, ask, store_crop=None, cache_key: str | None = None, model: str | None = None, rule_items: list | None = None, prompt_name: str | None = None,
-    examples: list | None = None, leave_out_office: bool = False) -> dict:
+    examples: list | None = None, leave_out_office: bool = False, need: dict | None = None) -> dict:
   page_pt = await asyncio.to_thread(lambda: R.page_picture(contents, page_no, 64)[1]["page_pt"])
   text = await asyncio.to_thread(R.page_text, contents, page_no, page_pt)
-  boxes = R.note_tiles(page_pt, len((text or "").split()))
+  every = R.note_tiles(page_pt, len((text or "").split()))
+  need = need_of(need)
+  
+  tile_texts = [await asyncio.to_thread(R.text_in_boxes, contents, page_no, [box]) for box in every]
+  pairs = [(b, t) for b, t in zip(every, tile_texts) if tile_wanted(t, need)]
+  boxes = [b for b, _t in pairs]
   version = P.load(prompt_name or PROMPT_NAME)["version"]
   shown = examples if "{examples}" in P.load(prompt_name or PROMPT_NAME)["text"] else []
-  prompt_text = prompt(prompt_name, shown)
+  prompt_text = prompt(prompt_name, shown, need)
   route = T.route(TASK)
   
   record = {"task": TASK, "purpose": PURPOSE, "prompt": prompt_text, "prompt_version": EX.prompt_version(version, shown, leave_out_office), "schema_version": SCHEMA_VERSION, "crop_key": None, "crop": {"tiles": boxes, "page_pt": page_pt, "reads": [], "review": [], "support": {}, "examples": EX.record(version, shown, leave_out_office)},
     "cache_key": cache_key, "model": model, "rule_value": {"items": len(rule_items or [])}, "ai_request_id": None, "input_tokens": 0, "output_tokens": 0, "seconds": 0.0, "ai_value": None,
     "comparison": [], "totals": {}, "validators": [], "status": OK, "problems": [], "error": None, "items": []}
+  if need is not None:
+    record["crop"]["ask"] = {"need": need, "tiles_all": len(every), "tiles_asked": len(boxes)}
   facts, validators, problems, confidences, held = [], [], [], [], 0
   how: dict = {}
+  by_fact: dict = {}
   
-  for n, box in enumerate(boxes):
+  for n, (box, tile_text) in enumerate(pairs):
     pictures = [(await asyncio.to_thread(R.box_picture, contents, page_no, box, int(R.BOX_LONG_SIDE_PX * scale)))[0] for scale in route["scales"]]
     if n == 0 and store_crop:
       record["crop_key"] = await store_crop(pictures[0])
-    tile_text = await asyncio.to_thread(R.text_in_boxes, contents, page_no, [box])
     support = await asyncio.to_thread(PI.support_inputs, pictures[0]) if sparse(tile_text) else None
 
     def checks(_key, fact, tile_text=tile_text, support=support):
@@ -197,6 +273,7 @@ async def read_notes(*, contents: bytes, page_no: int, ask, store_crop=None, cac
     for a in got["accepted"]:
       validators.extend(a["checks"])
       facts.append(a["row"])
+      by_fact[fact_signature(a["row"])] = a["checks"]
       support_of = next((c.get("support") for c in a["checks"] if c["name"].startswith("quote_supported")), None)
       how[a["how"]] = how.get(a["how"], 0) + 1
       record["crop"]["support"][support_of or "NONE"] = record["crop"]["support"].get(support_of or "NONE", 0) + 1
@@ -207,10 +284,40 @@ async def read_notes(*, contents: bytes, page_no: int, ask, store_crop=None, cac
       problems.append(f"{r['key'][0]}_DROPPED")
         
   facts = list({(f["key"], f["scope"], f["where"], f["bar"], f["value"], f["unit"]): f for f in facts}.values())
+  facts = [{**f, "checks": [{**c, "name": c["name"].split(".")[0]} for c in by_fact.get(fact_signature(f), [])]} for f in facts]
   merged = merge(rule_items or [], [to_item(f) for f in facts])
+  if need is not None:
+    record["crop"]["examples"]["variant"] = f"{record['crop']['examples']['variant']}+ask"
   record["items"] = merged["accepted"]
   record["ai_value"] = {"facts": facts, "confidence": min(confidences, key=CONFIDENCE.index) if confidences else "low"}
   record["validators"], record["problems"] = validators, problems
   record["comparison"] = merged["records"]
   record["totals"] = {**CMP.totals(merged["records"]), "accepted": len(facts), "review": held, "escalated": how.get(TW.ESCALATED, 0)}
   return record
+
+def cached(case_dir: str, variant: str | None = None) -> dict:
+  best: dict = {}
+  for e in CACHE.read_all(case_dir):
+    if e.get("task") != TASK or e.get("status") != OK or not e.get("answer"):
+      continue
+    if variant is not None and e.get("variant") != variant:
+      continue
+    slot = (str(e["pdf_sha256"]), int(e["page"]))
+    if slot not in best or (e.get("at") or "", e["cache_key"]) > (best[slot].get("at") or "", best[slot]["cache_key"]):
+      best[slot] = e
+  out: dict = {}
+  for (sha, page), e in best.items():
+    out.setdefault(sha, {})[page] = e["answer"]
+  return out
+
+def set_items(prepared: list) -> list:
+  sheets = [{"page_no": n * 10000 + no, "label": None, "facts": a.meta.get("facts"), "ai_facts": None} for n, (_doc, analysed, _problems) in enumerate(prepared) for no, a in sorted(analysed.items()) if (a.meta or {}).get("facts") is not None]
+  return DF.gather(sheets)["items"]
+
+def attach(items: list, prepared: list, notes: dict) -> None:
+  ruled = set_items(prepared)
+  for (_name, data), (_doc, analysed, _problems) in zip(items, prepared):
+    by_page = notes.get(CACHE.pdf_sha256(data)) or {}
+    for no, a in analysed.items():
+      if no in by_page:
+        a.meta["ai_facts"] = accepted_from(by_page[no], ruled)

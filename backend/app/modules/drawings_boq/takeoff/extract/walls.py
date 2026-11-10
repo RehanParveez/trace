@@ -527,8 +527,19 @@ def _lies_on(a: tuple, b: tuple, c: tuple, d: tuple, reach: float) -> bool:
   lo, hi = max(min(t0, t1), 0.0), min(max(t0, t1), lc)
   return hi - lo > 0.5 * la
 
-def add_light_walls(frames: list, runs: list, all_frames: list, all_runs: list, wall_pen: float, mm_per_pt: float) -> tuple:
+def _outside_box(runs: list, frames: list, mm_per_pt: float):
+  pts = [p for r in runs if (r.s1 - r.s0) * mm_per_pt >= LIGHT_KEEP_MIN_MM for p in _seg(r, frames)]
+  if not pts:
+    return None
+  xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+  return min(xs), min(ys), max(xs), max(ys)
+
+def add_light_walls(frames: list, runs: list, all_frames: list, all_runs: list, wall_pen: float, mm_per_pt: float, beyond: bool = False) -> tuple:
+  """Light runs that are walls by thickness and length are kept; with beyond, only those that stand outside the extent of the wall-pen runs (a roof plan whose edge is drawn in the light pen)."""
   keep = []
+  box = _outside_box(runs, frames, mm_per_pt) if beyond else None
+  if beyond and box is None:
+    return frames, runs, {"light_walls_kept": 0, "light_walls_m": 0.0}
   
   for r in all_runs:
     if r.w >= wall_pen - 0.005:
@@ -540,6 +551,10 @@ def add_light_walls(frames: list, runs: list, all_frames: list, all_runs: list, 
     if length < LIGHT_KEEP_LONG_MM and r.end0 == "FREE" and r.end1 == "FREE":
       continue
     a, b = _seg(r, all_frames)
+    if box is not None:
+      mx, my = (a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0
+      if box[0] <= mx <= box[2] and box[1] <= my <= box[3]:
+        continue
     if any(_lies_on(a, b, *_seg(h, frames), max(h.t_pt, r.t_pt) * 1.5) for h in runs):
       continue
   
@@ -558,7 +573,7 @@ def add_light_walls(frames: list, runs: list, all_frames: list, all_runs: list, 
   metres = sum((r.s1 - r.s0) for r in keep) * mm_per_pt / 1000.0
   return frames, runs, {"light_walls_kept": len(keep), "light_walls_m": round(metres, 1)}
 
-def detect_walls(index, mm_per_pt: float, deadline: float | None = None, at_grade: bool = False, work: Work | None = None) -> tuple[list[Frame], list[Run], dict]:
+def detect_walls(index, mm_per_pt: float, deadline: float | None = None, at_grade: bool = False, work: Work | None = None, roof_light: bool = False) -> tuple[list[Frame], list[Run], dict]:
   frames, runs, stats = _detect_once(index, mm_per_pt, deadline, 0.0, work)
   classes = pen_classes(index)
   stats["pens"] = [[w, round(s, 3)] for w, s in classes]
@@ -575,8 +590,8 @@ def detect_walls(index, mm_per_pt: float, deadline: float | None = None, at_grad
       continue
     f2, r2, s2 = _detect_once(index, mm_per_pt, deadline, w - 0.005, work)
     if len(r2) >= PEN_MIN_RUNS and _standard_length_mm(r2, mm_per_pt) >= PEN_KEEP_SHARE * base:
-      if at_grade:
-        f2, r2, kept = add_light_walls(f2, r2, frames, runs, w, mm_per_pt)
+      if at_grade or roof_light:
+        f2, r2, kept = add_light_walls(f2, r2, frames, runs, w, mm_per_pt, beyond=not at_grade)
         s2 = dict(s2, **kept)
       s2["pens"] = stats["pens"]
       s2["wall_pen_pt"] = w

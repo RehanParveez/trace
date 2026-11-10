@@ -84,6 +84,16 @@ def step_track() -> tuple:
   from app.modules.drawings_boq.takeoff.proof.bench import track_record as TR
   return TR.gate()
 
+def step_truth() -> tuple:
+  from app.modules.drawings_boq.takeoff.proof.bench import truth_check as TC
+  return TC.gate()
+
+def step_ai_switch() -> tuple:
+  from app.engine.catalogue import note_keys as NK
+  from app.modules.drawings_boq.takeoff.ai_reader import switch as SW
+  bad = [*NK.problems(), *SW.problems()]
+  return not bad, f"task_verdicts.yaml gives every AI task its verdict (NOTE_FACT {SW.verdict('NOTE_FACT')}) and the note-key prompts carry the key list {NK.state()}" if not bad else f"{len(bad)} AI switch or note-key problem(s)", bad
+
 def step_gates(cases_dir: str | None, out: str, no_toggles: bool) -> tuple:
   from app.modules.drawings_boq.takeoff.proof import check as CK
   argv = ["--out", out] + (["--cases-dir", cases_dir] if cases_dir else []) + (["--no-toggles"] if no_toggles else [])
@@ -205,7 +215,7 @@ def main(argv: list | None = None) -> int:
   cases_dir = CIO.cases_dir(args.cases_dir)
   
   steps = [("commit hook", step_hook), ("settings", step_settings), ("prompts", step_prompts), ("placement", step_placement), ("import check", step_import), ("case files", step_files),
-    ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys), ("gate 17", step_gate17), ("catalogue", step_catalogue), ("item roads", step_roads), ("qs methods", step_methods), ("track record", step_track)]
+    ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys), ("gate 17", step_gate17), ("catalogue", step_catalogue), ("item roads", step_roads), ("qs methods", step_methods), ("qs truth", step_truth), ("ai switch", step_ai_switch), ("track record", step_track)]
   if not args.fast:
     steps += [("gates", lambda: step_gates(cases_dir, args.out, args.no_toggles)), ("baseline", lambda: step_baseline(cases_dir, args.out))]
   for name, run in steps:

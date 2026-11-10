@@ -277,7 +277,7 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
       cals[sheet.id] = cal
       read_for_ready.append({"sheet_id": sheet.id, "page_no": r["page_no"], "title": r.get("title"), "stats": r.get("stats"), "candidates": cands, "schedule": r.get("schedule"), "mm_per_pt": r.get("mm_per_pt")})
     out.read[drawing_id] = read_for_ready
-    pages = [{"page_no": r["page_no"], "label": None, "facts": r.get("facts")} for r in rows if r.get("facts") is not None]
+    pages = [{"page_no": r["page_no"], "label": None, "facts": r.get("facts"), "ai_facts": r.get("ai_facts")} for r in rows if r.get("facts") is not None]
     every_page.extend(pages)
     out.printed[drawing_id] = printed_params.from_items(drawing_facts.gather(pages)["items"])
     out.meta[drawing_id] = meta

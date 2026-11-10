@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from app.modules.ai_requests import cap as CAP
+from app.modules.drawings_boq.takeoff.ai_reader import ask_plan as AP
 from app.modules.drawings_boq.takeoff.ai_reader import cost as COST
 from app.modules.drawings_boq.takeoff.ai_reader import legend as LG
 from app.modules.drawings_boq.takeoff.ai_reader import notes as NT
@@ -71,6 +72,7 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--root", default=CIO.HERE, help="the folder of case folders")
   ap.add_argument("--tasks", default=",".join(TASKS), help="comma-separated; default: " + ", ".join(TASKS))
   ap.add_argument("--case", action="append", default=[], help="only this case folder (repeat for more)")
+  ap.add_argument("--missing", action="store_true", help="ask NOTE_FACT only what each case's ai_plan.json names (proof.ai_plan --write): the missing keys, on the pages and tiles that could print them. The other tasks are not asked in this run, and a case with no usable plan stops it")
   ap.add_argument("--audit", action="store_true", help="also the bar schedule audit cases (a 100-page schedule: it costs more)")
   ap.add_argument("--model", default=None)
   ap.add_argument("--force", action="store_true")
@@ -80,6 +82,8 @@ def main(argv: list | None = None) -> int:
   
   args = ap.parse_args(argv)
   tasks = [t.strip() for t in args.tasks.split(",") if t.strip()]
+  if args.missing:
+    tasks = [NT.TASK]
   unknown = [t for t in tasks if t not in TASKS]
   
   if unknown:
@@ -93,6 +97,14 @@ def main(argv: list | None = None) -> int:
     print(f"Name the folder with the PDFs: --cases-dir, or set {CIO.CASES_DIR_ENV}.", file=sys.stderr)
     return 2
   items, problems = plan(cases_dir, args.root, args.audit, args.case)
+  plans: dict = {}
+  if args.missing:
+    for folder in sorted({i["folder"] for i in items}):
+      got = AP.load(folder)
+      ok, why = AP.usable(got)
+      if not ok:
+        problems.append(f"{os.path.basename(folder)}: {why}")
+      plans[folder] = got
   if problems:
     print("\n".join(problems), file=sys.stderr)
     return 2
@@ -113,9 +125,17 @@ def main(argv: list | None = None) -> int:
     doc.close()
     for task in tasks:
       spec, count = pages_for(task, contents, total)
+      need = None
+      if args.missing:
+        mine = plans[item["folder"]]["pdfs"].get(item["pdf"])
+        if mine is None:
+          print(f"{item['case']} {item['pdf']}: the plan does not name this PDF; plan again", file=sys.stderr)
+          return 2
+        spec, count, need = AP.spec_of(mine["pages"]), len(mine["pages"]), plans[item["folder"]]["need"]
+        
       row = {"case": item["case"], "pdf": item["pdf"], "task": task, "pages": count, "asked": 0, "cached": 0, "failed": 0, "seconds": 0.0, "input_tokens": 0, "output_tokens": 0, "pkr": 0.0}
       if count and not args.dry_run:
-        stats = asyncio.run(FC.fill(pdf=item["path"], out=item["folder"], provider=provider, model=model, pages=spec, force=args.force, max_tokens=DEFAULT_MAX_TOKENS, timeout_s=args.timeout, task=task, mode=LG.WEAK, spend_root=args.root))
+        stats = asyncio.run(FC.fill(pdf=item["path"], out=item["folder"], provider=provider, model=model, pages=spec, force=args.force, max_tokens=DEFAULT_MAX_TOKENS, timeout_s=args.timeout, task=task, mode=LG.WEAK, spend_root=args.root, need=need))
         row.update({k: stats[k] for k in ("asked", "cached", "failed", "seconds", "input_tokens", "output_tokens")})
         row["pkr"] = cost_of(stats, model)["pkr"]
         failed += stats["failed"]

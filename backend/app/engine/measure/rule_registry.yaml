@@ -327,6 +327,32 @@
     - {office: C, sets: 1, metric: "reading score, class PARAPET, every reading rule on: matched 8 of 12 (right value 8), true 11 of 12 read; off: matched 0 of 12", value: 8, pack: GX-5, met: true}
     - {office: D, sets: 1, metric: "reading score, class PARAPET, every reading rule on: matched 0 of 11 (right value 0), true 0 of 0 read; off: matched 0 of 11", value: 0, pack: GX-5, met: false}
   notes: A wall run that the roof-wall stage has judged to be a parapet is reported as a parapet and not as a wall. The judgement is the stage's own and is not widened here, so a plan on which the stage found no outline reports no parapet.
+- id: PARAPET_LIGHT_PEN_ON_ROOF
+  module: takeoff/extract/roof_plan_walls.py
+  kind: READING
+  class: PARAPET
+  recall: 0.5
+  precision: 0.8
+  accuracy: 0.9
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: C, sets: 1, metric: "reading score, class PARAPET, PARAPET_FROM_ROOF_PLAN on: matched 8 of 12 with this rule on and off, 7 of 7 read true, WALL reads unchanged (the wall pen of the roof plan already keeps the parapet, so no light run is kept)", value: 0, pack: AR-2, met: false}
+    - {office: D, sets: 1, metric: "reading score, class PARAPET, PARAPET_FROM_ROOF_PLAN on: matched 5 of 11 (off: 0 of 11), 5 of 5 read true, WALL reads unchanged at 34 true and 26 invented", value: 5, pack: AR-2, met: false}
+  notes: On a roof plan the wall pen is chosen from the heavy lines, so a parapet drawn as a pair of light lines is not read. With the rule on, the roof plan keeps the long thin walls the ground-floor sheets keep (4.5 to 6 inch, 3 m or more), and the roof-wall stage then judges them as it judges any wall. It changes no sheet other than a roof plan, and a light run is kept only where it stands outside the extent of the long walls of the wall pen, so a roof plan whose parapet is drawn in the wall pen is read as before. The rule needs PARAPET_FROM_ROOF_PLAN on to report what it reads as a parapet.
+- id: BOUNDARY_FROM_PLAN
+  module: takeoff/extract/wall_place.py
+  kind: READING
+  class: BOUNDARY_WALL
+  recall: 0.5
+  precision: 0.8
+  accuracy: 0.9
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: C, sets: 1, metric: "reading score, class BOUNDARY_WALL, rule on: matched 3 of 8 (right value 3), true 2 of 2 read; off: matched 0 of 8; class WALL: invented 19 off, 17 on, truth walls lost 0", value: 3, pack: AR-1, met: false}
+    - {office: D, sets: 1, metric: "reading score, class BOUNDARY_WALL, rule on: matched 2 of 6 (right value 2), true 2 of 2 read; off: matched 0 of 6; class WALL: invented 26 off, 24 on, truth walls lost 0", value: 2, pack: AR-1, met: false}
+  notes: On a ground floor plan, a wall run that stands at least 900 mm clear of the outline of the building (the walls of 200 mm and more, joined across their door gaps) and runs 3 m or more is reported as a boundary wall and not as a wall. The mark is a fact on the run (place BOUNDARY); no quantity changes and nothing is taken out of the engine's lines. A run that touches the house, a short run, and any run on another floor stays a wall.
 - id: LEVEL_MARK_ITEMS
   module: takeoff/extract/level_marks.py
   kind: READING

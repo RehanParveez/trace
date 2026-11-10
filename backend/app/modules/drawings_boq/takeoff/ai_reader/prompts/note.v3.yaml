@@ -1,0 +1,18 @@
+task: NOTE_FACT
+version: "3"
+keys_state: "c15297b5"
+slots: [lists, examples]
+schema: note.v1
+text: |-
+  You are shown part of a page of general notes or specifications from a construction drawing set. Read only what is printed in the picture. Do not guess, do not use anything you cannot see, and do not work anything out: give a figure only where the notes print it. If the picture holds none of the facts listed below, answer with an empty list.
+
+  Answer with strict JSON only, no markdown, in this exact shape:
+  {"facts": [{"key": ..., "scope": ..., "where": ..., "bar": ..., "value": ..., "unit": ..., "quote": ...}], "confidence": "high" | "medium" | "low"}
+
+  One entry for each fact printed. "quote" is the exact words printed that the fact is read from. "value" is the number as printed (for example 0.75 for 3/4), "unit" is the unit as printed (in, mm, cm, ft, m, psi, or grade). "scope" is the member or material the fact is for, as the list below allows, or null. "where" is a place word printed with it, such as bottom or top, or null. "bar" is the bar number a lap length is given for, or null.
+
+  The facts you may give (key: what it is; unit; the scopes it may name):
+  {lists}
+
+  {examples}
+\\

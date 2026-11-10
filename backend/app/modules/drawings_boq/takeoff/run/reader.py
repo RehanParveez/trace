@@ -85,10 +85,10 @@ def project_facts_on() -> bool:
   return RR.on(PROJECT_FACTS_RULE)
 
 def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, project: bool | None = None, storeys: list | None = None,
-  sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None, legends: dict | None = None) -> list:
+  sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None, legends: dict | None = None, notes: dict | None = None) -> list:
   if rules:
     with RR.using(rules):
-      return read_set(items, pages, budget_s=budget_s, scale_unverified=scale_unverified, project=project, storeys=storeys, sections=sections, runs=runs, structure=structure, legends=legends)
+      return read_set(items, pages, budget_s=budget_s, scale_unverified=scale_unverified, project=project, storeys=storeys, sections=sections, runs=runs, structure=structure, legends=legends, notes=notes)
     
   from types import SimpleNamespace
   use = project_facts_on() if project is None else project
@@ -96,6 +96,9 @@ def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_B
   if legends:
     from app.modules.drawings_boq.takeoff.ai_reader import legend as LG
     LG.attach(items, prepared, legends)
+  if notes:
+    from app.modules.drawings_boq.takeoff.ai_reader import notes as NT
+    NT.attach(items, prepared, notes)
   scales = _outline_scales(prepared) if use else [dict() for _ in prepared]
   groups = [[SimpleNamespace(page_no=no, label=None, prep_meta=a.meta) for no, a in sorted(analysed.items())] for _doc, analysed, _p in prepared]
   out, every = [], []
@@ -196,7 +199,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
       if not title.get("composite") and c.category == "WALL" and f.get("thickness_used_mm"):
         wall_rows.append((f.get("thickness_used_mm"), f.get("thickness_standard_mm"), False))
     read.append({"page_no": no, "title": title, "schedule": schedule, "candidates": res.candidates, "notes": [n.get("code") for n in res.notes], "mm_per_pt": round(mm_per_pt, 4),
-      "seconds": round(time.monotonic() - started, 1), "facts": meta.get("facts"), "stats": res.stats,
+      "seconds": round(time.monotonic() - started, 1), "facts": meta.get("facts"), **({"ai_facts": meta["ai_facts"]} if meta.get("ai_facts") else {}), "stats": res.stats,
       "meta": meta, "ratio": used, "scale_source": source, "content_kind": a.content_kind})
   read.sort(key=lambda sh: sh["page_no"])
   

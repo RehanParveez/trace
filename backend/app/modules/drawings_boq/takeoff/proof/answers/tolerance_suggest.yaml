@@ -1,0 +1,17 @@
+note: "A suggestion for the QS to accept or change in his column of the tolerance sheet. The benchmark never reads this file; tolerances.yaml takes only what he confirms."
+classes: {tight: 5.0, default: 10.0, loose: 15.0}
+sections:
+  "Earthwork and substructure": loose
+  "Concrete and RCC members": tight
+  "Reinforcement and formwork": tight
+  "Masonry": tight
+  "Damp proofing, waterproofing, termite, insulation and roof": default
+  "Plaster, wall and ceiling finishes, paint": loose
+  "Floors, skirting and stair finishes": loose
+  "Doors, windows, glazing, railings and metalwork": default
+  "Kitchen, wardrobes, fixtures and joinery": default
+  "Plumbing, drainage, water supply and sanitary": default
+  "Electrical and low voltage": default
+  "External works": loose
+  "Plaza and commercial additions": default
+  "Items that are not read from drawings": default

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import argparse
 import sys
+from app.modules.drawings_boq.takeoff.proof.bench import ai_money as AM
 from app.modules.drawings_boq.takeoff.proof.bench import report as RP
 
 def main(argv: list | None = None) -> int:
@@ -15,8 +16,16 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--no-history", action="store_true")
   ap.add_argument("--failures-run", choices=(RP.PRODUCT, RP.PROOF), default=RP.PRODUCT)
   ap.add_argument("--top", type=int, default=20)
+  ap.add_argument("--ai", metavar="TASK[:VARIANT]", help="read each set a second time with the accepted cached answers of the task (NOTE_FACT) as AI_READ inputs and write ai_money.json beside bench.md; VARIANT names the prompt variant whose answers are used, the latest answer of each page otherwise")
   a = ap.parse_args(argv)
-  return RP.run(a.out, a.cases_dir, a.score, a.product_score, a.only, a.reads_cache, None if a.no_history else a.history, a.failures_run, a.top)
+  if a.ai:
+    try:
+      AM.parse(a.ai)
+    except ValueError as exc:
+      ap.error(str(exc))
+    if not a.reads_cache:
+      ap.error("--ai reads each set again with the answers on: give --reads-cache so that the PDFs are read once for each")
+  return RP.run(a.out, a.cases_dir, a.score, a.product_score, a.only, a.reads_cache, None if a.no_history else a.history, a.failures_run, a.top, a.ai)
 
 if __name__ == "__main__":
   sys.exit(main())

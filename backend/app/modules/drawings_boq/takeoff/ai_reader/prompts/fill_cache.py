@@ -8,6 +8,7 @@ import time
 from app.modules.ai_requests import cap as CAP
 from app.modules.ai_requests.models import AIProvider
 from app.modules.ai_requests.service import AIOrchestratorService, AIRunResult, CONSENT_PROVIDER, DEFAULT_MAX_TOKENS, model_of
+from app.modules.drawings_boq.takeoff.ai_reader import ask_plan as AP
 from app.modules.drawings_boq.takeoff.ai_reader import cache as CACHE
 from app.modules.drawings_boq.takeoff.ai_reader import candidate as CAND
 from app.modules.drawings_boq.takeoff.ai_reader import contract as C
@@ -83,7 +84,8 @@ async def fill(*, pdf: str, out: str, provider: AIProvider, model: str, pages: s
     name = (prompt_name or TASKS.prompt_name(task)) if task in EX.TASKS else None
     version = P.load(name)["version"] if name else version
     shown = EX.for_page(bank=bank or [], task=task, name=name, contents=contents, page=page, office=office, drawing=sha, leave_out_office=leave_out_office) if task in EX.TASKS else []
-    key = CACHE.key(sha, page, region, task, version, model, EX.state(shown, leave_out_office))
+    asking = NT.need_of(need) if task == NT.TASK else None
+    key = CACHE.key(sha, page, region, task, version, model, "|".join(x for x in (EX.state(shown, leave_out_office), NT.ask_state(asking)) if x))
     if not force and CACHE.read(out, key) is not None:
       stats["cached"] += 1
       continue
@@ -133,6 +135,22 @@ def main(argv: list | None = None) -> int:
   if args.task == LG.TASK and not args.pages:
     print(f"{LG.TASK} needs --pages: name the pages that print a legend.", file=sys.stderr)
     return 2
+  need = None
+  if args.missing:
+    if args.task != NT.TASK:
+      print(f"--missing plans {NT.TASK} only.", file=sys.stderr)
+      return 2
+    plan = AP.load(args.out)
+    ok, why = AP.usable(plan)
+    mine = ((plan or {}).get("pdfs") or {}).get(os.path.basename(args.pdf))
+    if not ok or mine is None:
+      print(why or f"the plan has no entry for {os.path.basename(args.pdf)}", file=sys.stderr)
+      return 2
+    need = plan["need"]
+    args.pages = AP.spec_of(mine["pages"])
+    if not args.pages:
+      print("the plan names no page to ask: nothing is missing, or no tile could print it.")
+      return 0
   provider = CONSENT_PROVIDER["LOCAL" if args.where == "local" else "OUTSIDE"]
   model = args.model or model_of(provider)
   bank = None
