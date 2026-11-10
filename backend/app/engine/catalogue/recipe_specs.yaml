@@ -1,0 +1,42 @@
+blocked:
+  member_volume: "needs members the reader does not emit: combined footings, raft, piles, sunken and cantilever slabs, shear walls, ramps, tanks, stands; the reader has no class for them"
+  member_contact: "needs the contact faces of columns and beams left without plaster; no reader marks which are exposed"
+  excavation: "needs pit and trench sizes from sections; the reader gives footing sizes but no working space or depth to a founding level"
+  layers: "needs a note fact for the build-up (membrane, insulation, tile) and the area it covers; only roof-treatment area is read, so the roof layers are built and the foundation, basement and tank layers are not"
+  pipe_run: "needs pipe and conduit runs from the plumbing and electrical plans; the reader gives rain pipes only"
+  counts: "needs symbol counts per legend entry; the reader counts lights, fans, switches, sockets, boards and tank covers only"
+  site: "needs the site plan areas (lawn, drive, steps, drains); the reader gives porch and paving finishes only"
+  wall_face: "needs the face area of each wall type; the reader gives inside and outside plaster areas and the volume of brick walls only"
+  wall_run: "needs wall and building outline lengths by floor; the reader has no running length for edges, joints or rails"
+  floor_area: "needs the room area by finish; the reader gives the floor finish and ceiling areas, so the items that are a floor or ceiling alternative are built"
+  openings_area: "needs door and window sizes from the schedule; the reader gives door shutter and window areas"
+specs:
+  - {item: FL-04, recipe: floor_area, base: [FIN-FLOOR], note: "all floor finish area of the drawings, as an alternative to the tile finish"}
+  - {item: FL-05, recipe: floor_area, base: [FIN-FLOOR], note: "all floor finish area of the drawings, as an alternative to the tile finish"}
+  - {item: FL-06, recipe: floor_area, base: [FIN-FLOOR], note: "all floor finish area of the drawings, as an alternative to the tile finish"}
+  - {item: FL-17, recipe: floor_area, base: [FIN-FLOOR], note: "all floor finish area of the drawings, as an alternative to the tile finish"}
+  - {item: RF-05, recipe: floor_area, base: [FIN-FLOOR], note: "all floor finish area of the drawings; mesh covers the part that is cast as a topping"}
+  - {item: PL-15, recipe: floor_area, base: [CEILING_PLASTER], note: "all ceiling plaster area of the drawings, as an alternative to plastered ceilings"}
+  - {item: EW-09, recipe: floor_area, base: [KACHA], note: "kacha floor area of the drawings, which is the filled ground floor"}
+  - {item: PL-06, recipe: wall_face, base: [WALL_PLASTER_EXT], note: "outside plaster area of the drawings, as an alternative to plaster"}
+  - {item: PL-11, recipe: wall_face, base: [WALL_PLASTER_EXT], note: "outside plaster area of the drawings, as an alternative to plain plaster"}
+  - {item: MS-11, recipe: wall_face, base: [WALL_PLASTER_EXT], note: "outside wall area of the drawings, as an alternative to plaster"}
+  - {item: PL-19, recipe: wall_face, base: [WALL_PLASTER], note: "inside plaster area of the drawings, as an alternative to paint"}
+  - {item: MS-08, recipe: wall_face, base: [BRICK_WALLS], note: "volume of brick walls of the drawings, as an alternative to brick"}
+  - {item: PL-17, recipe: openings_area, base: [DOORS, WINDOWS], note: "door shutter and window area of the drawings, one face, no coats counted"}
+  - {item: PL-18, recipe: openings_area, base: [DOORS], note: "door shutter area of the drawings, one face"}
+  - {item: DW-06, recipe: openings_area, base: [WINDOWS], note: "window area of the drawings, as an alternative to aluminium"}
+  - {item: DW-08, recipe: openings_area, base: [WINDOWS], note: "window area of the drawings; grills cover the part that has them"}
+  - {item: DW-09, recipe: openings_area, base: [WINDOWS], note: "window area of the drawings; screens cover the part that has them"}
+  - {item: DW-10, recipe: openings_area, base: [WINDOWS], note: "window area of the drawings, glass area not read apart from the frame"}
+  - {item: DP-11, recipe: layers, base: [ROOF_TREATMENT], note: "roof treatment area of the drawings"}
+  - {item: DP-12, recipe: layers, base: [ROOF_TREATMENT], note: "roof treatment area of the drawings"}
+  - {item: DP-13, recipe: layers, base: [ROOF_TREATMENT], note: "roof treatment area of the drawings"}
+  - {item: DP-19, recipe: layers, base: [ROOF_TREATMENT], note: "roof treatment area of the drawings"}
+  - {item: DP-20, recipe: layers, base: [ROOF_TREATMENT], note: "roof treatment area of the drawings"}
+  - {item: FL-16, recipe: layers, base: [ROOF_TREATMENT], note: "roof treatment area of the drawings"}
+  - {item: EX-03, recipe: site, base: [FIN-PAVING], note: "porch, drive and lawn paving area of the drawings"}
+  - {item: PB-08, recipe: counts, base: [MET-OHWT-COVER], note: "tank covers on the roof tank count of the drawings"}
+  - {item: PB-15, recipe: counts, base: [MET-SEPTIC-COVER], note: "septic tank covers of the drawings"}
+  - {item: EL-12, recipe: counts, base: [ELE-LIGHT], note: "light points of the drawings; fixtures are one per point"}
+  - {item: EL-13, recipe: counts, base: [ELE-FAN], note: "fan points of the drawings; fans are one per point"}

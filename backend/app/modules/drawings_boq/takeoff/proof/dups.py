@@ -9,10 +9,10 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("cases", nargs="*")
   ap.add_argument("--cases-dir")
   args = ap.parse_args(argv)
-  from app.modules.drawings_boq.takeoff.proof import offline_run as OR
+  from app.modules.drawings_boq.takeoff.run import offline_run as OR
   from app.modules.drawings_boq.takeoff.proof import case_io as CIO
   from app.engine.measure import rulebook as RB
-  from app.modules.drawings_boq.takeoff.proof import offline_accept as OA
+  from app.modules.drawings_boq.takeoff.run import offline_accept as OA
   from app.modules.drawings_boq.takeoff.run import reader as RDR
   
   profile, _rule_set = OR.seed_profile()

@@ -48,7 +48,10 @@ FACT_VALUES = {
 BILLING_KINDS = ("MRS_PB", "PRIVATE_QS")
 OWNER_RE = re.compile(r"^(CV-\d+|BB-\d+|PX-\d+|CT-\d+|BM-\d+|RATE|DERIVED)$")
 ID_RE = re.compile(r"^([A-Z]{2})-(\d{2})$")
-ITEM_FIELDS = ("id", "name", "section", "use", "unit", "member_class", "inputs", "yields", "page_roles", "applies_when", "owner_pack", "derived", "billing", "how_measured", "status_v1", "reads")
+MEASURED_BY_FAMILY, BY_RECIPE, DERIVED_ROAD, ASK_ONLY = "MEASURED_BY_FAMILY", "BY_RECIPE", "DERIVED", "ASK_ONLY"
+ROAD_STATUSES = (MEASURED_BY_FAMILY, BY_RECIPE, DERIVED_ROAD, ASK_ONLY)
+RECIPES = ("wall_face", "floor_area", "wall_run", "member_volume", "member_contact", "excavation", "layers", "counts", "openings_area", "site", "pipe_run")
+ITEM_FIELDS = ("id", "name", "section", "use", "unit", "member_class", "inputs", "yields", "page_roles", "applies_when", "owner_pack", "derived", "billing", "how_measured", "status_v1", "status_v1_was", "recipe", "reads")
 
 @dataclass(frozen=True)
 class Input:
@@ -103,6 +106,7 @@ class Item:
   billing: Billing
   how_measured: str = ""
   status_v1: str = ""
+  recipe: str = ""
   reads: tuple = ()
 
   def as_dict(self) -> dict:
@@ -113,7 +117,7 @@ class Item:
       "page_roles": list(self.page_roles), "applies_when": dict(self.applies_when), "owner_pack": self.owner_pack, "derived": self.derived,
       "billing": {"MRS_PB": [{"item": b.item, "qty": b.qty, "spec": b.spec, "convert": b.convert} for b in self.billing.MRS_PB],
         "PRIVATE_QS": [{"line": b.line, "qty": b.qty} for b in self.billing.PRIVATE_QS]},
-      "how_measured": self.how_measured, "status_v1": self.status_v1,
+      "how_measured": self.how_measured, "status_v1": self.status_v1, "recipe": self.recipe,
       "reads": [{"class": r.cls, "on": list(r.on), "support": r.support} for r in self.reads],
     }
 
@@ -129,7 +133,7 @@ def parse(raw: dict) -> Item:
       MRS_PB=tuple(MrsLine(item=str(b["item"]), qty=str(b["qty"]), spec=b.get("spec"), convert=b.get("convert")) for b in billing.get("MRS_PB") or []),
       PRIVATE_QS=tuple(QsLine(line=str(b["line"]), qty=str(b["qty"])) for b in billing.get("PRIVATE_QS") or []),
     ),
-    how_measured=str(raw.get("how_measured") or ""), status_v1=str(raw.get("status_v1") or ""),
+    how_measured=str(raw.get("how_measured") or ""), status_v1=str(raw.get("status_v1") or ""), recipe=str(raw.get("recipe") or ""),
     reads=tuple(Read(cls=str(r["class"]), on=tuple(r.get("on") or ()), support=bool(r.get("support", False))) for r in raw.get("reads") or []),
   )
 
@@ -181,6 +185,11 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
       out.append(f"{it.id}: use must be H, P or both")
     if it.member_class not in MEMBER_CLASSES:
       out.append(f"{it.id}: member_class {it.member_class} is not one of the known classes")
+    if it.status_v1 not in ROAD_STATUSES:
+      out.append(f"{it.id}: status_v1 is {it.status_v1!r}; it is one of {', '.join(ROAD_STATUSES)}")
+    if (it.status_v1 == BY_RECIPE) != bool(it.recipe):
+      out.append(f"{it.id}: a recipe is named exactly when status_v1 is {BY_RECIPE}")
+      
     if not it.yields:
       out.append(f"{it.id}: no yield")
     for y in it.yields:

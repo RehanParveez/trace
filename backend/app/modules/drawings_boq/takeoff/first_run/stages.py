@@ -46,6 +46,4 @@ def questions_stage(state: dict) -> None:
 
 def self_check_stage(state: dict) -> None:
   """The self-checks on the reading: each compares two things the drawings say twice. A check that cannot run says why; none is guessed. Runs on what the reading left, so a failed reading stage leaves every check NOT_CHECKABLE."""
-
-def self_check_stage(state: dict) -> None:
   state["checks"] = SC.run(state.get("ledger") or [], state.get("evidence") or _empty_evidence())

@@ -1,0 +1,10 @@
+- line: DOR-NOS
+  reason: "Door openings are billed by area through DW-02 and DW-05; the engine's count of them has no billing item"
+- line: WIN-NOS
+  reason: "Window openings are billed by area through DW-02 and DW-05; the engine's count of them has no billing item"
+- line: CON-RCC
+  reason: "Concrete the engine writes with no member class (grade beams, stair flights); the members are billed under their own member lines"
+- line: CON-PCC
+  reason: "Plain concrete the engine writes with no member class: beds under footings, under walls and under floors in one line; the floor bed is billed by EW-14 under PCC"
+- line: ELE-OTHER
+  reason: "Electrical points the symbol reader could not class as light, fan, switch, socket, board or low-voltage; no single item bills them, so they are counted and left to a question"

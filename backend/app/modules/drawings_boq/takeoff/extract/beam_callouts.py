@@ -48,15 +48,6 @@ def callouts_in(words: list, h: float) -> list:
   for run in LN.runs(list(enumerate(words)), h):
     ws = [w for _i, w in run["words"]]
     for k, w in enumerate(ws):
-      if k and w.turn == 0 and CAPTION_MARK.match(w.text.upper()) and ws[k - 1].text.upper().strip(".:") in CAPTION_WORDS:
-        out.append({"mark": w.text.upper().replace("-", ""), "u": sum(x.uc for x in ws) / len(ws), "v": run["y"], "word": w})
-  return out
-
-def callouts_in(words: list, h: float) -> list:
-  out = []
-  for run in LN.runs(list(enumerate(words)), h):
-    ws = [w for _i, w in run["words"]]
-    for k, w in enumerate(ws):
       if w.turn != 0:
         continue
       text = INCH_PAIR.sub('"', w.text)

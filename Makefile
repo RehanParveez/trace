@@ -14,7 +14,7 @@ backend-lint:
 	docker compose run --rm backend ruff check app tests
 
 check:
-	cd backend && python scripts/check.py
+	cd backend && python -m app.modules.drawings_boq.takeoff.proof.precommit --fast
 
 hooks:
 	git config core.hooksPath scripts/hooks

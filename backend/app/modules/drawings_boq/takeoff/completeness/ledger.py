@@ -26,6 +26,7 @@ ANSWERED = "ANSWERED"
 DECLARED_OUT = "DECLARED_OUT_OF_SCOPE"
 METHOD_DEFAULT = "METHOD_DEFAULT"
 METHOD_NOT_BUILT = "METHOD_NOT_BUILT"
+RECIPE_IF_USED = "RECIPE_IF_USED"
 INFO_REASONS = ("LABELS_OUTLINED", "GLYPH_REPAIRED", "FONT_DECODED")
 REASON_INPUT = {"NEEDS_STOREY_HEIGHT": "height"}
 ENTRY_KEYS = ("element", "name", "section", "owner_pack", "floor", "state", "quantity", "members", "assumptions", "questions", "reasons")
@@ -69,11 +70,14 @@ def _members_on(item, floor: str, evidence: dict) -> tuple:
   here = [m for m in every + printed_twice if floor == ALL or m.get("floor") in (None, floor)]
   return every, here
 
+def _own_families(item) -> set:
+  own = {y.qty for y in item.yields if y.unit == item.unit}
+  every = {q.line for q in item.billing.PRIVATE_QS}
+  return {q.line for q in item.billing.PRIVATE_QS if q.qty in own} or every
+
 def _lines_for(item, floor: str, evidence: dict) -> list:
-  families = {q.line for q in item.billing.PRIVATE_QS}
-  if not families:
-    return []
-  return [ln for ln in evidence["lines"] if ln["family"] in families and (floor == ALL or ln.get("floor") == floor)]
+  families = _own_families(item)
+  return [ln for ln in evidence["lines"] if (ln.get("item") == item.id or (not ln.get("item") and ln["family"] in families)) and (floor == ALL or ln.get("floor") == floor)]
 
 def _quantity(item, lines: list) -> dict | None:
   if not lines:
@@ -173,6 +177,24 @@ def _confirm_questions(item, blockers: list) -> list:
     out.append(_ask(None, f"{item.name}: confirm the reading of {len(ms)} {cls.lower().replace('_', ' ')} member(s), first {', '.join(m['id'] for m in ms[:3])}" + (f" ({', '.join(why)})." if why else "."), QK.reading_key(cls), QK.CONFIRM, cls=cls, members=[m["id"] for m in ms], reasons=why))
   return out
 
+def _recipe_entry(item, floor: str, lines: list, ctx: dict) -> dict:
+  key = QK.input_key(f"use_{item.id}")
+  quantity = _quantity(item, lines)
+  why = [f"{RECIPE_IF_USED}:{lines[0].get('recipe')}"]
+  given = _answer(ctx, key)
+  if given is not None:
+    try:
+      value = float(given)
+    except ValueError:
+      value = None
+      
+    if given == QK.NOT_IN_SCOPE or value == 0:
+      return _entry(item, floor, NOT_APPLICABLE, [f"{DECLARED_OUT}:{key}"])
+    if value is not None:
+      return _entry(item, floor, MEASURED, [f"{ANSWERED}:{key}"] + why, quantity={"value": round(value, 3), "unit": item.unit, "range": None})
+  text = f"{item.name}: is it used? The drawings give up to {quantity['value']:g} {quantity['unit']} ({lines[0].get('note')}). Give the quantity it covers, or say it is not in scope."
+  return _entry(item, floor, ASKED, why, quantity=quantity, questions=[_ask(None, text, key, QK.INPUT)])
+
 def _regular(item, floor: str, evidence: dict, ctx: dict) -> dict:
   every, here = _members_on(item, floor, evidence)
   settled, used = [], []
@@ -196,6 +218,9 @@ def _regular(item, floor: str, evidence: dict, ctx: dict) -> dict:
     questions = [_ask(n, f"{item.name}: {n} is not read for {len(who)} member(s), first {', '.join(who[:3])}. Give it.", QK.input_key(n), QK.INPUT, members=who, floor=None if floor == ALL else floor) for n, who in asked.items()]
     questions += _confirm_questions(item, [m for m in unsure if m["blocks"]])
     return _finish_ask(item, floor, evidence, reasons + unknown, here_ids, questions, _quantity(item, lines), ctx)
+  asking = [ln for ln in lines if ln.get("ask")]
+  if asking and not live:
+    return _recipe_entry(item, floor, asking, ctx)
   if live or lines:
     return _entry(item, floor, MEASURED, unknown + said, members=here_ids, quantity=_quantity(item, lines))
   state, reasons, questions = _unread(item, floor, every, evidence)

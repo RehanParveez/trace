@@ -81,7 +81,7 @@ def effective(key: str, scope: dict):
 def run_variants(case_name: str, only: list | None, cases_dir: str | None, log=print) -> dict:
   from app.engine.measure import rulebook as RB
   from app.modules.drawings_boq.takeoff.proof import case_io as CIO
-  from app.modules.drawings_boq.takeoff.proof import offline_run as OR
+  from app.modules.drawings_boq.takeoff.run import offline_run as OR
   from app.modules.drawings_boq.takeoff.proof import score as SC
   folder = os.path.join(CIO.HERE, case_name)
   case = CIO.load_case(folder)

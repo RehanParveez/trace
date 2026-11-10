@@ -12,7 +12,7 @@ from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.takeoff.extract import drawing_passes_service as DPS
 from app.modules.identity.models import Organization
 from app.modules.projects.models import Project
-from app.modules.drawings_boq.takeoff.proof import offline_accept as OA
+from app.modules.drawings_boq.takeoff.run import offline_accept as OA
 from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
 from sqlalchemy import text
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO

@@ -15,6 +15,10 @@ from app.core.exceptions import TraceException
 from app.modules.drawings_boq.takeoff.decisions.schemas import ChooseDecisionRequest
 from app.modules.drawings_boq.takeoff.questions import answers as AN
 from app.modules.audit.models import AuditAction
+from app.modules.drawings_boq.takeoff.learning import reasons as LR
+from app.modules.drawings_boq.takeoff.learning import service as LS
+from app.modules.drawings_boq.takeoff.learning import reasons as LR
+from app.modules.drawings_boq.takeoff.learning import service as LS
 
 AI_TASKS = (RW.NOTE_TASK, RW.SCHEDULE_TASK, RW.LEGEND_TASK)
 WITHDRAW = "withdraw"

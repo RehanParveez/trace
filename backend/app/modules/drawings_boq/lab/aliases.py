@@ -39,6 +39,8 @@ KEY_LABEL = {
   "RCC_SLABS": "RCC slabs", "CEILING_PLASTER": "Ceiling plaster", "WALL_PLASTER": "Wall plaster", "WALL_PLASTER_EXT": "External plaster", "BRICK_WALLS": "Brick work above plinth",
   "STEEL": "Reinforcement steel", "DOOR_FRAMES": "Door frames", "DOORS": "Doors", "WINDOWS": "Windows and ventilators",
   "KACHA": "Kacha or PCC on floor", "BALLAST": "Brick ballast under floors and on roofs", "FILLING": "Earth filling under floors",  "ROOF_TREATMENT": "Roof treatment", "FORMWORK": "Form work", "TANKS": "Tanks", "LUMP_SUM": "Lump-sum items",
+  "FIN-CEIL-PAINT": "Ceiling paint", "FIN-SKIRT": "Skirting", "FIN-WATERPROOF-WET": "Waterproofing in wet areas", "DRN-RWP": "Rain water pipes", "SCF-EXTERNAL": "External scaffolding",
+  "FLR-SAND-FILL": "Sand filling under floors", "FLR-CS-BED": "Cement-sand bed under floor finish", "DRN-MANHOLE": "Manholes", "ELE-BOARD": "Distribution boards",
 }
 
 SOFTWARE_UNIT = {

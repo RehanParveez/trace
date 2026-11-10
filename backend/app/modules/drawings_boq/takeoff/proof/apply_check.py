@@ -1,8 +1,10 @@
 from __future__ import annotations
 import argparse
 import hashlib
+import os
 import pathlib
 import re
+import subprocess
 import sys
 
 APPLIED, TO_APPLY, NEITHER = "applied", "to apply", "neither"
@@ -108,6 +110,34 @@ def default_root() -> pathlib.Path:
       return parent.parent
   return pathlib.Path.cwd()
 
+def placement_problems(root: pathlib.Path) -> list:
+  top = root.parent if root.name == "backend" else root
+  app = top / "backend" / "app"
+  out = []
+  if app.is_dir():
+    for folder, dirs, names in os.walk(app):
+      dirs[:] = [d for d in dirs if d != "__pycache__"]
+      here = pathlib.Path(folder)
+      if here.name != "prompts":
+        continue
+      for name in sorted(names):
+        if name.endswith(".py") and name != "__init__.py":
+          home = here.parent.relative_to(top).as_posix()
+          out.append(f"{(here / name).relative_to(top).as_posix()} is a module inside a prompts folder, which holds __init__.py and .yaml files only; it belongs at {home}/{name}")
+
+  if (top / ".git").exists():
+    try:
+      got = subprocess.run(["git", "--no-optional-locks", "-C", str(top), "ls-files", "-ci", "--exclude-standard"], capture_output=True, text=True, timeout=60).stdout.splitlines()
+    except (OSError, subprocess.SubprocessError):
+      got = []
+    out += [f"{p.strip()} is tracked but .gitignore ignores it; run: git rm --cached {p.strip()}" for p in got if p.strip()]
+  else:
+    skip = {"__pycache__", "node_modules", "venv", ".venv"}
+    for folder, dirs, names in os.walk(top / "backend"):
+      dirs[:] = [d for d in dirs if d not in skip]
+      out += [f"{(pathlib.Path(folder) / n).relative_to(top).as_posix()} is a backup file; delete it" for n in sorted(names) if ".bak" in n]
+  return out
+
 def check(md_path: pathlib.Path, root: pathlib.Path, before: bool = False) -> tuple:
   doc = parse_md(md_path.read_text(encoding="utf8"))
   out, misses = [], 0
@@ -155,6 +185,10 @@ def check(md_path: pathlib.Path, root: pathlib.Path, before: bool = False) -> tu
     out.append(f"Manifest   lists blocks {sorted(listed - have)} that have no text and misses blocks {sorted(have - listed)}")
     
     misses += 1
+  if not before:
+    for problem in placement_problems(root):
+      out.append(f"Placement  {problem}")
+      misses += 1
   out.append(f"{len(doc['edits'])} edit block(s): {counts[APPLIED]} applied, {counts[TO_APPLY]} to apply, {counts[NEITHER]} neither; {misses} miss(es)" + (" (checking before applying)" if before else ""))
   return out, misses
 

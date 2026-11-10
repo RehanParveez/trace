@@ -16,7 +16,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Plot area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: EW-02
   name: "Excavation for foundations (trench and pit)"
@@ -39,7 +41,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: EXCAVATION, qty: excavation_volume}]
   how_measured: "Trench length × width (with working space) × depth below NGL"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EW-03
   name: "Bulk excavation for basement"
@@ -61,7 +64,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Basement footprint plus working space × depth"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "excavation"
   reads: []
 - id: EW-04
   name: "Excavation for tanks, septic, soakage"
@@ -84,7 +89,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Tank outer size plus working space × depth"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "excavation"
   reads: []
 - id: EW-05
   name: "Excavation in hard soil or rock"
@@ -105,7 +112,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As above, by soil class"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "excavation"
   reads: []
 - id: EW-06
   name: "Back filling around foundations"
@@ -127,7 +136,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Excavation minus buried volumes"
-  status_v1: "PARTIAL"
+  status_v1: "DERIVED"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: EW-07
   name: "Earth filling under floors (plinth filling)"
@@ -148,7 +158,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FILLING, qty: fill_volume}]
   how_measured: "Floor area × fill depth (NGL to under PCC)"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EW-08
   name: "Sand filling under floors"
@@ -167,9 +178,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: []
+    PRIVATE_QS: [{line: FLR-SAND-FILL, qty: sand_volume}]
   how_measured: "Floor area × thickness"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: EW-09
   name: "Compaction of fill"
@@ -192,7 +204,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area or volume compacted"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "floor_area"
   reads: []
 - id: EW-10
   name: "Disposal of surplus earth"
@@ -213,7 +227,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Excavation minus fill"
-  status_v1: "NO"
+  status_v1: "DERIVED"
+  status_v1_was: "NO"
   reads: []
 - id: EW-11
   name: "Dewatering and shoring"
@@ -235,7 +250,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Basement perimeter"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: EW-12
   name: "Stone or brick soling"
@@ -256,7 +272,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area × thickness"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "floor_area"
   reads: []
 - id: EW-13
   name: "PCC under footings (lean, e.g. 1:4:8 or 1:6:12)"
@@ -279,7 +297,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: PCC, qty: pcc_volume}]
   how_measured: "Footing plan area plus projection × thickness"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EW-14
   name: "PCC under floors (e.g. 1:2:4 or 1:4:8)"
@@ -301,7 +320,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: PCC, qty: pcc_volume}]
   how_measured: "Floor area × thickness"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EW-15
   name: "Kacha (rammed earth, brick ballast) under floors"
@@ -322,7 +342,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: KACHA, qty: kacha_area}]
   how_measured: "Floor area"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EW-16
   name: "Brick masonry in foundation (steps)"
@@ -345,7 +366,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: BRICK_FOUNDATION, qty: brick_volume}]
   how_measured: "Wall length × step width × height, per step"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: RC-01
   name: "RCC isolated footings (pads)"
@@ -371,7 +393,8 @@
     MRS_PB: [{item: 6-6(c), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_FOOTINGS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Count × L × W × D, plus sloped part if any"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: FOOTING_PAD, 'on': [PLAN/FOOTING_LAYOUT], support: false}, {class: GRID, 'on': [PLAN/FOOTING_LAYOUT], support: true}]
 - id: RC-02
   name: "RCC strip or wall footings"
@@ -396,7 +419,8 @@
     MRS_PB: [{item: 6-6(c), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_FOOTINGS, qty: concrete_volume}, {line: STEEL, qty: steel_mass}]
   how_measured: "Centreline length × width × depth"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: [{class: FOOTING_STRIP, 'on': [PLAN/FOOTING_LAYOUT, PLAN/FOUNDATION], support: false}]
 - id: RC-03
   name: "RCC combined footings"
@@ -422,7 +446,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As pads"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-04
   name: "RCC raft or mat foundation"
@@ -447,7 +473,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Raft area × thickness, plus thickenings"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-05
   name: "Pile caps and piles"
@@ -471,7 +499,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count × size; pile length × count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-06
   name: "RCC plinth beam (grade beam, DPC beam)"
@@ -496,7 +526,8 @@
     MRS_PB: [{item: 6-6(c), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_PLINTH_BEAM, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Length × b × d"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: PLINTH_BEAM, 'on': [PLAN/FOUNDATION], support: false}]
 - id: RC-07
   name: "RCC columns (by floor)"
@@ -522,7 +553,8 @@
     MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_COLUMNS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Count × b × d × height (floor to slab or beam soffit)"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: COLUMN, 'on': [PLAN/COLUMN_LAYOUT], support: false}, {class: GRID, 'on': [PLAN/COLUMN_LAYOUT], support: true}, {class: COLUMN_SCHEDULE_CELL, 'on': [SCHEDULE], support: true}]
 - id: RC-08
   name: "RCC column necks (footing to plinth)"
@@ -547,7 +579,8 @@
     MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}]
     PRIVATE_QS: [{line: RCC_COLUMNS, qty: concrete_volume}]
   how_measured: "Count × size × neck height"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: RC-09
   name: "RCC beams (by floor)"
@@ -573,7 +606,8 @@
     MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_BEAMS, qty: concrete_volume}, {line: RCC_ROOF_BEAMS, qty: concrete_volume}, {line: RCC_BEAMS_SLABS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Clear span × b × (d minus slab, if slab is billed through)"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: BEAM, 'on': [PLAN/SLAB], support: false}]
 - id: RC-10
   name: "RCC slabs (by floor)"
@@ -598,7 +632,8 @@
     MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_SLABS, qty: concrete_volume}, {line: RCC_BEAMS_SLABS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Area net of openings × thickness"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: SLAB_PANEL, 'on': [PLAN/SLAB], support: false}, {class: SLAB_BAR_CALLOUT, 'on': [PLAN/SLAB], support: true}]
 - id: RC-11
   name: "RCC sunken slabs (toilets)"
@@ -622,7 +657,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area × thickness, plus drop walls"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-12
   name: "RCC cantilever slabs, chajjas, sunshades"
@@ -646,7 +683,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Projection × length × thickness"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-13
   name: "RCC lintels"
@@ -672,7 +711,8 @@
     MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_LINTELS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "(Opening width plus bearings) × b × d, per opening"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: LINTEL_TYPE, 'on': [], support: false}]
 - id: RC-14
   name: "RCC tie bands or seismic bands"
@@ -695,7 +735,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Wall length × b × d"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-15
   name: "RCC walls: basement, retaining"
@@ -720,7 +762,8 @@
     MRS_PB: [{item: 6-6(b), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_WALLS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Length × height × thickness, net of openings"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: RC-16
   name: "RCC shear walls and lift core"
@@ -745,7 +788,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As walls"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-17
   name: "RCC stair (waist, steps, landings)"
@@ -772,7 +817,8 @@
     MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_STAIR, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Waist slab plus steps (triangles) plus landings"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: STAIR, 'on': [], support: false}]
 - id: RC-18
   name: "RCC water tanks: OHWT, UGWT"
@@ -798,7 +844,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: TANKS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Walls plus base plus top, net"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: TANK, 'on': [], support: false}]
 - id: RC-19
   name: "RCC septic tank and soakage pit"
@@ -823,7 +870,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: TANKS, qty: concrete_volume}, {line: STEEL, qty: steel_mass}]
   how_measured: "As tanks"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: RC-20
   name: "RCC parapet or coping"
@@ -847,7 +895,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length × section"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-21
   name: "RCC ramp"
@@ -871,7 +921,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area × thickness"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-22
   name: "RCC boundary wall columns and beams"
@@ -896,7 +948,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As columns and beams"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: RC-23
   name: "RCC mumty slab and machine-room slab"
@@ -919,7 +973,8 @@
     MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_SLABS, qty: concrete_volume}, {line: STEEL, qty: steel_mass}]
   how_measured: "As slabs"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: RC-24
   name: "Precast items (jali, coping, kerb)"
@@ -943,7 +998,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length or count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: RF-01
   name: "Steel reinforcement, Grade 40 or 60, by diameter (#3 to #8, or 10–25 mm)"
@@ -967,7 +1024,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: STEEL, qty: steel_mass}]
   how_measured: "BBS: bars × cut length × unit weight, per member; laps, hooks and bends per notes; wastage %"
-  status_v1: "Partial (estimated from volume, except via the BBS)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Partial (estimated from volume, except via the BBS)"
   reads: [{class: NOTE_FACT, 'on': [NOTES], support: true}]
 - id: RF-02
   name: "Steel by member: footings, columns, beams, slabs, stair, tanks, lintels"
@@ -988,7 +1046,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: STEEL, qty: steel_mass}]
   how_measured: "As above, grouped as BBS sheets"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: RF-03
   name: "Binding wire"
@@ -1009,7 +1068,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "% of steel"
-  status_v1: "NO"
+  status_v1: "DERIVED"
+  status_v1_was: "NO"
   reads: []
 - id: RF-04
   name: "Dowels and starter bars"
@@ -1031,7 +1091,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count × length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: RF-05
   name: "Mesh (BRC) for floors or toppings"
@@ -1053,7 +1115,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "floor_area"
   reads: []
 - id: RF-06
   name: "Formwork or shuttering: footings"
@@ -1073,7 +1137,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FORMWORK, qty: formwork_area}]
   how_measured: "Side areas"
-  status_v1: "Bills (as one formwork line)"
+  status_v1: "DERIVED"
+  status_v1_was: "Bills (as one formwork line)"
   reads: []
 - id: RF-07
   name: "Formwork: columns"
@@ -1094,7 +1159,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Perimeter × height"
-  status_v1: "BILLS"
+  status_v1: "DERIVED"
+  status_v1_was: "BILLS"
   reads: []
 - id: RF-08
   name: "Formwork: beams"
@@ -1115,7 +1181,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Sides plus soffit"
-  status_v1: "BILLS"
+  status_v1: "DERIVED"
+  status_v1_was: "BILLS"
   reads: []
 - id: RF-09
   name: "Formwork: slabs (soffit and edges)"
@@ -1136,7 +1203,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Soffit area plus edges"
-  status_v1: "BILLS"
+  status_v1: "DERIVED"
+  status_v1_was: "BILLS"
   reads: []
 - id: RF-10
   name: "Formwork: stair, tanks, walls"
@@ -1156,7 +1224,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Contact areas"
-  status_v1: "PARTIAL"
+  status_v1: "DERIVED"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: RF-11
   name: "Centring and props (staging) for slabs"
@@ -1177,7 +1246,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Slab soffit area, by height"
-  status_v1: "NO"
+  status_v1: "DERIVED"
+  status_v1_was: "NO"
   reads: []
 - id: MS-01
   name: "Brickwork 13½\" and 9\" walls, superstructure, per floor"
@@ -1201,7 +1271,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
   how_measured: "Length × height × thickness, minus openings and RCC passing through"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: WALL, 'on': [PLAN/FLOOR], support: false}]
 - id: MS-02
   name: "Brickwork 4½\" partitions"
@@ -1224,7 +1295,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
   how_measured: "Length × height"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: MS-03
   name: "Brickwork in substructure (plinth walls)"
@@ -1246,7 +1318,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
   how_measured: "As above, below plinth"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: MS-04
   name: "Brickwork in boundary wall"
@@ -1269,7 +1342,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: BRICK_BOUNDARY, qty: brick_volume}]
   how_measured: "Length × height × thickness, plus footing steps"
-  status_v1: "Bills (but short)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (but short)"
   reads: []
 - id: MS-05
   name: "Brickwork in parapet"
@@ -1291,7 +1365,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
   how_measured: "Roof perimeter × height × thickness"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: MS-06
   name: "Brickwork in mumty"
@@ -1313,7 +1388,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
   how_measured: "As walls"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: MS-07
   name: "Brick on edge (sills, copings)"
@@ -1334,7 +1410,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: MS-08
   name: "Block masonry (concrete or AAC blocks)"
@@ -1358,7 +1436,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As brickwork"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: MS-09
   name: "Honeycomb or jali brickwork"
@@ -1379,7 +1459,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: MS-10
   name: "Stone masonry or cladding walls"
@@ -1402,7 +1484,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Volume or area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: MS-11
   name: "Brick tiles or exposed brick facing"
@@ -1423,7 +1507,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: DP-01
   name: "DPC horizontal (1:2:4 concrete with bitumen coat)"
@@ -1445,7 +1531,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: MAS-DPC, qty: dpc_area}]
   how_measured: "Wall length at plinth × wall width"
-  status_v1: "Bills (but short)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (but short)"
   reads: []
 - id: DP-02
   name: "DPC vertical (basement or below-grade face)"
@@ -1466,7 +1553,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: DPC_VERTICAL, qty: dpc_area}]
   how_measured: "Length × height"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: DP-03
   name: "Polythene or membrane sheet under floor"
@@ -1487,7 +1575,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: MEMBRANE, qty: membrane_area}]
   how_measured: "Floor area plus laps"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: DP-04
   name: "Anti-termite treatment"
@@ -1508,7 +1597,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: TERMITE, qty: termite_area}]
   how_measured: "Footprint plus trench sides and bottoms"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: DP-05
   name: "Bitumen coats on foundations"
@@ -1529,7 +1619,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Buried faces"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "layers"
   reads: []
 - id: DP-06
   name: "Basement waterproofing (membrane or crystalline)"
@@ -1551,7 +1643,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Walls plus floor area"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "layers"
   reads: []
 - id: DP-07
   name: "Waterproofing of wet areas (toilet floors, sunken slabs)"
@@ -1570,9 +1664,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: []
+    PRIVATE_QS: [{line: FIN-WATERPROOF-WET, qty: waterproofing_area}]
   how_measured: "Floor plus upturn"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: DP-08
   name: "Tank waterproofing (inside faces)"
@@ -1592,7 +1687,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Inside area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "layers"
   reads: []
 - id: DP-09
   name: "Roof treatment: mud and tiles (traditional)"
@@ -1614,7 +1711,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ROOF_TREATMENT, qty: roof_area}]
   how_measured: "Roof area plus parapet upturn"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: DP-10
   name: "Roof treatment: brick-bat coba, screed to slope"
@@ -1637,7 +1735,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ROOF_TREATMENT, qty: roof_area}, {line: BALLAST, qty: coba_volume}]
   how_measured: "Roof area × average thickness"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: DP-11
   name: "Roof membrane or bitumen felt"
@@ -1659,7 +1758,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Roof area plus upturns"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "layers"
   reads: []
 - id: DP-12
   name: "Roof thermal insulation (thermopore, polystyrene)"
@@ -1681,7 +1782,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Roof area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "layers"
   reads: []
 - id: DP-13
   name: "Roof tiles (terracotta, concrete)"
@@ -1702,7 +1805,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "layers"
   reads: []
 - id: DP-14
   name: "Gola or fillet at roof edges"
@@ -1723,7 +1828,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Perimeter"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: DP-15
   name: "Water spouts and khurras"
@@ -1744,7 +1851,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: DP-16
   name: "Expansion joints and sealant"
@@ -1765,7 +1874,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: PL-01
   name: "Cement plaster inside walls (½\", 1:4 or 1:6)"
@@ -1789,7 +1900,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: WALL_PLASTER, qty: plaster_area}]
   how_measured: "Both faces of internal walls, room-side faces of external walls, minus openings above a size"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: PL-02
   name: "Cement plaster outside walls (¾\")"
@@ -1812,7 +1924,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: WALL_PLASTER_EXT, qty: plaster_area}]
   how_measured: "Outer face of external walls × height, minus openings"
-  status_v1: "Bills (but short)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (but short)"
   reads: []
 - id: PL-03
   name: "Ceiling plaster (⅜\", 1:4)"
@@ -1833,7 +1946,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: CEILING_PLASTER, qty: plaster_area}]
   how_measured: "Room ceiling areas"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: PL-04
   name: "Plaster on columns and beams (exposed RCC)"
@@ -1854,7 +1968,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Exposed faces"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "member_contact"
   reads: []
 - id: PL-05
   name: "Plaster on boundary wall and parapet"
@@ -1876,7 +1992,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Both faces"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: PL-06
   name: "Pointing (exposed brick)"
@@ -1897,7 +2015,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: PL-07
   name: "Wall putty and skim coat"
@@ -1918,7 +2038,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Painted area"
-  status_v1: "NO"
+  status_v1: "DERIVED"
+  status_v1_was: "NO"
   reads: []
 - id: PL-08
   name: "Emulsion paint inside (walls)"
@@ -1940,7 +2061,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-PAINT, qty: paint_area}]
   how_measured: "Plastered internal area"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: PL-09
   name: "Paint on ceilings"
@@ -1959,9 +2081,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: [{line: FIN-PAINT, qty: paint_area}]
+    PRIVATE_QS: [{line: FIN-CEIL-PAINT, qty: paint_area}]
   how_measured: "Ceiling area"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: PL-10
   name: "Weather-shield paint outside"
@@ -1982,7 +2105,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-PAINT-EXT, qty: paint_area}]
   how_measured: "External plaster area"
-  status_v1: "Bills (but short)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (but short)"
   reads: []
 - id: PL-11
   name: "Textured or stone-coat finish outside"
@@ -2003,7 +2127,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: PL-12
   name: "Facade tiles, stone or cladding"
@@ -2025,7 +2151,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-FACADE-TILE, qty: facade_area}]
   how_measured: "Elevation areas by finish, minus openings"
-  status_v1: "Bills (estimated)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (estimated)"
   reads: []
 - id: PL-13
   name: "Wall tiles (bathroom dado)"
@@ -2047,7 +2174,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-DADO, qty: tile_area}]
   how_measured: "Wet-room wall perimeter × dado height, minus openings"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: PL-14
   name: "Kitchen wall tiles (backsplash)"
@@ -2068,7 +2196,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-WALL-TILE, qty: tile_area}]
   how_measured: "Counter wall length × height"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: PL-15
   name: "False ceiling: gypsum board or tiles"
@@ -2089,7 +2218,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "floor_area"
   reads: []
 - id: PL-16
   name: "Cornice and ceiling moulding"
@@ -2110,7 +2241,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Room perimeter"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: PL-17
   name: "Enamel paint on doors, windows, grills"
@@ -2131,7 +2264,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Both faces × factor"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: PL-18
   name: "Polish or lacquer on woodwork"
@@ -2152,7 +2287,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: PL-19
   name: "Wallpaper or wall panelling"
@@ -2173,7 +2310,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: FL-01
   name: "Floor screed or cement topping (1½\"–2\")"
@@ -2192,9 +2331,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: []
+    PRIVATE_QS: [{line: FLR-CS-BED, qty: screed_area}]
   how_measured: "Floor area"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: FL-02
   name: "Porcelain or ceramic floor tiles (rooms)"
@@ -2216,7 +2356,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-FLOOR, qty: tile_area}, {line: FIN-FLOOR-TILE, qty: tile_area}]
   how_measured: "Room areas by finish"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: ROOM, 'on': [PLAN/FLOOR], support: false}]
 - id: FL-03
   name: "Bathroom floor tiles (anti-skid)"
@@ -2237,7 +2378,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-FLOOR-TILE, qty: tile_area}]
   how_measured: "Wet-room areas"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: FL-04
   name: "Marble floor (Ziarat, Botticino and so on)"
@@ -2258,7 +2400,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "floor_area"
   reads: []
 - id: FL-05
   name: "Terrazzo or chips flooring"
@@ -2279,7 +2423,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "floor_area"
   reads: []
 - id: FL-06
   name: "Wooden or laminate floor"
@@ -2300,7 +2446,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "floor_area"
   reads: []
 - id: FL-07
   name: "Skirting (tile, marble, wood), 4\"–6\""
@@ -2320,9 +2468,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: []
+    PRIVATE_QS: [{line: FIN-SKIRT, qty: skirting_length}]
   how_measured: "Room perimeters minus door widths"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: FL-08
   name: "Stair treads and risers (marble or granite)"
@@ -2346,7 +2495,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-STAIR-MARBLE, qty: tread_area}]
   how_measured: "Steps × width; landings by area"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: FL-09
   name: "Stair nosing or anti-skid strips"
@@ -2367,7 +2517,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Steps × width"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: FL-10
   name: "Window sills (marble)"
@@ -2390,7 +2542,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-SILL-MARBLE, qty: sill_length}]
   how_measured: "Window widths × sill depth"
-  status_v1: "Bills (but short)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (but short)"
   reads: []
 - id: FL-11
   name: "Door thresholds and water stoppers"
@@ -2412,7 +2565,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-WATER-STOPPER, qty: stopper_length}]
   how_measured: "Wet-room door widths"
-  status_v1: "Bills (but short)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (but short)"
   reads: []
 - id: FL-12
   name: "Kitchen counter top (granite or marble slab)"
@@ -2434,7 +2588,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-KITCHEN-SLAB, qty: counter_area}]
   how_measured: "Counter length × depth"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: FL-13
   name: "Vanity top marble"
@@ -2456,7 +2611,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-VANITY-MARBLE, qty: vanity_area}]
   how_measured: "Count × size"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: FL-14
   name: "Porch, driveway and lawn paving (tiles, pavers)"
@@ -2477,7 +2633,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-PAVING, qty: paving_area}, {line: FIN-PORCH-TILE, qty: paving_area}]
   how_measured: "Outdoor areas by finish"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: FL-15
   name: "CC tiles (outside the gate, service lanes)"
@@ -2498,7 +2655,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-CC-TILE, qty: tile_area}]
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: FL-16
   name: "Rooftop tiles (on roof treatment)"
@@ -2519,7 +2677,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Roof area"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "layers"
   reads: []
 - id: DW-01
   name: "Door frames: wood (deodar, partal) or MS pressed steel"
@@ -2542,7 +2702,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: DOOR_FRAMES, qty: frame_count}, {line: DOOR_FRAMES_RFT, qty: frame_length}]
   how_measured: "Frame perimeter per door × count, by type"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: DW-02
   name: "Door shutters: solid wood, flush, panel"
@@ -2565,7 +2726,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: DOORS, qty: shutter_area}]
   how_measured: "Width × height × count, by type"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: DOOR, 'on': [PLAN/FLOOR], support: false}]
 - id: DW-03
   name: "Main entrance door"
@@ -2587,7 +2749,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "openings_area"
   reads: []
 - id: DW-04
   name: "Bathroom doors (PVC, WPC, fibre)"
@@ -2610,7 +2774,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count × size"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "openings_area"
   reads: []
 - id: DW-05
   name: "Aluminium windows (sliding, casement) with glass"
@@ -2633,7 +2799,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: WINDOWS, qty: window_area}]
   how_measured: "Width × height × count"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: WINDOW, 'on': [PLAN/FLOOR], support: false}]
 - id: DW-06
   name: "uPVC windows"
@@ -2655,7 +2822,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As above"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DW-07
   name: "Ventilators (toilet, kitchen)"
@@ -2678,7 +2847,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: WINDOWS, qty: ventilator_area}]
   how_measured: "Count × size"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: DW-08
   name: "Steel or wrought-iron grills and safety bars"
@@ -2701,7 +2871,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Opening area or weight"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DW-09
   name: "Fly-screen or mosquito net"
@@ -2722,7 +2894,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Window areas"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DW-10
   name: "Glazing: float, tinted, tempered"
@@ -2744,7 +2918,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Pane areas"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "openings_area"
   reads: []
 - id: DW-11
   name: "Ironmongery: locks, handles, hinges, stoppers"
@@ -2765,7 +2941,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Per door or window"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: DW-12
   name: "Main gate (MS or wrought iron)"
@@ -2788,7 +2966,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: MET-MAIN-GATE, qty: gate_count}]
   how_measured: "Count or weight"
-  status_v1: "Allowance only"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Allowance only"
   reads: []
 - id: DW-13
   name: "Garage or rolling shutter"
@@ -2809,7 +2988,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Width × height"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DW-14
   name: "Stair railing (MS, SS, glass)"
@@ -2830,7 +3011,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: FIN-GLASS-RAILING, qty: railing_length}]
   how_measured: "Stair and landing open edges"
-  status_v1: "Bills (glass, no number)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (glass, no number)"
   reads: []
 - id: DW-15
   name: "Balcony and terrace railing"
@@ -2851,7 +3033,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Edge length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: DW-16
   name: "Tank covers: OHWT, UGWT, septic (MS or cast iron)"
@@ -2873,7 +3057,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: MET-UGT-COVER, qty: cover_count}, {line: MET-OHWT-COVER, qty: cover_count}, {line: MET-SEPTIC-COVER, qty: cover_count}]
   how_measured: "Count"
-  status_v1: "Allowance only"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Allowance only"
   reads: []
 - id: DW-17
   name: "Manhole covers and gratings"
@@ -2895,7 +3080,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: MET-GATE-GRATING, qty: cover_count}]
   how_measured: "Count"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: DW-18
   name: "Sheet doors (store, mumty)"
@@ -2917,7 +3103,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: MET-SHEET-DOOR, qty: door_count}]
   how_measured: "Count × size"
-  status_v1: "Allowance only"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Allowance only"
   reads: []
 - id: DW-19
   name: "Canopies, pergolas, sunshades (steel)"
@@ -2940,7 +3127,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Weight or area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: DW-20
   name: "Glass curtain wall or structural glazing"
@@ -2961,7 +3150,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Elevation area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: KJ-01
   name: "Kitchen cabinets: base and wall units"
@@ -2983,7 +3174,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: JOI-KITCHEN-CABINET, qty: cabinet_length}]
   how_measured: "Run length of each"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: KJ-02
   name: "Wardrobes and built-in cupboards"
@@ -3006,7 +3198,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: JOI-WARDROBES, qty: wardrobe_area}]
   how_measured: "Front area or length"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: KJ-03
   name: "Vanity units"
@@ -3027,7 +3220,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: KJ-04
   name: "TV wall and console units"
@@ -3049,7 +3244,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length or count"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: KJ-05
   name: "Shelving and niches"
@@ -3069,7 +3265,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: KJ-06
   name: "Wooden stair (if any) and handrail"
@@ -3090,7 +3287,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: KJ-07
   name: "Mirror"
@@ -3112,7 +3310,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Size × count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: KJ-08
   name: "Bathroom accessories (towel rail, soap dish)"
@@ -3133,7 +3333,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Per bathroom"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-01
   name: "Water supply pipes, PPR or GI, by diameter (½\" to 2\")"
@@ -3155,7 +3357,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Run lengths per diameter"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: PB-02
   name: "Hot water pipes"
@@ -3177,7 +3381,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Run lengths"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: PB-03
   name: "Fittings: elbows, tees, sockets"
@@ -3200,7 +3406,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count or allowance"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: PB-04
   name: "Valves: gate, ball, float, non-return"
@@ -3221,7 +3429,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-05
   name: "Water meter and connection"
@@ -3241,7 +3451,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-06
   name: "Water pump and motor (lifting)"
@@ -3262,7 +3474,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-07
   name: "Pressure pump or booster"
@@ -3283,7 +3497,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-08
   name: "Plastic water tank on roof"
@@ -3304,7 +3520,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-09
   name: "Water heater or geyser (gas, electric, solar)"
@@ -3325,7 +3543,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-10
   name: "Drainage pipes, uPVC or PVC, by diameter (2\" to 6\")"
@@ -3348,7 +3568,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Run lengths per diameter"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: [{class: PIPE_RUN, 'on': [PLAN/OVERLAY], support: false}]
 - id: PB-11
   name: "Soil and vent stacks"
@@ -3370,7 +3592,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Height × count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: PB-12
   name: "Rainwater down-pipes"
@@ -3390,9 +3614,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: []
+    PRIVATE_QS: [{line: DRN-RWP, qty: pipe_length}]
   how_measured: "Height × count"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: PB-13
   name: "Floor traps and gully traps"
@@ -3413,7 +3638,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: [{class: DRAIN_POINT, 'on': [PLAN/OVERLAY], support: false}]
 - id: PB-14
   name: "Inspection chambers and manholes"
@@ -3433,9 +3660,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: []
+    PRIVATE_QS: [{line: DRN-MANHOLE, qty: chamber_count}]
   how_measured: "Count, by size"
-  status_v1: "PARTIAL"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "PARTIAL"
   reads: []
 - id: PB-15
   name: "Septic tank (if not in RCC) and soakage pit"
@@ -3458,7 +3686,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count or volume"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "counts"
   reads: []
 - id: PB-16
   name: "Sewer connection to main line"
@@ -3479,7 +3709,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: PB-17
   name: "WC: commode (wall-hung or floor) or Asian (squatting)"
@@ -3500,7 +3732,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: [{class: PLUMBING_FIXTURE, 'on': [PLAN/OVERLAY], support: false}]
 - id: PB-18
   name: "Wash basin with pedestal or vanity"
@@ -3521,7 +3755,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-19
   name: "Kitchen sink (single or double)"
@@ -3542,7 +3778,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-20
   name: "Shower set, mixers, taps, muslim shower"
@@ -3563,7 +3801,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-21
   name: "Bathtub or shower tray"
@@ -3584,7 +3824,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-22
   name: "Washing-machine and ablution points"
@@ -3605,7 +3847,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-23
   name: "Gas pipe, GI or PE, and gas points (stove, heater, geyser)"
@@ -3629,7 +3873,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Run lengths, count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: PB-24
   name: "Gas meter connection"
@@ -3649,7 +3895,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-01
   name: "Light points (ceiling, wall bracket, outdoor, lawn)"
@@ -3671,7 +3919,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ELE-LIGHT, qty: point_count}]
   how_measured: "Count per symbol"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: [{class: ELECTRICAL_POINT, 'on': [PLAN/OVERLAY], support: false}]
 - id: EL-02
   name: "Fan points (ceiling, exhaust)"
@@ -3693,7 +3942,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ELE-FAN, qty: point_count}]
   how_measured: "Count"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EL-03
   name: "Switch plates and switches (by gang)"
@@ -3716,7 +3966,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ELE-SWITCH, qty: switch_count}]
   how_measured: "Count of plates, or of switches"
-  status_v1: "Bills (but short)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Bills (but short)"
   reads: []
 - id: EL-04
   name: "Socket outlets: 5 A light plug, 15 A power plug"
@@ -3738,7 +3989,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ELE-SOCKET, qty: point_count}]
   how_measured: "Count"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EL-05
   name: "AC points (with dedicated circuit)"
@@ -3759,7 +4011,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-06
   name: "Geyser and heater points"
@@ -3780,7 +4034,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-07
   name: "Wiring: point wiring or circuits"
@@ -3803,7 +4059,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Per point, or run lengths by wire size"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-08
   name: "Conduits: PVC, by size"
@@ -3825,7 +4083,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Run lengths"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: EL-09
   name: "Main cable from meter to DB"
@@ -3846,7 +4106,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: EL-10
   name: "Distribution boards and breakers (MCB, RCD)"
@@ -3866,9 +4128,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: []
+    PRIVATE_QS: [{line: ELE-BOARD, qty: board_count}]
   how_measured: "Count, by ways"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: [{class: DISTRIBUTION_BOARD, 'on': [PLAN/OVERLAY], support: false}]
 - id: EL-11
   name: "Earthing pit and earth wire"
@@ -3890,7 +4153,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count and length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-12
   name: "Light fixtures: LED panels, downlights, chandeliers"
@@ -3912,7 +4177,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count, by type"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-13
   name: "Ceiling and exhaust fans (supply)"
@@ -3933,7 +4200,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-14
   name: "TV and telephone points"
@@ -3954,7 +4223,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ELE-LOWV, qty: point_count}]
   how_measured: "Count"
-  status_v1: "No number"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "No number"
   reads: []
 - id: EL-15
   name: "Data (CAT6) points"
@@ -3975,7 +4245,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ELE-LOWV, qty: point_count}]
   how_measured: "Count"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EL-16
   name: "CCTV cameras and DVR"
@@ -3997,7 +4268,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ELE-LOWV, qty: camera_count}]
   how_measured: "Count"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EL-17
   name: "Smoke detectors and fire alarm"
@@ -4019,7 +4291,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: ELE-LOWV, qty: detector_count}]
   how_measured: "Count"
-  status_v1: "BILLS"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "BILLS"
   reads: []
 - id: EL-18
   name: "Door bell, intercom, video door phone"
@@ -4040,7 +4313,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-19
   name: "Solar panels, inverter, batteries"
@@ -4062,7 +4337,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count or capacity"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-20
   name: "UPS or generator connection and changeover"
@@ -4083,7 +4360,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EL-21
   name: "Lightning arrester"
@@ -4103,7 +4382,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EX-01
   name: "Boundary wall: footing, brick, RCC columns, coping, plaster, paint"
@@ -4128,7 +4409,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: BRICK_BOUNDARY, qty: brick_volume}]
   how_measured: "Boundary length × sections"
-  status_v1: "Partial (brick only)"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "Partial (brick only)"
   reads: []
 - id: EX-02
   name: "Front elevation boundary with grill or cladding"
@@ -4150,7 +4432,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: EX-03
   name: "Driveway and ramp (concrete or pavers)"
@@ -4172,7 +4456,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "site"
   reads: []
 - id: EX-04
   name: "Lawn: soil filling and grass"
@@ -4193,7 +4479,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: EX-05
   name: "Planters and flower beds"
@@ -4215,7 +4503,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length or count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: EX-06
   name: "Car porch canopy"
@@ -4236,7 +4526,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: EX-07
   name: "External steps"
@@ -4257,7 +4549,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count × width"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: EX-08
   name: "Storm drains and channels"
@@ -4279,7 +4573,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: EX-09
   name: "Underground water tank access and pump room"
@@ -4300,7 +4596,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EX-10
   name: "Guard room or servant quarter (as a small building)"
@@ -4322,7 +4620,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As the main building"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: EX-11
   name: "Name plate and house number"
@@ -4343,7 +4642,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EX-12
   name: "Street-level culvert or ramp to road"
@@ -4365,7 +4666,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area or volume"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: PZ-01
   name: "Raft foundation and thickenings"
@@ -4390,7 +4693,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area × thickness"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: PZ-02
   name: "Piles and pile caps"
@@ -4414,7 +4719,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count × length; caps by volume"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: PZ-03
   name: "Basement retaining walls (multi-level)"
@@ -4439,7 +4746,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length × height × thickness"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "member_volume"
   reads: []
 - id: PZ-04
   name: "Shear walls and lift core"
@@ -4464,7 +4773,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As walls"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: PZ-05
   name: "Flat slabs, drop panels, column capitals"
@@ -4489,7 +4800,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area × thickness, plus drops"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: PZ-06
   name: "Post-tensioned slabs (tendons)"
@@ -4513,7 +4826,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Tendon weight, anchors"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: PZ-07
   name: "Ramps (car parking)"
@@ -4535,7 +4849,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Area × thickness"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: PZ-08
   name: "Lift (elevator) and escalator"
@@ -4557,7 +4873,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count, by stops"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PZ-09
   name: "Fire-fighting: hydrants, sprinklers, hose reels, fire pumps"
@@ -4580,7 +4898,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count and pipe lengths"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PZ-10
   name: "Fire doors and fire-rated shutters"
@@ -4602,7 +4922,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count, by rating"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: PZ-11
   name: "Emergency staircase pressurisation"
@@ -4623,7 +4945,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PZ-12
   name: "HVAC: ducting, VRF units, chillers, AHUs"
@@ -4647,7 +4971,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Duct area or weight; unit count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "pipe_run"
   reads: []
 - id: PZ-13
   name: "Curtain wall, ACP cladding, structural glazing"
@@ -4668,7 +4994,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Facade area by type"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: PZ-14
   name: "Shopfront glazing and rolling shutters"
@@ -4690,7 +5018,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Width × height"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: PZ-15
   name: "Public toilets (multiple fixtures per block)"
@@ -4712,7 +5042,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PZ-16
   name: "Car parking marking, wheel stoppers"
@@ -4734,7 +5066,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length, count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: PZ-17
   name: "Transformer room, LT panel, generator"
@@ -4755,7 +5089,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PZ-18
   name: "Water treatment, overhead and underground tanks (large)"
@@ -4777,7 +5113,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "As tanks"
-  status_v1: "PARTIAL"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "PARTIAL"
+  recipe: "member_volume"
   reads: []
 - id: PZ-19
   name: "Signage and facade lighting"
@@ -4798,7 +5136,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Count"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PZ-20
   name: "Expansion joints (structural)"
@@ -4819,7 +5159,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Length"
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: MS-12
   name: "Drywall or gypsum board partitions"
@@ -4842,7 +5184,9 @@
     MRS_PB: [{item: 9-50, qty: partition_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: MS-13
   name: "Aluminium glazed partitions"
@@ -4864,7 +5208,9 @@
     MRS_PB: [{item: 25-56, qty: partition_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: MS-14
   name: "Reinforced brick walling"
@@ -4886,7 +5232,9 @@
     MRS_PB: [{item: 7-21, qty: wall_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_face"
   reads: []
 - id: DP-17
   name: "Drip course under slab edges"
@@ -4907,7 +5255,9 @@
     MRS_PB: [{item: 9-33, qty: drip_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: DP-18
   name: "Flashing: GI, lead or copper"
@@ -4930,7 +5280,9 @@
     MRS_PB: [{item: 9-18, qty: flashing_length}, {item: 9-19, qty: flashing_length}, {item: 6-29, qty: flashing_length}, {item: 25-50, qty: flashing_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: DP-19
   name: "Sheet roofing: GI, asbestos, sandwich panel"
@@ -4952,7 +5304,9 @@
     MRS_PB: [{item: 9-13, qty: sheet_area}, {item: 9-25, qty: sheet_area}, {item: 9-26, qty: sheet_area}, {item: 9-28, qty: sheet_area}, {item: 9-29, qty: sheet_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "layers"
   reads: []
 - id: DP-20
   name: "Foam concrete or screed insulation layer"
@@ -4974,7 +5328,9 @@
     MRS_PB: [{item: 6-26, qty: layer_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "layers"
   reads: []
 - id: PL-20
   name: "Edge beads and corner guards"
@@ -4995,7 +5351,9 @@
     MRS_PB: [{item: 11-33, qty: bead_length}, {item: 11-55, qty: bead_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: PL-21
   name: "Wall guards and bumper rails"
@@ -5016,7 +5374,9 @@
     MRS_PB: [{item: 11-53, qty: rail_length}, {item: 11-54, qty: rail_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "wall_run"
   reads: []
 - id: FL-17
   name: "Epoxy, vinyl, rubber and carpet flooring"
@@ -5037,7 +5397,9 @@
     MRS_PB: [{item: 10-55, qty: flooring_area}, {item: 10-56, qty: flooring_area}, {item: 10-52, qty: flooring_area}, {item: 10-39, qty: flooring_area}, {item: 10-60, qty: flooring_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "floor_area"
   reads: []
 - id: FL-18
   name: "Floor divider strips (glass, marble)"
@@ -5058,7 +5420,9 @@
     MRS_PB: [{item: 10-40, qty: strip_length}, {item: 10-41, qty: strip_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "floor_area"
   reads: []
 - id: FL-19
   name: "Floor trap jali (stainless)"
@@ -5079,7 +5443,9 @@
     MRS_PB: [{item: 10-64, qty: trap_count}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: DW-21
   name: "Curtain rails and blinds"
@@ -5102,7 +5468,9 @@
     MRS_PB: [{item: 12-54, qty: rail_length}, {item: 12-69, qty: rail_length}, {item: 12-70, qty: rail_length}, {item: 12-71, qty: rail_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DW-22
   name: "Door closers, kick plates and stoppers"
@@ -5123,7 +5491,9 @@
     MRS_PB: [{item: 12-62, qty: fitting_count}, {item: 12-63, qty: fitting_count}, {item: 12-53, qty: fitting_count}, {item: 12-66, qty: fitting_count}, {item: 12-67, qty: fitting_count}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: DW-23
   name: "Architraves and door trims"
@@ -5146,7 +5516,9 @@
     MRS_PB: [{item: 12-57, qty: trim_length}, {item: 12-56, qty: trim_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DW-24
   name: "Steel grated and security doors"
@@ -5168,7 +5540,9 @@
     MRS_PB: [{item: 25-30, qty: door_area}, {item: 25-31, qty: door_area}, {item: 25-66, qty: door_area}, {item: 25-59, qty: door_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DW-25
   name: "Frameless and automatic glass doors"
@@ -5190,7 +5564,9 @@
     MRS_PB: [{item: 25-69, qty: door_area}, {item: 25-70, qty: door_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DW-26
   name: "Spiral stair (MS)"
@@ -5214,7 +5590,9 @@
     MRS_PB: [{item: 25-63, qty: stair_count}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-25
   name: "Flushing cisterns and stop cocks"
@@ -5235,7 +5613,9 @@
     MRS_PB: [{item: 19-12, qty: fitting_count}, {item: 19-21, qty: fitting_count}, {item: 19-22, qty: fitting_count}, {item: 19-23, qty: fitting_count}, {item: 19-25, qty: fitting_count}, {item: 19-42, qty: fitting_count}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-26
   name: "Glass and ceramic shelves"
@@ -5256,7 +5636,9 @@
     MRS_PB: [{item: 19-18, qty: shelf_count}, {item: 19-19, qty: shelf_count}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EX-13
   name: "Barbed or razor wire fencing on boundary"
@@ -5277,7 +5659,9 @@
     MRS_PB: [{item: 25-73to25-77, qty: fence_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: EX-14
   name: "Kerb stones and edging"
@@ -5298,7 +5682,9 @@
     MRS_PB: [{item: 6-53, qty: kerb_length}, {item: 6-55, qty: kerb_length}, {item: 10-45, qty: kerb_length}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "site"
   reads: []
 - id: RC-25
   name: "Rainwater harvesting tank"
@@ -5323,7 +5709,9 @@
     MRS_PB: [{item: 6-6(b), qty: concrete_volume}, {item: 6-6(a), qty: concrete_volume}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-26
   name: "Sump pit and basement drainage pit"
@@ -5347,7 +5735,9 @@
     MRS_PB: [{item: 6-6(b), qty: concrete_volume}, {item: 3-21, qty: concrete_volume}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: RC-27
   name: "Overhead tank stand or platform"
@@ -5371,7 +5761,9 @@
     MRS_PB: [{item: 6-6(a), qty: concrete_volume}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: MS-15
   name: "Fireplace and chimney"
@@ -5394,7 +5786,9 @@
     MRS_PB: [{item: 7-20, qty: fireplace_count}, {item: 25-49, qty: fireplace_count}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: DP-21
   name: "Skylight and light-well glazing"
@@ -5416,7 +5810,9 @@
     MRS_PB: [{item: 12-52, qty: glazing_area}, {item: 25-52, qty: glazing_area}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "openings_area"
   reads: []
 - id: DP-22
   name: "Roof access hatch"
@@ -5437,7 +5833,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: PB-27
   name: "Home water filter plant"
@@ -5458,7 +5856,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EX-15
   name: "Swimming pool (shell, finishes, plant)"
@@ -5483,7 +5883,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: EX-16
   name: "Water feature or fountain"
@@ -5504,7 +5905,9 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "counts"
   reads: []
 - id: EX-17
   name: "Generator platform and pad"
@@ -5525,7 +5928,9 @@
     MRS_PB: [{item: 6-5, qty: pad_volume}]
     PRIVATE_QS: []
   how_measured: "Added from the rate books; the method is for the QS to confirm."
-  status_v1: "NO"
+  status_v1: "BY_RECIPE"
+  status_v1_was: "NO"
+  recipe: "member_volume"
   reads: []
 - id: NR-01
   name: "Mobilisation, site office, temporary water and power"
@@ -5545,7 +5950,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Lump sum"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-02
   name: "Scaffolding"
@@ -5565,9 +5971,10 @@
   derived: null
   billing:
     MRS_PB: []
-    PRIVATE_QS: []
+    PRIVATE_QS: [{line: SCF-EXTERNAL, qty: scaffold_area}]
   how_measured: "sft of elevation, or lump sum"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-03
   name: "Curing"
@@ -5587,7 +5994,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Included in concrete and plaster rates"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-04
   name: "Carriage of materials (lead and lift)"
@@ -5608,7 +6016,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Rate-book chapter, per distance"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-05
   name: "Loading, unloading and stacking"
@@ -5628,7 +6037,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Rate-book chapter"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-06
   name: "Testing: cube tests, steel tests, soil investigation"
@@ -5649,7 +6059,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Nos or lump sum"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-07
   name: "Dewatering"
@@ -5670,7 +6081,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Lump sum or per day"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-08
   name: "Labour: grey structure and finishing"
@@ -5691,7 +6103,8 @@
     MRS_PB: []
     PRIVATE_QS: [{line: LABOUR-GREY, qty: covered_area}]
   how_measured: "sft of covered area"
-  status_v1: "NO"
+  status_v1: "MEASURED_BY_FAMILY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-09
   name: "Site cleaning and debris removal"
@@ -5711,7 +6124,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Lump sum"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-10
   name: "Contractor's profit and overheads"
@@ -5731,7 +6145,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "% of works"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-11
   name: "Contingencies"
@@ -5751,7 +6166,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "% of works"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-12
   name: "Design and supervision fees"
@@ -5772,7 +6188,8 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "% or lump sum"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []
 - id: NR-13
   name: "Authority fees and approvals"
@@ -5792,5 +6209,6 @@
     MRS_PB: []
     PRIVATE_QS: []
   how_measured: "Lump sum"
-  status_v1: "NO"
+  status_v1: "ASK_ONLY"
+  status_v1_was: "NO"
   reads: []

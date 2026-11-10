@@ -70,6 +70,12 @@ def step_catalogue() -> tuple:
   from app.modules.drawings_boq.takeoff.proof import catalogue_check as CC
   return CC.gate()
 
+def step_roads() -> tuple:
+  from app.engine.catalogue import roads as RDS
+  bad, warn = RDS.problems()
+  note = ", ".join(f"{k} {v}" for k, v in RDS.counts(RDS.table()).items())
+  return not bad, note + "".join("; " + w for w in warn) if not bad else f"{len(bad)} item road problem(s)", bad
+
 def step_methods() -> tuple:
   from app.modules.drawings_boq.takeoff.proof import methods_check as MC
   return MC.gate()
@@ -183,6 +189,12 @@ def step_prompts() -> tuple:
       bad.append(f"{name}.yaml is named version {stem} and says version {got['version']}")
   return not bad, f"{len(names)} prompt file(s) load with task, version, schema and text, and each file name carries its version" if not bad else f"{len(bad)} prompt problem(s)", bad
 
+def step_placement() -> tuple:
+  import pathlib
+  from app.modules.drawings_boq.takeoff.proof import apply_check as AC
+  bad = AC.placement_problems(pathlib.Path(ROOT))
+  return not bad, "no module sits inside a prompts folder and no tracked file is one that .gitignore ignores" if not bad else f"{len(bad)} misplaced or tracked-but-ignored file(s)", bad
+
 def main(argv: list | None = None) -> int:
   ap = argparse.ArgumentParser(description="Run before every commit: import check, case files, reading validate, truth folder keys, the gates, then the pinned baseline. Stops at the first failure.")
   ap.add_argument("--cases-dir", help="the folder with the case PDFs (default: TRACE_CASES_DIR)")
@@ -192,8 +204,8 @@ def main(argv: list | None = None) -> int:
   args = ap.parse_args(argv)
   cases_dir = CIO.cases_dir(args.cases_dir)
   
-  steps = [("commit hook", step_hook), ("settings", step_settings), ("prompts", step_prompts), ("import check", step_import), ("case files", step_files),
-    ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys), ("gate 17", step_gate17), ("catalogue", step_catalogue), ("qs methods", step_methods), ("track record", step_track)]
+  steps = [("commit hook", step_hook), ("settings", step_settings), ("prompts", step_prompts), ("placement", step_placement), ("import check", step_import), ("case files", step_files),
+    ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys), ("gate 17", step_gate17), ("catalogue", step_catalogue), ("item roads", step_roads), ("qs methods", step_methods), ("track record", step_track)]
   if not args.fast:
     steps += [("gates", lambda: step_gates(cases_dir, args.out, args.no_toggles)), ("baseline", lambda: step_baseline(cases_dir, args.out))]
   for name, run in steps:

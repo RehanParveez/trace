@@ -291,12 +291,15 @@ def read_case(case: dict, files: dict, budget_s: float | None = None) -> dict:
   kw = {} if budget_s is None else {"budget_s": budget_s}
   return {name: rows for name, rows, _problems in RDR.read_set(blobs, rules=case.get("overrides"), **kw)}
 
-def read_items(pdf_path: str) -> SetRead:
+def read_rows(pdf_path: str) -> tuple:
   with open(pdf_path, "rb") as fh:
     data = fh.read()
   name = os.path.basename(pdf_path)
   _n, rows, _p = RDR.read_set([(name, data)])[0]
-  return items_of(rows)
+  return name, rows
+
+def read_items(pdf_path: str) -> SetRead:
+  return items_of(read_rows(pdf_path)[1])
 
 def mapping_table() -> list:
   rows = []

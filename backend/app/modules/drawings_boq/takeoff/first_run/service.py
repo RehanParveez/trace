@@ -6,12 +6,13 @@ from datetime import datetime, timezone
 from uuid import UUID
 from app.core.exceptions import TraceException
 from app.engine.catalogue import conventions as CV
-from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq import company_conventions as CCV
+from app.modules.drawings_boq import rule_book_service as RBS
 from app.modules.drawings_boq.takeoff.first_run import job as JB
 from app.modules.drawings_boq.takeoff.first_run import report as RP
 from app.modules.drawings_boq.takeoff.first_run import stages as ST
 from app.modules.drawings_boq.takeoff.flow import sitting as SIT
+from app.modules.drawings_boq.takeoff.run import company_rules as CRL
 from app.modules.drawings_boq.takeoff.run import first_run_bindings as FR
 from app.modules.drawings_boq.takeoff.questions import answers as AN
 from app.modules.drawings_boq.takeoff.service import TakeoffService
@@ -28,18 +29,20 @@ def read_plains(files: list) -> tuple:
   from app.modules.drawings_boq.takeoff.run import completeness as CR
   from app.modules.drawings_boq.takeoff.run import reading_adapter as AD
   from app.modules.drawings_boq.takeoff.profile import run as PRUN
-  plains, unread, facts = [], [], []
+  plains, unread, facts, reads = [], [], [], []
   with tempfile.TemporaryDirectory() as tmp:
     for n, (name, key) in enumerate(files):
       path = os.path.join(tmp, f"{n}.pdf")
       try:
         download_to_path(key, path)
-        plain = CR.plain_read(AD.read_items(path))
+        _name, rows = AD.read_rows(path)
+        plain = CR.plain_read(AD.items_of(rows))
         facts.extend(PRUN.facts_of_pdf(path, len(plains) * CR.SHEET_SHIFT))
         plains.append(plain)
+        reads.append((name, rows))
       except Exception as exc:
         unread.append({"file": name, "error": f"{type(exc).__name__}: {str(exc)[:200]}"})
-  return plains, unread, facts
+  return plains, unread, facts, reads
 
 class FirstRunService(TakeoffService):
   async def _drawings(self, org: UUID, project_id: UUID) -> list:
@@ -55,11 +58,13 @@ class FirstRunService(TakeoffService):
     """The first-upload job over every PDF of the project: read, ledger, BOQ draft, questions. The snapshot goes on the first drawing and the report with it."""
     drawings = await self._drawings(org, project_id)
     files = [(d.original_filename, d.storage_key) for d in drawings]
-    plains, unread, facts = await asyncio.to_thread(read_plains, files)
+    plains, unread, facts, reads = await asyncio.to_thread(read_plains, files)
     state = {"conventions": await self._conventions(org), "answers": AN.merge([d.ingestion_meta for d in drawings]), "unread": unread}
-    out = JB.run(FR.offline_bindings(plains=plains, page_facts=facts), state, progress=progress)
+    rules = CRL.rows_of_book(await RBS.snapshot(self.session, org, project_id))
+    out = JB.run(FR.offline_bindings(plains=plains, page_facts=facts, reads=reads, rules=rules), state, progress=progress)
     report = RP.build(state, out)
     home = drawings[0]
+    
     meta = dict(home.ingestion_meta or {})
     if "facts" in state and "evidence" in state:
       meta[AN.META_LEDGER] = snapshot_of(state)

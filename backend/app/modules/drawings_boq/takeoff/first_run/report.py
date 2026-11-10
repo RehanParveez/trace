@@ -20,7 +20,7 @@ def build(state: dict, run: dict) -> dict:
     "checks_summary": SC.summary(state.get("checks") or []),
     "stages": [{"name": s["name"], "status": s["status"], "seconds": s["seconds"], "error": s["error"]} for s in run["stages"]],
     "convention": {k: {"value": v["value"], "confidence": v["confidence"]} for k, v in (state.get("convention") or {}).get("points", {}).items()} or None,
-    "failed": list(run["failed"]), "unread": list(state.get("unread") or []), "seconds": run["seconds"]}
+    "engine": state.get("engine"), "failed": list(run["failed"]), "unread": list(state.get("unread") or []), "seconds": run["seconds"]}
 
 def render(rep: dict, name: str = "") -> str:
   p = rep["project"] or {}
@@ -34,6 +34,9 @@ def render(rep: dict, name: str = "") -> str:
   if rep.get("checks"):
     s = rep["checks_summary"]
     lines.append(f"  self-checks: {s[SC.PASS]} pass, {s[SC.FAIL]} fail, {s[SC.NOT_CHECKABLE]} cannot be checked" + "".join(f"\n    {c['check']}: {c['detail']}" for c in rep["checks"] if c["result"] == SC.FAIL))
+  if rep.get("engine"):
+    e = rep["engine"]
+    lines.append(f"  engine: {e['rows']} row(s), {e['lines']} line(s) into the ledger, {e.get('recipes', 0)} of them from recipes, under {e.get('rules', 0)} company rule(s); not billed {sum(e['not_billed'].values())}, unmapped {sum(e['unmapped'].values())}, errors {e['errors']}")
   if rep.get("unread"):
     lines.append("  NOT READ: " + "; ".join(f"{u['file']} ({u['error']})" for u in rep["unread"]))
   if rep["failed"]:

@@ -18,6 +18,7 @@ _VALUE = re.compile(r"^(?:" + _FOOT + "|" + _INCH_ONLY + r")$")
 _GLUED = re.compile(r"(?<![\d'\"’′”″-])(?P<sign>\+/-|[+±])\s*(?P<v>" + _FOOT + "|" + _INCH_ONLY + r")$")
 _NAME_WORD = re.compile(r"^[A-Za-z][A-Za-z.]*$")
 _NAME_END = re.compile(r"^LEV(?:EL)?\.?$", re.I)
+_NAME_BEFORE = re.compile(r"^(?:[A-Za-z]\.){1,3}L$", re.I)
 
 def enabled() -> bool:
   return RR.on(RULE)

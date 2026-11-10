@@ -10,8 +10,8 @@ import time
 from app.modules.drawings_boq.takeoff.run import known_facts as KF
 from app.modules.drawings_boq.takeoff.proof import fact_kinds as FK
 from app.modules.drawings_boq.lab import tolerances as T
-from app.modules.drawings_boq.takeoff.proof import offline_accept as OA
-from app.modules.drawings_boq.takeoff.proof import offline_run as OR
+from app.modules.drawings_boq.takeoff.run import offline_accept as OA
+from app.modules.drawings_boq.takeoff.run import offline_run as OR
 from app.modules.drawings_boq.lab.aliases import KEY_LABEL, SOFTWARE_UNIT, bill_quantity, software_key
 from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.ai_reader import legend as LEG

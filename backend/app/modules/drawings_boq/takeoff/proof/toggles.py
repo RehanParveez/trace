@@ -47,7 +47,8 @@ def _deducted_m2(accs: list, ledger: list) -> float:
   return total
 
 def prove_formula(case_name: str, key: str, cases_dir: str | None = None) -> dict:
-  from app.modules.drawings_boq.takeoff.proof import case_io as CIO, offline_run as OR
+  from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+  from app.modules.drawings_boq.takeoff.run import offline_run as OR
   spec = FORMULA_RULES[key]
   profile, rule_set = OR.seed_profile()
   catalog = OR.work_item_catalog()
@@ -76,7 +77,8 @@ def prove_formula(case_name: str, key: str, cases_dir: str | None = None) -> dic
 def prove(case_name: str, key: str, cases_dir: str | None = None) -> dict:
   if key in FORMULA_RULES:
     return prove_formula(case_name, key, cases_dir)
-  from app.modules.drawings_boq.takeoff.proof import case_io as CIO, offline_run as OR
+  from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+  from app.modules.drawings_boq.takeoff.run import offline_run as OR
   profile, rule_set = OR.seed_profile()
   catalog = OR.work_item_catalog()
   
