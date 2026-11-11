@@ -378,6 +378,7 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
   os.makedirs(out_dir, exist_ok=True)
   rows_sha = write_rows(os.path.join(out_dir, "rows.jsonl"), all_rows)
   SAN.write_schedules(out_dir, cases)
+  SAN.write_sanity(out_dir, cases)
   
   by_section = {}
   for sec in sorted({r["section"] for r in all_rows}):

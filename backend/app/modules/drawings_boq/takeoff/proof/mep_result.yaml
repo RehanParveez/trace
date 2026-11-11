@@ -1,0 +1,9 @@
+legend_rows_target: 30          
+fixture_recall_target: 0.70     
+fixture_offices_needed: 2      
+fixture_class: PLUMBING_FIXTURE
+point_class: ELECTRICAL_POINT
+classes: [ELECTRICAL_POINT, PLUMBING_FIXTURE, PIPE_RUN, DRAIN_POINT]
+
+min_checked_share: 1.0
+result_file: MEP_RESULT.md

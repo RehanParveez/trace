@@ -1,0 +1,4 @@
+required_gates: [14, 15, 16, 17, 18, 19, 20]
+result_file: K_RESULT.md
+k_packs: [K1, K2, K3, K4, K5, K6, K7, K8, K9]
+packs_note: "K-7 (MEP by measurement) waits for checked MEP truth; until its generality record exists this report says nothing about MEP."

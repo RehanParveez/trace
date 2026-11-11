@@ -1,0 +1,31 @@
+cards:
+  - id: WIRE_PER_POINT
+    name: "Wire per electrical point (light, fan or socket), metres of conductor"
+    unit: m_per_point
+    scope: [H, P]
+    question: "How many metres of PVC-insulated copper wire (1.5 mm2 and 2.5 mm2) are allowed per electrical point (a light, fan or socket point) in building estimates in Pakistan, or in the CPWD or PWD rate analyses that Pakistani schedules follow?"
+  - id: POINTS_PER_ROOM
+    name: "Electrical points per room in a house"
+    unit: points_per_room
+    scope: [H, P]
+    question: "How many electrical points (lights, fans and sockets together) per room are normally provided in residential building estimates in Pakistan, or recommended by the Pakistan Engineering Council or the CPWD norms?"
+  - id: WASTAGE_TILES
+    name: "Wastage allowance on floor and wall tiles, percent"
+    unit: percent
+    scope: [H, P]
+    question: "What wastage percentage is allowed on floor and wall tiles in the Punjab MRS, other Pakistani rate analyses, or CPWD norms?"
+  - id: WASTAGE_MARBLE
+    name: "Wastage allowance on marble and granite flooring, percent"
+    unit: percent
+    scope: [H, P]
+    question: "What wastage percentage is allowed on marble or granite flooring slabs in the Punjab MRS, other Pakistani rate analyses, or CPWD norms?"
+  - id: WASTAGE_PLASTER
+    name: "Wastage allowance on cement plaster, percent"
+    unit: percent
+    scope: [H, P]
+    question: "What wastage or allowance percentage is added to the material of cement sand plaster in the Punjab MRS, other Pakistani rate analyses, or CPWD norms?"
+  - id: WASTAGE_PAINT
+    name: "Wastage allowance on paint, percent"
+    unit: percent
+    scope: [H, P]
+    question: "What wastage percentage is allowed on paint (emulsion, distemper or enamel) materials in the Punjab MRS, other Pakistani rate analyses, or CPWD norms?"

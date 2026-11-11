@@ -141,3 +141,11 @@ def write_schedules(out_dir: str, cases: list) -> int:
         fh.write("\n")
       n += 1
   return n
+
+def write_sanity(out_dir: str, cases: list) -> int:
+  """sanity.json beside bench.md: the sanity ratios of each set, which the K result report reads."""
+  got = {c["name"]: c["sanity"] for c in cases if c.get("sanity")}
+  with open(os.path.join(out_dir, "sanity.json"), "w", encoding="utf-8", newline="\n") as fh:
+    json.dump(got, fh, indent=1, sort_keys=True, ensure_ascii=False)
+    fh.write("\n")
+  return len(got)

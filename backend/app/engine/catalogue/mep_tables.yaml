@@ -1,0 +1,10 @@
+wires:
+  source: "Build File K runbook, K-7 step 3: wire designations 3/0.029 and 7/0.029"
+  status: FROM_RUNBOOK
+  sizes_mm2: {"3/0.029": 1.5, "7/0.029": 2.5}
+conduit:
+  source: "AJK specification Table 30.3(a), as quoted in Build File K runbook, K-7 step 4"
+  status: FROM_RUNBOOK
+  fill:
+    20: {"1.5": 6, "2.5": 4}
+    25: {"1.5": 13, "2.5": 9}

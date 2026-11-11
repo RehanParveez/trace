@@ -125,6 +125,15 @@ def placement_problems(root: pathlib.Path) -> list:
           home = here.parent.relative_to(top).as_posix()
           out.append(f"{(here / name).relative_to(top).as_posix()} is a module inside a prompts folder, which holds __init__.py and .yaml files only; it belongs at {home}/{name}")
 
+  if app.is_dir():
+    for folder, dirs, names in os.walk(app):
+      dirs[:] = [d for d in dirs if d not in ("__pycache__", "proof")]
+      for name in sorted(names):
+        if name.endswith(".py"):
+          p = pathlib.Path(folder) / name
+          if "standards_draft" in p.read_text(encoding="utf8", errors="replace"):
+            out.append(f"{p.relative_to(top).as_posix()} names standards_draft; the web drafts are read inside proof/ only, never by a run")
+
   if (top / ".git").exists():
     try:
       got = subprocess.run(["git", "--no-optional-locks", "-C", str(top), "ls-files", "-ci", "--exclude-standard"], capture_output=True, text=True, timeout=60).stdout.splitlines()
