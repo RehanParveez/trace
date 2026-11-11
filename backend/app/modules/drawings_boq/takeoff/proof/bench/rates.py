@@ -4,11 +4,14 @@ import hashlib
 import os
 import re
 import sys
+from app.engine.catalogue import choices as CH
 from app.engine.catalogue import loader as CL
 from app.modules.drawings_boq import boq_logic as LOGIC
 from app.modules.drawings_boq.pricing import mrs_import as MI
 from app.modules.drawings_boq.pricing import rate_profile as RP
 from app.modules.drawings_boq.takeoff.proof.answers import answers as AN
+from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from app.modules.drawings_boq.takeoff.questions import answers as QAN
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RATES = os.path.join(HERE, "rates.yaml")
@@ -42,14 +45,17 @@ def entries_for(item) -> list:
   keys = {y.qty for y in item.yields if LOGIC.normalise_unit(y.unit) == want}
   return [b for b in item.billing.MRS_PB if b.qty in keys]
 
-def rate_for(item, codes: dict) -> tuple:
+def rate_for(item, codes: dict, chosen: dict | None = None) -> tuple:
   if not item.billing.MRS_PB:
     return None, "NO_MRS_CODE"
   named = sorted({b.item for b in entries_for(item)})
   if not named:
     return None, "NO_CODE_FOR_UNIT"
   if len(named) > 1:
-    return None, "SEVERAL_CODES"
+    pick = (chosen or {}).get(item.id)
+    if pick not in named:
+      return None, "SEVERAL_CODES"
+    named = [pick]
   code = named[0]
   rows = codes.get(code) or []
   if not rows:
@@ -68,11 +74,11 @@ def rate_for(item, codes: dict) -> tuple:
     return None, "UNIT_CANNOT_CONVERT"
   return {"unit": LOGIC.normalise_unit(item.unit), "rate": float(per), "mrs": code}, None
 
-def build(rows: list, name: str, digest: str) -> dict:
+def build(rows: list, name: str, digest: str, chosen: dict | None = None) -> dict:
   codes = by_code(rows)
   priced, no_rate, reasons = {}, [], {}
   for item in CL.items():
-    got, why = rate_for(item, codes)
+    got, why = rate_for(item, codes, chosen)
     if got is None:
       no_rate.append(item.id)
       reasons[item.id] = why
@@ -120,6 +126,7 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--book", help="the rate book PDF")
   ap.add_argument("--books-dir", help="a folder of rate books; with --match the newest PDF whose name has that word is used")
   ap.add_argument("--match")
+  ap.add_argument("--case", help="a case folder name: its decisions.yaml choice answers say which rate-book item an item billed under several is priced under")
   ap.add_argument("--name", help="the book's name as it goes in the file (default: the file name)")
   ap.add_argument("--province", required=True)
   ap.add_argument("--city", required=True)
@@ -133,9 +140,12 @@ def main(argv: list | None = None) -> int:
     print("give --book, or --books-dir with --match")
     return 2
   rows, digest, report = book_rows(path, a.first_page, a.last_page, a.province, a.city)
-  doc = build(rows, a.name or os.path.splitext(os.path.basename(path))[0], digest)
+  chosen = CH.billing_items(QAN.split_case(CIO.load_decisions(os.path.join(CIO.HERE, a.case)))[1]) if a.case else None
+  doc = build(rows, a.name or os.path.splitext(os.path.basename(path))[0], digest, chosen)
   for ln in lines_of(doc, report, shares_doc()):
     print(ln)
+  for ln in CH.problems(None, set(by_code(rows))):
+    print("  choice card: " + ln)
   if a.write:
     AN.write_yaml(a.out, doc)
     print(f"wrote {a.out}")

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-INPUT, CONFIRM, CONFLICT, METHOD, SUPPLY = "INPUT", "CONFIRM", "CONFLICT", "METHOD", "SUPPLY"
-KINDS = (INPUT, CONFIRM, CONFLICT, METHOD, SUPPLY)
+INPUT, CONFIRM, CONFLICT, METHOD, SUPPLY, CHOICE, SITE = "INPUT", "CONFIRM", "CONFLICT", "METHOD", "SUPPLY", "CHOICE", "SITE"
+KINDS = (INPUT, CONFIRM, CONFLICT, METHOD, SUPPLY, CHOICE, SITE)
 ACCEPT, REJECT = "ACCEPT", "REJECT"
 PRINTED, DRAWN = "PRINTED", "DRAWN"
 NOT_IN_SCOPE = "NOT_IN_SCOPE"
 HEIGHT_INPUT = "height"
-FIRST = {"storeys": INPUT, "inputs": INPUT, "reading": CONFIRM, "conflict": CONFLICT, "method": METHOD, "sets": SUPPLY, "sheets": SUPPLY}
+FIRST = {"storeys": INPUT, "inputs": INPUT, "reading": CONFIRM, "conflict": CONFLICT, "method": METHOD, "choice": CHOICE, "site": SITE, "sets": SUPPLY, "sheets": SUPPLY}
 
 def input_key(about: str, floor: str | None = None) -> str:
   return "storeys.ALL.ftf_mm" if about == HEIGHT_INPUT else f"inputs.{about}"
@@ -23,6 +23,12 @@ def conflict_key(cls: str, mark: str | None) -> str:
 
 def method_key(mid: str) -> str:
   return f"method.{mid}"
+
+def choice_key(card_id: str) -> str:
+  return f"choice.{card_id}"
+
+def site_key(site_id: str) -> str:
+  return f"site.{site_id}"
 
 def sets_key(name: str) -> str:
   return f"sets.{name}"

@@ -5,6 +5,7 @@ from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.completeness import derived_rules as DR
 from app.modules.drawings_boq.takeoff.completeness import expected as EX
 from app.modules.drawings_boq.takeoff.completeness import facts as F
+from app.modules.drawings_boq.takeoff.completeness import site_state as SS
 from app.modules.drawings_boq.takeoff.questions import keys as QK
 
 MEASURED, ASSUMED, ASKED, NOT_APPLICABLE, NOT_READ = CM.STATES
@@ -369,13 +370,13 @@ def build(items: list, facts: dict, evidence: dict, conventions: list | None = N
   entries: dict = {}
   plain = [it for it in items if not it.derived]
   for it in plain:
-    entries[it.id] = _single(it, facts, evidence, scope, entries, ctx)
+    entries[it.id] = SS.apply(it, _single(it, facts, evidence, scope, entries, ctx), ctx, evidence)
   pending = [it for it in items if it.derived]
   derived_ids = {it.id for it in pending}
   while pending:
     ready = [it for it in pending if all(sid not in derived_ids or sid in entries for sid in _from_ids(it))] or pending
     for it in ready:
-      entries[it.id] = _single(it, facts, evidence, scope, entries, ctx)
+      entries[it.id] = SS.apply(it, _single(it, facts, evidence, scope, entries, ctx), ctx, evidence)
     pending = [it for it in pending if it.id not in entries]
   order = {it.id: n for n, it in enumerate(items)}
   out = [e for rows in entries.values() for e in rows]

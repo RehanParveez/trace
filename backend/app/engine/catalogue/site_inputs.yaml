@@ -1,0 +1,67 @@
+site_inputs:
+  - id: EXCAVATION_DEPTH
+    label: "Depth of excavation"
+    asks: "How deep below natural ground is the bottom of the foundation excavation, in millimetres? The drawing does not print it; it depends on the site."
+    shape: NUMBER
+    unit: mm
+    bounds: [300.0, 6000.0]
+    fallback: {kind: RANGE, low: 914.4, typical: 1066.8, high: 1219.2, source: "M. Junaid, sitting of 10 Nov 2026: his typical 3 to 4 ft (3.5 ft typical)"}
+    proportional: true
+    waits: [EW-02, EW-03, EW-04, EW-06, EW-16]
+    feeds: {footing_bottom_below_ngl_mm: 1.0}
+    read: {key: EXCAVATION_DEPTH, scope: foundation}
+  - id: NATURAL_GROUND
+    label: "Natural ground against the floor level"
+    asks: "How far below the finished floor level of the ground floor is the natural ground, in millimetres? The plinth is printed as 1 ft or 2 ft above the road; the ground itself is on site."
+    shape: NUMBER
+    unit: mm
+    bounds: [-2000.0, 3000.0]
+    fallback: null
+    proportional: false
+    waits: [EW-07, EW-09, MS-03]
+    feeds: {ngl_below_ffl_mm: 1.0}
+    read: null
+  - id: SOIL_REUSE
+    label: "Excavated soil: reuse"
+    asks: "Is the excavated soil reused as back fill, or taken away and back fill brought in?"
+    shape: CHOICE
+    fallback: {kind: OPTION, typical: REUSE, source: "M. Junaid, sitting of 10 Nov 2026: excavated soil reused"}
+    proportional: false
+    waits: [EW-06, EW-10]
+    options:
+      REUSE: {text: "The excavated soil is reused as back fill.", params: {fill_from_excavation: 1.0}}
+      HAUL: {text: "The excavated soil is taken away; back fill is brought in.", params: {fill_from_excavation: 0.0}}
+    read: null
+  - id: WORKING_SPACE
+    label: "Room for working space"
+    asks: "Is there room for working space on both sides of the trench, or on one side only (a tight plot)?"
+    shape: CHOICE
+    fallback: {kind: OPTION, typical: BOTH_SIDES, source: "M. Junaid, sitting of 10 Nov 2026: 1 ft on both sides"}
+    proportional: false
+    waits: [EW-02, EW-03, EW-04, EW-06]
+    options:
+      BOTH_SIDES: {text: "1 ft working space on both sides of the trench.", params: {working_space_mm: 304.8}}
+      ONE_SIDE: {text: "1 ft working space on one side only. The engine takes one working space for both sides, so this answer is recorded and changes no quantity.", params: {}}
+    read: null
+  - id: LEAD_CARRIAGE
+    label: "Lead and carriage distance"
+    asks: "What is the distance in metres from the supplier or the stockyard to the site (lead), for the carriage items?"
+    shape: NUMBER
+    unit: m
+    bounds: [1.0, 2000.0]
+    fallback: {kind: NOT_BILLED, source: "M. Junaid, sitting of 10 Nov 2026: carriage is not billed until the distance is known"}
+    proportional: false
+    waits: [NR-04]
+    feeds: {}
+    read: null
+  - id: EXISTING_WORKS
+    label: "Existing works to remove"
+    asks: "Is there an existing structure, wall or tree on the plot that the contract removes?"
+    shape: CHOICE
+    fallback: {kind: NOT_BILLED, source: "M. Junaid, sitting of 10 Nov 2026: dismantling is not billed unless the site has existing works"}
+    proportional: false
+    waits: [NR-09]
+    options:
+      NONE: {text: "Nothing is to be removed.", params: {}}
+      REMOVE: {text: "Existing works are removed under the contract. Trace does not measure them; the answer is recorded for the client page.", params: {}}
+    read: null

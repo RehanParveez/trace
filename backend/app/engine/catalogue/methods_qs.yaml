@@ -1,4 +1,4 @@
-aspects: [deductions, faces, heights, laps, wastage, working_space, projections]
+aspects: [deductions, faces, heights, laps, wastage, working_space, projections, sources]
 
 profiles:
   - id: QS_JUNAID
@@ -93,6 +93,36 @@ profiles:
         rule: {key: pcc_thickness_mm, scope: {}, value: 76.2}
         source: {kind: QS, name: "M. Junaid", date: "2026-10-22", reading: Q23}
       
+      - id: SPACE-WORKING-1FT
+        aspect: working_space
+        item: EW-02
+        says: "An excavation has 1 ft of working space each side; 1 ft on one side only where the plot leaves no room."
+        rule: {key: working_space_mm, scope: {}, value: 304.8}
+        source: {kind: QS, name: "M. Junaid", date: "2026-11-10", reading: K-B17}
+      - id: HEIGHT-PLASTER-INSIDE-HALF-INCH
+        aspect: heights
+        item: PL-01
+        says: "Plaster inside is 12 to 13 mm where no sheet prints a thickness (taken as half an inch, 12.7 mm)."
+        rule: {key: plaster_inside_mm, scope: {}, value: 12.7}
+        source: {kind: QS, name: "M. Junaid", date: "2026-11-10", reading: K-B20}
+      - id: HEIGHT-PLASTER-OUTSIDE-HALF-INCH
+        aspect: heights
+        item: PL-02
+        says: "Plaster outside is 12 to 13 mm where no sheet prints a thickness (taken as half an inch, 12.7 mm)."
+        rule: {key: plaster_outside_mm, scope: {}, value: 12.7}
+        source: {kind: QS, name: "M. Junaid", date: "2026-11-10", reading: K-B20}
+      - id: HEIGHT-PLASTER-CEILING-HALF-INCH
+        aspect: heights
+        item: PL-03
+        says: "Plaster on a ceiling is 12 to 13 mm where no sheet prints a thickness (taken as half an inch, 12.7 mm)."
+        rule: {key: plaster_ceiling_mm, scope: {}, value: 12.7}
+        source: {kind: QS, name: "M. Junaid", date: "2026-11-10", reading: K-B20}
+      - id: FILL-LAYERS-6IN
+        aspect: heights
+        item: EW-09
+        says: "Earth under floors is filled in 6 in layers."
+        rule: {key: fill_layer_mm, scope: {}, value: 152.4}
+        source: {kind: QS, name: "M. Junaid", date: "2026-11-10", reading: K-C3}
       - id: WASTE-STEEL-5PCT
         aspect: wastage
         item: RF-01
@@ -147,6 +177,33 @@ open:
   - {id: OPEN-PCC-PROJECTION, aspect: working_space, item: EW-13, question: "Projection of the PCC bed beyond the footing", trace: "100 mm a side", standard: null, asked: "Q23"}
   - {id: OPEN-ROOF-CHAMFER, aspect: projections, item: DP-11, question: "Size of the small chamfer at the parapet", trace: "not measured", standard: null, asked: "R12"}
   - {id: OPEN-TANK-SLABS, aspect: heights, item: RC-18, question: "Tank slab thickness: 6 in on the sheet, 8 in answered", trace: "6 in top, 8 in bottom (tank_top_slab_mm, tank_bottom_slab_mm)", standard: null, asked: "S11"}
+  - {id: OPEN-STEEL-NO-ESTIMATE, aspect: laps, item: RF-02, question: "Steel where the bars are not printed: never from the concrete volume (10 Nov) or 1.5 kg per sq ft (22 Oct, LAP-SLAB-STEEL-RULE). Which stands?", trace: "steel_estimate_from_volume on; the slab rule 1.5 kg per sq ft; each such line flagged ASSUMED", standard: null, asked: "B23, S16"}
+  - {id: OPEN-LINTEL-BEARING, aspect: heights, item: RC-13, question: "Lintel bearing about 1 ft each side (a 2.5 ft door gives about 4.5 ft), type by span from the drawing's lintel table. Is the lintel length the opening plus the bearing at each end?", trace: "lintel_bearing_mm 152.4 is held and no quantity reads it; the formwork bearing is 6 in", standard: null, asked: "B15"}
+  - {id: OPEN-PAINT-COATS, aspect: faces, item: ALL, question: "Paint coats: 1 primer, 2 putty, 3 paint as he said? That is more than most house bills carry", trace: "not held", standard: null, asked: "B29"}
+  - {id: OPEN-TERMITE-TRENCH-SIDES, aspect: faces, item: DP-04, question: "Termite: footprint only, or trenches on two sides as well? He said both", trace: "FACE-TERMITE-FOOTPRINT: footprint and floors, the sides of the excavation are not treated", standard: null, asked: "C4"}
+  - {id: OPEN-WORKING-SPACE-TIGHT-PLOT, aspect: working_space, item: EW-02, question: "Working space is 1 ft on one side only where the plot leaves no room: which plots, and who says so on a job?", trace: "one value for every side; a site question for K-5", standard: null, asked: "B17"}
+  - {id: OPEN-EARTH-SHRINKAGE, aspect: wastage, item: EW-06, question: "Shrinkage of filled earth: his rule of 22 Oct is none; the MRS deducts 10 percent from bank measurement. Show both on the line?", trace: "WASTE-NO-SWELL: no swell, no compaction extra", standard: "Standard: Punjab MRS Bahawalpur 2026-2, ch. 3 note 2, assumed until K-2's pin", asked: "Q24"}
+  - {id: SRC-B1, aspect: sources, item: ALL, question: "Floor-to-floor height: read from the drawing, on the section; the external plaster takes the slab, the inside brick stops under the slab or beam; ask when it is not printed", trace: "the convention PK_STOREY_DEFAULT (10 ft 9 in), a Trace seed", standard: null, asked: "B1"}
+  - {id: SRC-B2, aspect: sources, item: ALL, question: "Basement floor-to-floor height: read from the drawing, on the drawing; ask when it is not printed", trace: "the case rules of the set", standard: null, asked: "B2"}
+  - {id: SRC-B3, aspect: sources, item: ALL, question: "Plinth above the road and natural ground: read from the drawing, on the drawing, as plus 1 ft or plus 2 ft; ask when it is not printed", trace: "not read as a parameter", standard: null, asked: "B3"}
+  - {id: SRC-B4, aspect: sources, item: ALL, question: "Mumty height: read from the drawing, on the drawing; ask when it is not printed", trace: "read from the elevation", standard: null, asked: "B4"}
+  - {id: SRC-B5, aspect: sources, item: ALL, question: "Parapet height: read from the drawing, on the drawing; ask when it is not printed", trace: "the rule stage.parapet_height_mm (914.4 mm)", standard: null, asked: "B5"}
+  - {id: SRC-B7, aspect: sources, item: ALL, question: "Lintel level, door and window heights: read from the drawing, on the drawing; ask when it is not printed", trace: "the opening reader", standard: null, asked: "B7"}
+  - {id: SRC-B8, aspect: sources, item: ALL, question: "Sill height: read from the drawing, on the drawing; ask when it is not printed", trace: "read where printed", standard: null, asked: "B8"}
+  - {id: SRC-B9, aspect: sources, item: ALL, question: "Roof and floor slab thickness: read from the drawing, on the drawing; ask when it is not printed", trace: "the key SLAB_THICKNESS has no consumer; method HEIGHT-SLAB-6IN", standard: null, asked: "B9"}
+  - {id: SRC-B10, aspect: sources, item: ALL, question: "Wall thicknesses: read from the drawing, on the drawing; ask when it is not printed", trace: "the wall reader", standard: null, asked: "B10"}
+  - {id: SRC-B12, aspect: sources, item: ALL, question: "Strip footing width: read from the drawing, on the drawing, which says which foundation it is; ask when it is not printed", trace: "the wall foundation recipe", standard: null, asked: "B12"}
+  - {id: SRC-B13, aspect: sources, item: ALL, question: "PCC under footings and floors: read from the drawing, on the drawing; ask when it is not printed", trace: "the key PCC_THICKNESS has no consumer; method HEIGHT-PCC-3IN", standard: null, asked: "B13"}
+  - {id: SRC-B14, aspect: sources, item: ALL, question: "Plinth beam size: read from the drawing, on the drawing; ask when it is not printed", trace: "the beam reader", standard: null, asked: "B14"}
+  - {id: SRC-B15, aspect: sources, item: ALL, question: "Lintel depth and type: read from the drawing, the depth on the drawing, the type by span from its table; ask when it is not printed", trace: "not read", standard: null, asked: "B15"}
+  - {id: SRC-B16, aspect: sources, item: ALL, question: "Brick footing steps and offsets: read from the drawing, in the foundation detail; ask when it is not printed", trace: "open (AR-1d)", standard: null, asked: "B16"}
+  - {id: SRC-B18, aspect: sources, item: ALL, question: "Floor build-up: read from the drawing, on the drawing; ask when it is not printed", trace: "the finish recipes", standard: null, asked: "B18"}
+  - {id: SRC-B19, aspect: sources, item: ALL, question: "Roof build-up: read from the drawing, in the architecture drawing; ask when it is not printed", trace: "the roof deck recipe", standard: null, asked: "B19"}
+  - {id: SRC-B21, aspect: sources, item: ALL, question: "Dado and kitchen backsplash: read from the drawing, on the drawing (tile to 7 ft, for example); ask when it is not printed", trace: "not read as a parameter", standard: null, asked: "B21"}
+  - {id: SRC-B22, aspect: sources, item: ALL, question: "Skirting height: read from the drawing, on the drawing, 4 in or 6 in; ask when it is not printed", trace: "not read", standard: null, asked: "B22"}
+  - {id: SRC-B23, aspect: sources, item: ALL, question: "Steel: read from the drawing, from the drawing only, never from the concrete volume; ask when it is not printed", trace: "the estimate from volume is on; see OPEN-STEEL-NO-ESTIMATE", standard: null, asked: "B23"}
+  - {id: SRC-B30, aspect: sources, item: ALL, question: "Concrete strength: read from the drawing, on the drawing, 3,000 or 4,000 psi; ask when it is not printed", trace: "the key CONCRETE_CLASS has no consumer", standard: null, asked: "B30"}
+  - {id: SRC-B37, aspect: sources, item: ALL, question: "Fixtures per bath and kitchen: read from the drawing, from the MEP drawing, with the valves; ask when it is not printed", trace: "the legend reader (AR-2)", standard: null, asked: "B37"}
 
 building_facts:
   - neck_height_mm

@@ -69,6 +69,12 @@ rules:
   - {key: convention.PK_STEEL_WASTAGE_PCT, value: 0.0, unit: null, cls: JUDGEMENT}
   - {key: convention.PK_SLAB_STEEL_KG_PER_M2, value: 0.0, unit: null, cls: JUDGEMENT}
   - {key: convention.PK_BINDING_WIRE_PCT, value: 0.0, unit: null, cls: JUDGEMENT}
+  - {key: convention.PK_BINDING_WIRE_KG_PER_T, value: 0.0, unit: null, cls: JUDGEMENT}
+  - {key: working_space_mm, value: 76.2, unit: "mm", cls: JUDGEMENT}
+  - {key: plaster_inside_mm, value: 12.7, unit: "mm", cls: JUDGEMENT}
+  - {key: plaster_outside_mm, value: 19.05, unit: "mm", cls: JUDGEMENT}
+  - {key: plaster_ceiling_mm, value: 9.525, unit: "mm", cls: JUDGEMENT}
+  - {key: fill_layer_mm, value: 152.4, unit: "mm", cls: JUDGEMENT}
 
   - {key: working_space_qs_mm, value: 304.8, unit: "mm", cls: JUDGEMENT}
   - {key: props_step_mm, value: 1000.0, unit: "mm", cls: JUDGEMENT}

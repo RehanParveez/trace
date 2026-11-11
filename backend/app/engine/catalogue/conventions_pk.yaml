@@ -53,6 +53,15 @@ conventions:
     scope: [H, P]
     engine_key: null
     fills: [RF-03.binding_percent]
+  - id: PK_BINDING_WIRE_KG_PER_T
+    name: "Binding wire in kg for each tonne of steel"
+    value: 3.5
+    unit: kg_per_tonne
+    range: [2.0, 10.0]
+    source: {kind: QS_CONVENTION, label: "QS convention v1, 2026", note: "His 10 Nov 2026 answer B25: 3.5 kg a tonne of steel, which is 0.35 percent, for a material list. The MRS rate 6-12 includes the binding wire in the steel rate, so the figure shows only in the material schedule (K-6). The range 2 to 10 kg is a Trace estimate: the low end is below his figure, the high end is the 8 to 10 kg a tonne that Indian sites print. Nothing reads this figure yet; PK_BINDING_WIRE_PCT stays until K-6 reads this one."}
+    scope: [H, P]
+    engine_key: null
+    fills: []
 methods:
   - id: backfill_method
     item: EW-06

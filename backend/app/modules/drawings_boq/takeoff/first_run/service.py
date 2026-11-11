@@ -17,6 +17,7 @@ from app.modules.drawings_boq.takeoff.run import first_run_bindings as FR
 from app.modules.drawings_boq.takeoff.questions import answers as AN
 from app.modules.drawings_boq.takeoff.service import TakeoffService
 from app.shared.storage import download_to_path
+from app.modules.audit.models import AuditAction
 
 META_REPORT = "first_run"
 

@@ -23,8 +23,8 @@ class QuestionDefault(BaseModel):
   switched_on: bool = False
 
 class QuestionItem(BaseModel):
-  key: str = Field(description="storeys.ALL.ftf_mm, inputs.<input>, reading.<class>, conflict.<class>.<mark>, method.<id>, sets.<set> or sheets.<kind>.")
-  kind: str = Field(description="INPUT, CONFIRM, CONFLICT, METHOD or SUPPLY.")
+  key: str = Field(description="storeys.ALL.ftf_mm, inputs.<input>, reading.<class>, conflict.<class>.<mark>, method.<id>, choice.<card>, site.<input>, sets.<set> or sheets.<kind>.")
+  kind: str = Field(description="INPUT, CONFIRM, CONFLICT, METHOD, SUPPLY, CHOICE or SITE.")
   prompt: str
   why: str
   unit: str | None = None

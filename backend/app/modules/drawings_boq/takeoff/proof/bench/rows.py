@@ -2,6 +2,7 @@ from __future__ import annotations
 import re
 from app.modules.drawings_boq.lab.aliases import bill_quantity
 from app.modules.drawings_boq.takeoff.proof import score as SC
+from app.modules.drawings_boq.takeoff.proof.bench import money_source as MS
 from app.modules.drawings_boq.takeoff.completeness import ledger as LG
 from app.engine.catalogue import loader as CL
 from app.modules.drawings_boq.takeoff.run import completeness as RC
@@ -103,7 +104,7 @@ def row_of(name: str, office: str, split_by_group: dict, group_of_section: dict,
     "element": entry["element"], "floor": entry["floor"], "state": entry["state"], "unit": unit,
     "trace_qty": None if trace is None else round(trace, 3), "answer_qty": None if ans is None else round(ans, 3),
     "within_10": d is not None and abs(d) <= WITHIN_PCT, "tol_pct": tol, "tol_basis": tol_basis, "within_tol": d is not None and abs(d) <= tol, "diff_pct": None if d is None else round(d, 2),
-    "reasons": list(entry["reasons"]) + ([why] if why else []), "sources": sources_of(entry, joins), "pages": pages_of(entry, evidence, pdfs, kinds)}
+    "reasons": list(entry["reasons"]) + ([why] if why else []), "sources": sources_of(entry, joins), "pages": pages_of(entry, evidence, pdfs, kinds), "money_source": MS.of_entry(entry, evidence)}
 
 def rows_of(name: str, office: str, split_by_group: dict, group_of_section: dict, run: str, ledger: list, answers_doc: dict | None, plain: dict, evidence: dict, pdfs: list) -> tuple:
   answers = answer_table(answers_doc)

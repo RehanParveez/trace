@@ -1,6 +1,7 @@
 from __future__ import annotations
 from uuid import UUID
 from fastapi import APIRouter, Depends
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
@@ -19,6 +20,10 @@ def _org(user: User) -> UUID:
 @router.get("/projects/{project_id}/questions", response_model=QuestionsResponse)
 async def project_questions(project_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db)):
   return await QuestionsService(session).view(_org(current_user), project_id)
+
+@router.get("/projects/{project_id}/questions/client-page", response_class=PlainTextResponse)
+async def client_page(project_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db)):
+  return PlainTextResponse(await QuestionsService(session).client_page(_org(current_user), project_id), media_type="text/markdown; charset=utf-8")
 
 @router.post("/projects/{project_id}/questions/{qid}/answer", response_model=QuestionsResponse)
 async def answer_question(project_id: UUID, qid: str, payload: AnswerRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db)):

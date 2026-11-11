@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime, timezone
 from uuid import UUID
 from app.core.exceptions import TraceException
 from app.engine.catalogue import conventions as CV
@@ -7,6 +8,7 @@ from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq import company_conventions as CCV
 from app.modules.drawings_boq.takeoff.completeness import ledger as LG
 from app.modules.drawings_boq.takeoff.questions import answers as AN
+from app.modules.drawings_boq.takeoff.questions import client_page as CP
 from app.modules.drawings_boq.takeoff.questions import engine as QE
 from app.modules.drawings_boq.takeoff.service import TakeoffService
 
@@ -30,6 +32,9 @@ class QuestionsService(TakeoffService):
     for q in questions:
       by_state[q["state"]] = by_state.get(q["state"], 0) + 1
     return {"project_id": project_id, "has_ledger": True, "questions": questions, "open": by_state.get(QE.OPEN, 0), "by_state": by_state}
+
+  async def client_page(self, org: UUID, project_id: UUID) -> str:
+    return CP.render(await self.view(org, project_id), None, datetime.now(timezone.utc).date().isoformat())
 
   async def answer(self, org: UUID, user_id: UUID, project_id: UUID, key: str, value: str | None) -> dict:
     view = await self.view(org, project_id)

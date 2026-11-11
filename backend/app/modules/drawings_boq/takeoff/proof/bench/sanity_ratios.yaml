@@ -1,0 +1,13 @@
+covered_area:
+
+  families: [CEILING_PLASTER, FIN-FLOOR]
+cost_groups:
+  grey: [EW, RC, RF, MS]
+  finishing: [PL, FL, DW]
+ratios:
+  - {id: G8, name: "Steel per sft covered", unit: "kg/sft", needs: steel_kg, range: null, source: null}
+  - {id: G9, name: "Concrete per sft covered", unit: "cft/sft", needs: concrete_cft, range: null, source: null}
+  - {id: G10, name: "Bricks per sft covered", unit: "nos/sft", needs: bricks, range: null, source: null}
+  - {id: G11, name: "Cement per sft covered", unit: "bags/sft", needs: cement_bags, range: null, source: null}
+  - {id: G12, name: "Grey cost per sft covered", unit: "PKR/sft", needs: grey_cost, range: null, source: null}
+  - {id: G13, name: "Finishing cost per sft covered", unit: "PKR/sft", needs: finishing_cost, range: null, source: null}

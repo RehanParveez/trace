@@ -6,7 +6,7 @@ import yaml
 from app.engine.catalogue import loader as CAT
 
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "methods_qs.yaml")
-ASPECTS = ("deductions", "faces", "heights", "laps", "wastage", "working_space", "projections")
+ASPECTS = ("deductions", "faces", "heights", "laps", "wastage", "working_space", "projections", "sources")
 QS, WORKBOOK, STANDARD = "QS", "WORKBOOK", "STANDARD"
 METHOD, FACT, CHOICE = "METHOD", "FACT", "CHOICE"
 MARKER_KEY = "qs_method.profile"

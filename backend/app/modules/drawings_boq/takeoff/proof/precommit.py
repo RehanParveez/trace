@@ -80,6 +80,10 @@ def step_methods() -> tuple:
   from app.modules.drawings_boq.takeoff.proof import methods_check as MC
   return MC.gate()
 
+def step_standards(books_dir: str | None) -> tuple:
+  from app.modules.drawings_boq.takeoff.proof import standards_check as SC
+  return SC.gate(books_dir)
+
 def step_track() -> tuple:
   from app.modules.drawings_boq.takeoff.proof.bench import track_record as TR
   return TR.gate()
@@ -210,12 +214,13 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--cases-dir", help="the folder with the case PDFs (default: TRACE_CASES_DIR)")
   ap.add_argument("--out", default="score_out")
   ap.add_argument("--no-toggles", action="store_true", help="skip the convention toggle proofs inside the gates")
+  ap.add_argument("--books-dir", help="the folder with the MRS rate book PDFs (default: TRACE_BOOKS_DIR); with none, the standards step checks the library and compares no book")
   ap.add_argument("--fast", action="store_true", help="what the commit hook runs: every step except the gates and the pinned baseline, which need the PDFs and take about 40 minutes")
   args = ap.parse_args(argv)
   cases_dir = CIO.cases_dir(args.cases_dir)
   
   steps = [("commit hook", step_hook), ("settings", step_settings), ("prompts", step_prompts), ("placement", step_placement), ("import check", step_import), ("case files", step_files),
-    ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys), ("gate 17", step_gate17), ("catalogue", step_catalogue), ("item roads", step_roads), ("qs methods", step_methods), ("qs truth", step_truth), ("ai switch", step_ai_switch), ("track record", step_track)]
+    ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys), ("gate 17", step_gate17), ("catalogue", step_catalogue), ("item roads", step_roads), ("qs methods", step_methods), ("standards", lambda: step_standards(args.books_dir)), ("qs truth", step_truth), ("ai switch", step_ai_switch), ("track record", step_track)]
   if not args.fast:
     steps += [("gates", lambda: step_gates(cases_dir, args.out, args.no_toggles)), ("baseline", lambda: step_baseline(cases_dir, args.out))]
   for name, run in steps:

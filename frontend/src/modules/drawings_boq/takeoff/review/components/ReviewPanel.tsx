@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button } from "../../../../organizations/components/OrganizationUi";
-import type { ReviewAction, ReviewRow } from "../types/review.types";
+import type { ReviewAction, ReviewOption, ReviewRow } from "../types/review.types";
 import { KIND_TEXT, lineQuantity, moneyText, REASON_TEXT, reasonsFor, SOURCE_TEXT, SOURCE_TONE } from "../utils/review";
 import { ReviewCrop } from "./ReviewCrop";
 
@@ -25,20 +25,22 @@ function ReasonSelect({ reasons, value, onChange, testId }: { reasons: string[];
   );
 }
 
-function CorrectBox({ spec, busy, reasons, onSend }: { spec: ReviewAction; busy: boolean; reasons: string[]; onSend: (value: string, reason: string | null) => void }) {
+function CorrectBox({ spec, busy, reasons, options, onSend }: { spec: ReviewAction; busy: boolean; reasons: string[]; options: ReviewOption[]; onSend: (value: string, reason: string | null) => void }) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
   const [reason, setReason] = useState("");
+  const picked = options.find((o) => o.value === value);
   return (
     <div className="flex flex-wrap items-center gap-2">
       {spec.choices.length > 0 ? (
         <select className="min-h-9 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-[13px]" value={value} onChange={(e) => setValue(e.target.value)} data-testid="review-choice">
           <option value="">{t("boq.review.pick", "Pick a value")}</option>
-          {spec.choices.map((c) => <option key={c} value={c}>{c}</option>)}
+          {spec.choices.map((c) => <option key={c} value={c}>{options.find((o) => o.value === c)?.label ?? c}</option>)}
         </select>
       ) : (
         <input className="min-h-9 w-40 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-[13px]" value={value} onChange={(e) => setValue(e.target.value)} placeholder={t("boq.review.value", "Value")} data-testid="review-value" />
       )}
+      {picked && picked.text ? <span className="basis-full text-[12px] text-[var(--color-text-secondary)]" data-testid="review-option-text">{picked.text}</span> : null}
       <ReasonSelect reasons={reasons} value={reason} onChange={setReason} testId="review-correct-reason" />
       <Button size="sm" disabled={busy || value.trim() === ""} onClick={() => onSend(value.trim(), reason || null)}>{t("boq.review.correct", "Correct")}</Button>
     </div>
@@ -97,7 +99,7 @@ export function ReviewPanel({ row, canEdit, busy, onAct }: Props) {
             {fixed.some((a) => a.action === "reject") ? <ReasonSelect reasons={reasonsFor(row, "reject")} value={rejectReason} onChange={setRejectReason} testId="review-reject-reason" /> : null}
             {row.decision ? <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAct("withdraw", null)}>{t("boq.review.withdraw", "Take the decision back")}</Button> : null}
           </div>
-          {correct ? <CorrectBox key={row.key} spec={correct} busy={busy} reasons={reasonsFor(row, "correct")} onSend={(v, why) => onAct("correct", v, why)} /> : null}
+          {correct ? <CorrectBox key={row.key} spec={correct} busy={busy} reasons={reasonsFor(row, "correct")} options={row.options ?? []} onSend={(v, why) => onAct("correct", v, why)} /> : null}
         </div>
       ) : null}
     </aside>

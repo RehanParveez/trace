@@ -5,7 +5,7 @@ from app.modules.drawings_boq.takeoff.proof.bench import offices as OFF
 
 METHOD_RUN = "PRODUCT_METHOD"
 THIN_BELOW = 0.5
-FIELDS = ["money_pkr", "within_pkr", "money_pct", "confirmed_items", "unpriced_items", "thin"]
+FIELDS = ["money_pkr", "within_pkr", "money_pct", "confirmed_items", "unpriced_items", "thin", "drawn_money_pkr", "drawn_within_pkr", "assumed_money_pkr", "assumed_within_pkr", "assumed_share_pct"]
 THIN = "THIN"
 
 def rate_entry(element: str, rates: dict) -> tuple | None:
@@ -63,6 +63,75 @@ def within_money(rows: list, rates: dict) -> float:
         total += qty * entry[0]
   return total
 
+DRAWN, ASSUMED, NONE = "DRAWN", "ASSUMED", "NONE"
+
+def element_class(rows: list) -> dict:
+  """Where the money of each element rests, from the rows' money_source: ASSUMED when any floor row is, DRAWN when none is and one is drawn, else NONE."""
+  by: dict = {}
+  for r in rows:
+    if r.get("money_source"):
+      by.setdefault(r["element"], set()).add(r["money_source"])
+  return {el: ASSUMED if ASSUMED in cs else DRAWN if DRAWN in cs else NONE for el, cs in by.items()}
+
+def within_by_element(rows: list, rates: dict) -> dict:
+  by: dict = {}
+  for r in rows:
+    by.setdefault(r["element"], []).append(r)
+  out: dict = {}
+  for element, rs in sorted(by.items()):
+    entry = rate_entry(element, rates)
+    if entry is None:
+      continue
+    total = 0.0
+    for r in [r for r in rs if r["floor"] == LG.ALL] or rs:
+      if r["answer_qty"] in (None, 0) or not r["within_tol"]:
+        continue
+      qty = to_rate_unit(float(r["answer_qty"]), r.get("unit"), entry[1])
+      if qty is not None:
+        total += qty * entry[0]
+    out[element] = total
+  return out
+
+def split_fields(rows: list, mine: dict, rates: dict, money: float, defined: bool) -> dict:
+  """The workbook money of the confirmed items split by what Trace's number for each rests on (drawn, assumed, or no number), with the part of each that is within
+  tolerance, and the assumed share of all the money."""
+  cls, within = element_class(rows), within_by_element(rows, rates)
+  b = {DRAWN: [0.0, 0.0], ASSUMED: [0.0, 0.0], NONE: [0.0, 0.0]}
+  for el, m in mine["by_element"].items():
+    c = cls.get(el, NONE)
+    b[c][0] += m
+    b[c][1] += min(within.get(el, 0.0), m)
+  def r2(x):
+    return round(x, 2) if defined else None
+  return {"drawn_money_pkr": r2(b[DRAWN][0]), "drawn_within_pkr": r2(b[DRAWN][1]), "assumed_money_pkr": r2(b[ASSUMED][0]), "assumed_within_pkr": r2(b[ASSUMED][1]),
+    "unread_money_pkr": r2(b[NONE][0]), "assumed_share_pct": round(100.0 * b[ASSUMED][0] / money, 1) if defined else None}
+
+def _pct(w, m) -> str:
+  return "-" if not m else f"{100.0 * w / m:.1f}%"
+
+def source_lines(cases: list, table) -> list:
+  L = ["## Money by source", "",
+    "The money of the confirmed items is split by what Trace's number for each rests on. Drawn money: every input of its lines is the drawing or a user's own figure. Assumed money: at least one input is a standard, a choice default, "
+    "a site fallback, a QS rule or a seed, or the line is ASSUMED or ASKED in the ledger. No number: Trace gives none. First-sight money accuracy on each part is its money within tolerance over its money; the assumed share is assumed money over all money. "
+    "A pack that raises accuracy by assuming more shows here as a rising assumed share.", ""]
+  body, by_office = [], {}
+  for c in cases:
+    v = c["money"]["headline"]
+    if v is None or not v.get("defined") or v.get("drawn_money_pkr") is None:
+      continue
+    body.append([c["name"], c["office"], f"{v['drawn_money_pkr']:,.0f}", _pct(v["drawn_within_pkr"], v["drawn_money_pkr"]), f"{v['assumed_money_pkr']:,.0f}", _pct(v["assumed_within_pkr"], v["assumed_money_pkr"]),
+      f"{v['unread_money_pkr']:,.0f}", f"{v['assumed_share_pct']:.1f}%"])
+    o = by_office.setdefault(c["office"], [0.0] * 5)
+    for n, k in enumerate(("drawn_money_pkr", "drawn_within_pkr", "assumed_money_pkr", "assumed_within_pkr", "unread_money_pkr")):
+      o[n] += v[k]
+  if not body:
+    return L + ["No set has a money figure with a source split yet.", ""]
+  L += table(["Set", "Office", "Drawn money (PKR)", "Accuracy on drawn money", "Assumed money (PKR)", "Accuracy on assumed money", "No number (PKR)", "Assumed share"], body) + [""]
+  total = lambda o: o[0] + o[2] + o[4]
+  L += ["Per office, money-weighted:", ""] + table(["Office", "Drawn money (PKR)", "Accuracy on drawn money", "Assumed money (PKR)", "Accuracy on assumed money", "Assumed share"],
+    [[k, f"{o[0]:,.0f}", _pct(o[1], o[0]), f"{o[2]:,.0f}", _pct(o[3], o[2]), _pct(o[2], total(o))] for k, o in sorted(by_office.items())]) + [""]
+  return L
+
 def of_set(rows: list, answers_doc: dict | None, rates: dict) -> dict:
   items = list((answers_doc or {}).get("items") or [])
   confirmed = [it for it in items if it.get("confirmed")]
@@ -75,11 +144,12 @@ def of_set(rows: list, answers_doc: dict | None, rates: dict) -> dict:
   return {"defined": defined, "money_pkr": round(money, 2) if defined else None, "within_pkr": round(within, 2) if defined else None,
     "money_pct": round(100.0 * within / money, 1) if defined else None, "confirmed_items": len(confirmed), "workbook_items": len(items),
     "unpriced_items": len(mine["unpriced"]), "unpriced": mine["unpriced"], "workbook_pkr": round(book["money"], 2), "confirmed_share_pct": share,
-    "thin": bool(defined and book["money"] and money < THIN_BELOW * book["money"])}
+    "thin": bool(defined and book["money"] and money < THIN_BELOW * book["money"]), **split_fields(rows, mine, rates, money, defined)}
 
 def history_fields(view: dict) -> list:
   return ["" if view["money_pkr"] is None else f"{view['money_pkr']:.2f}", "" if view["within_pkr"] is None else f"{view['within_pkr']:.2f}",
-    "" if view["money_pct"] is None else f"{view['money_pct']:.1f}", view["confirmed_items"], view["unpriced_items"], THIN if view["thin"] else ""]
+    "" if view["money_pct"] is None else f"{view['money_pct']:.1f}", view["confirmed_items"], view["unpriced_items"], THIN if view["thin"] else "",
+    *["" if view.get(k) is None else f"{view[k]:.2f}" if k != "assumed_share_pct" else f"{view[k]:.1f}" for k in FIELDS[6:]]]
 
 def _num(v) -> float | None:
   try:
@@ -139,6 +209,7 @@ def lines_for(cases: list, rates: dict, fmt, table) -> list:
     L += ["Per office, money-weighted over its sets with a defined number:", ""]
     L += table(["Office", "Sets", "Money (PKR)", "Within tolerance (PKR)", "First-sight money accuracy", "THIN sets"],
       [[o["office"], ", ".join(o["sets"]), f"{o['money_pkr']:,.0f}", f"{o['within_pkr']:,.0f}", f"{o['money_pct']:.1f}%", ", ".join(o["thin"]) or "-"] for o in offices]) + [""]
+  L += source_lines(cases, table)
   return L
 
 def first_sight_lines(history: list, sets_doc: dict, offices_doc: dict) -> list:

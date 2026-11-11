@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.engine.measure import grades as GR
+from app.modules.drawings_boq.takeoff.prep import param_values as PV
 
 COVER_PARAM_OF = {"slab": "steel_cover_slab_mm", "beam": "steel_cover_beam_mm", "column": "steel_cover_column_mm", "footing": "steel_cover_footing_mm", "wall": "steel_cover_wall_mm"}
 PCC_PARAM = "pcc_thickness_mm"
@@ -33,7 +34,7 @@ def _note(row: dict) -> dict:
 def _single(rows: list, name: str, conflicts: list) -> dict | None:
   """The one row of a note, or None when two rows print different values (the conflict is listed)."""
   by: dict = {}
-  for r in rows:
+  for r in PV.strongest(rows):
     by.setdefault(round(float(r["value_mm"]), 2), r)
   if len(by) == 1:
     return next(iter(by.values()))
@@ -102,7 +103,7 @@ def from_items(items: list) -> dict:
     params[LAP_PARAM] = round(sum(ratios) / len(ratios), 1)
     notes[LAP_PARAM] = {"text": "; ".join(f"bar {k} = {mm:g} mm" for k, mm in lap_table.items()), "pages": sorted({p for v in table.values() for p in v["pages"]}),
       "count": sum(v["count"] for v in table.values())}
-  return {"params": params, "lap_table_mm": lap_table, "notes": notes, "conflicts": conflicts, "grades": GR.rules_from_items(items or []), "soil": soil}
+  return {"params": params, "lap_table_mm": lap_table, "notes": notes, "conflicts": conflicts, "grades": GR.rules_from_items(items or []), "soil": soil, **PV.from_items(items or [])}
 
 def _stabilisation(items: list, params: dict, notes: dict, conflicts: list) -> None:
   head = [r for r in items if r.get("kind") == "SOIL_STAB_NOTE"]

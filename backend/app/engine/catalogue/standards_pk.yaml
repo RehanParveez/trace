@@ -1,0 +1,243 @@
+books:
+  - {id: MRS_BWP_2026_1, name: "Punjab MRS Bahawalpur 2026-1", edition: "2026-1", match: "2026-1"}
+  - {id: MRS_BWP_2026_2, name: "Punjab MRS Bahawalpur 2026-2", edition: "2026-2", match: "2026-2"}
+entries:
+  - id: STD_MORTAR_DRY_MATERIAL
+    name: "Dry material for 100 cft of wet cement-sand mortar, by mix (cement in bags, sand in cft)"
+    unit: table
+    scope: [H, P]
+    read: mortar_table
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 5
+      on: norms
+      expect_rows: {"1:3": ["23.11", "85"], "1:4": ["18.37", "90"], "1:5": ["14.70", "90"], "1:6": ["13.61", "100"]}
+      note: "The table is read from the page that opens with 'Dry Material Required' by the table reader in pricing/standards_book.py. Build File K quotes the 1:3 to 1:6 rows as the spot-check; rows 1:2, 1:7 and 1:8 come from the book alone."
+  - id: STD_MORTAR_WET_PER_100CFT_BRICK
+    name: "Wet mortar in brick masonry, per 100 cft of masonry (cement-sand)"
+    value: 25
+    unit: cft_per_100cft
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 5
+      on: norms
+      find: ['(?i)mortar', '(?<![\d.])25(?![\d.])']
+      note: "25 cft of wet mortar per 100 cft of brick masonry, as quoted in Build File K (MRS ch. 5). The pin finds a page that has the word mortar and the figure 25; the printed line is recorded for a person to read."
+  - id: STD_BRICK_LENGTH_IN
+    name: "Standard brick, length"
+    value: 9
+    unit: in
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 7
+      find: ['(?i)brick', '5\s*/\s*16']
+      note: "Standard brick 9 x 4.5 x 3 in with tolerances of 5/16, 3/16 and 1/8 in, from MRS ch. 7 note 3 as Build File K quotes it. The pin looks for the chapter 7 page that prints the 5/16 tolerance."
+  - id: STD_BRICK_WIDTH_IN
+    name: "Standard brick, width"
+    value: 4.5
+    unit: in
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 7
+      find: ['(?i)brick', '3\s*/\s*16']
+      note: "As STD_BRICK_LENGTH_IN."
+  - id: STD_BRICK_HEIGHT_IN
+    name: "Standard brick, height"
+    value: 3
+    unit: in
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 7
+      find: ['(?i)brick', '1\s*/\s*8']
+      note: "As STD_BRICK_LENGTH_IN."
+  - id: STD_BRICK_TOL_LENGTH_IN
+    name: "Standard brick, tolerance on length"
+    value: 0.3125
+    unit: in
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 7
+      find: ['(?i)brick', '5\s*/\s*16']
+      note: "5/16 in as a decimal."
+  - id: STD_BRICK_TOL_WIDTH_IN
+    name: "Standard brick, tolerance on width"
+    value: 0.1875
+    unit: in
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 7
+      find: ['(?i)brick', '3\s*/\s*16']
+      note: "3/16 in as a decimal."
+  - id: STD_BRICK_TOL_HEIGHT_IN
+    name: "Standard brick, tolerance on height"
+    value: 0.125
+    unit: in
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 7
+      find: ['(?i)brick', '1\s*/\s*8']
+      note: "1/8 in as a decimal."
+  - id: STD_CEMENT_KG_PER_CFT
+    name: "Cement, kg in one cubic foot"
+    value: 40.8233
+    unit: kg_per_cft
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 5
+      on: norms
+      find: ['40\.82']
+      note: "1 cft of cement = 40.8233 kg, as the runbook quotes it. If the book prints another number of digits the pin will not find it and the entry stays unpinned until a person cites the page."
+  - id: STD_EARTH_SHRINK_MANUAL_PCT
+    name: "Shrinkage deducted from bank measurement, manual filling"
+    value: 10
+    unit: percent
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 3
+      find: ['(?i)shrink', '(?<![\d.])10\s*%']
+      note: "MRS ch. 3 note 2 deducts 10 percent from bank measurement for manual filling. His own rule of 22 Oct 2026 (WASTE-NO-SWELL) is no shrinkage; the two are shown side by side and neither replaces the other (Build File K section 8, row 6)."
+  - id: STD_EARTH_SHRINK_MACHINE_RANGE_PCT
+    name: "Shrinkage deducted from bank measurement, machine filling (low to high)"
+    range: [3, 6]
+    unit: percent
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 3
+      find: ['(?i)shrink', '(?<![\d.])3\s*(?:to|-)\s*6']
+      note: "3 to 6 percent for machine filling, from the same note as STD_EARTH_SHRINK_MANUAL_PCT."
+  - id: STD_FILL_LAYER_IN
+    name: "Largest layer of fill before compaction"
+    value: 6
+    unit: in
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 10
+      find: ['(?i)proctor', '(?<![\d.])6\s*(?:in|")']
+      note: "Layers of at most 6 in. The AJK specification asks 20 cm at 90 percent; the MRS and AJK differ and Build File K names the MRS."
+  - id: STD_FILL_COMPACTION_PCT
+    name: "Compaction of fill, percent of modified Proctor density"
+    value: 95
+    unit: percent
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 10
+      find: ['(?i)proctor', '(?<![\d.])95\s*%']
+      note: "95 percent of modified Proctor density."
+  - id: STD_WIRE_3_29_MM2
+    name: "Wire 3/0.029 in (3/0.74 mm), conductor area"
+    value: 1.5
+    unit: mm2
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 24
+      find: ['3\s*/\s*0?\.029']
+      note: "3/0.029 in = 3/0.74 mm = 1.5 mm2, billed per rft. A seller's page that calls 7/29 '0.29 mm' strands is wrong; the book is the source."
+  - id: STD_WIRE_7_29_MM2
+    name: "Wire 7/0.029 in (7/0.74 mm), conductor area"
+    value: 2.5
+    unit: mm2
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 24
+      find: ['7\s*/\s*0?\.029']
+      note: "7/0.029 in = 7/0.74 mm = 2.5 mm2, billed per rft."
+  - id: STD_CONDUIT_PVC_MM
+    name: "PVC conduit sizes"
+    values: [12, 20, 25, 32, 40, 50]
+    unit: mm
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 24
+      find: ['(?i)conduit', '(?i)pvc']
+      note: "PVC conduit 12, 20, 25, 32, 40 and 50 mm, per rft, recessed or surface, as Build File K quotes MRS ch. 24 items 1 to 3. The pin locates the page; reading the sizes off it is a person's check."
+  - id: STD_CONDUIT_MS_RANGE_MM
+    name: "MS conduit sizes (smallest to largest)"
+    range: [16, 50]
+    unit: mm
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 24
+      find: ['(?i)conduit', '(?i)\bMS\b|mild\s+steel']
+      note: "MS conduit 16 to 50 mm, from the same items."
+  - id: STD_DRAIN_PIPE_UPVC_MM
+    name: "uPVC drain pipe sizes"
+    values: [32, 40, 50, 82, 110, 160, 200]
+    unit: mm
+    scope: [H, P]
+    source:
+      kind: STANDARD
+      label: "Standard: Punjab MRS Bahawalpur 2026-2"
+      book: MRS_BWP_2026_2
+      chapter: 19
+      find: ['(?i)u\s*-?\s*pvc', '(?<![\d.])110(?![\d.])']
+      note: "uPVC drain pipe 32, 40, 50, 82, 110, 160 and 200 mm per rft (MRS ch. 19), as Build File K quotes it."
+  - id: STD_BRICKS_PER_CFT
+    name: "Bricks in one cubic foot of brickwork, mortar included"
+    value: 13.5
+    unit: bricks_per_cft
+    scope: [H, P]
+    source:
+      kind: QS_CONVENTION
+      label: "QS convention v1, 2026"
+      by: "the QS (profile QS_JUNAID)"
+      date: "2026-11-10"
+      note: "His 10 Nov 2026 answer B26: 13.5, a constant. The geometry of a 9 x 4.5 x 3 in brick with its joint gives 14.2; the trade figure he uses is 13.5. Not a STANDARD."
+  - id: STD_CONCRETE_DRY_FACTOR
+    name: "Dry volume of materials for a volume of wet concrete"
+    value: 1.54
+    unit: ratio
+    scope: [H, P]
+    source:
+      kind: TRACE_SEED
+      label: "Trace seed, unsourced"
+      note: "The dry factor 1.54 the runbook names. It stays a TRACE_SEED until the QS says it or the book prints it; never shown as a standard."

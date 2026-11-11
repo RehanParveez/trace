@@ -8,6 +8,7 @@ from app.modules.drawings_boq.takeoff.first_run import stages as ST
 from app.modules.drawings_boq.takeoff.first_run import report as RP
 from app.modules.drawings_boq.takeoff.run import reading_adapter as AD
 from app.modules.drawings_boq.takeoff.run import engine_lines as EL
+from app.engine.catalogue import site_inputs as SI
 
 def offline_bindings(pdfs: list | None = None, plains: list | None = None, lines: list | None = None, page_facts: list | None = None, reads: list | None = None, rules: list | None = None) -> dict:
   held = list(reads) if reads is not None else []
@@ -54,7 +55,7 @@ def offline_bindings(pdfs: list | None = None, plains: list | None = None, lines
   def quantities(state: dict) -> None:
     got = lines
     if got is None and held:
-      out = EL.lines_of_reads(held, rules=rules)
+      out = EL.lines_of_reads(held, rules=rules, derived_params=SI.derived_params(state.get("answers")) or None)
       state["engine"] = {"rows": out["rows"], "lines": len(out["lines"]), "recipes": out["recipes"], "rules": out["rules"], "not_billed": out["not_billed"], "unmapped": out["unmapped"], "errors": len(out["errors"])}
       got = out["lines"]
     if got is not None and "evidence" in state:

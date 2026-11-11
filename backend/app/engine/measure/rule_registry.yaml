@@ -407,6 +407,27 @@
     - {office: D, sets: 1, metric: "reading: tube fixtures made (0; the set has no electrical plan sheet)", value: 0, pack: CV-10b, met: false}
     - {office: A, sets: 1, metric: "reading: tube fixtures made (0; the set has no electrical plan sheet)", value: 0, pack: CV-10b, met: false}
   notes: A tube light drawn on an electrical plan sheet as two equal straight lines side by side is read as an electrical point at the middle of the pair. The two lines are heavy strokes of the sheet, parallel within one and a half degrees, equal in length within 4 percent and one along the other. The pair is a fixture only when its length is between 300 and 1500 mm and the gap between its lines between 10 and 60 mm at the sheet's scale; the lines of a wall are a brick apart and are left out. The point is not named from the legend. A tube light drawn in any other way is not read.
+- id: PARAM_HEIGHTS
+  module: takeoff/prep/param_values.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence: []
+  notes: Reads the depth of excavation or of the foundation when a line of drawing text prints it as feet and inches next to the words excavation, foundation, footing or trench and the word depth. It is read as a note, the weakest level. It feeds the footing depth parameter only when switched on and a person has not typed one. The other height keys (plinth, parapet, mumty, lintel level, sill, door, dado, skirting) have no calculation that reads them, so nothing reads them here.
+- id: PARAM_MIXES
+  module: takeoff/prep/param_values.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence: []
+  notes: Reads the cement to sand ratio of brick masonry mortar (the word brick or masonry within a short distance of a two part ratio, so a plain concrete mix 1:4:8 is never taken for it), the ratio of cement plaster (the word plaster near it, mud plaster left out), and the nominal mix of concrete from a three part ratio on a line that names concrete or a member. It is read as a note, the weakest level. A line that names a concrete class is left to the class reader.
+- id: SITE_INPUTS_ASKED
+  module: takeoff/completeness/site_state.py
+  kind: PIPELINE
+  default: off
+  status: CANDIDATE
+  evidence: []
+  notes: After each catalogue item is settled, the ledger asks the site inputs its lines wait on (depth of excavation, natural ground against the floor, reuse of excavated soil, working space, lead and carriage, existing works). A line whose input the project has not answered and the drawing did not print is ASKED and keeps its quantity. With the project's QS defaults on it is ASSUMED and shows the fallback range where the quantity grows with the input. Carriage and dismantling with a NOT_BILLED fallback are left out. Off, no entry changes.
 - id: PROJECT_FACTS
   module: takeoff/run/reader.py
   kind: PIPELINE

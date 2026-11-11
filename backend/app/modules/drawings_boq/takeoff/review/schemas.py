@@ -16,6 +16,11 @@ class ReviewAction(BaseModel):
   value: str | None = Field(default=None, description="The value the action stores when it is fixed; null when the person gives it (correct).")
   choices: list[str] = Field(default_factory=list, description="The values offered for a correction; empty when any value of the right kind is taken.")
 
+class ReviewOption(BaseModel):
+  value: str
+  label: str
+  text: str = ""
+
 class ReviewDecision(BaseModel):
   action: str
   value: str | None = None
@@ -45,6 +50,7 @@ class ReviewRow(BaseModel):
   decision: ReviewDecision | None = None
   default: dict | None = None
   unit: str | None = None
+  options: list[ReviewOption] = Field(default_factory=list, description="For a question: each option with the words that say what it means, so a dropdown can show them.")
   affects: str | None = None
   read_id: str | None = None
   task: str | None = None

@@ -333,6 +333,38 @@ READINGS = [
     "Points are counted and no wiring length is taken, as now. Which rate book prices them is a pricing question and is left for later.", on=LATEST),
   _a("R19", "E", "Rain water pipe", "A pipe is labelled on the roof plan and again on the floor plans: one pipe, or one for each label?",
     "One pipe. It runs from the roof down.", APPLIED, "No change: a pipe seen on two sheets is counted once.", on=LATEST),
+  _a("K-B17", "E", "Working space for excavation", "How much working space is left each side of an excavation?",
+    "1 ft each side; 1 ft on one side only where there is no room.", CONFIRM,
+    "Recorded as method SPACE-WORKING-1FT (working_space_mm 304.8) in his profile. The product run is unchanged: it still takes 76.2 mm, his 26 Oct answer (R17), until a company chooses the profile.",
+    "R17 gave 3 in for a foundation trench and about 1 ft for other excavation; this answer says 1 ft each side. Which stands for a foundation trench? The tight-plot case is a site question.", params=["working_space_mm"], on="2026-11-10"),
+  _a("K-B20", "A", "Plaster thickness", "How thick is plaster inside, outside and on ceilings when no sheet prints it?",
+    "Not on any drawing; 12 to 13 mm inside, outside and on the ceiling alike.", CONFIRM,
+    "Recorded as three methods of his profile (12.7 mm each). The product run is unchanged: it still takes 12.7 mm inside, 19.05 mm outside and 9.525 mm on ceilings where no sheet prints a thickness, and a printed thickness always wins.",
+    "Confirm 12.7 mm outside and on ceilings. A printed thickness still beats his figure: one set prints 3/4 in, another 1 in on some faces.", on="2026-11-10"),
+  _a("K-C3", "E", "Earth filling under floors", "In what layers is the earth under floors filled?",
+    "Levels from the drawing; compaction is a separate item; 6 in layers.", APPLIED,
+    "No change: fill_layer_mm is already 152.4. Recorded as method FILL-LAYERS-6IN so the source is his.",
+    "Whether compaction is billed as a separate item stays with item EW-09.", on="2026-11-10"),
+  _a("K-B15", "B", "Lintel depth and bearing", "What are the depth and the bearing of a lintel?",
+    "The depth is on the drawing; the type follows the span from its table; about 1 ft bearing each side (a 2.5 ft door gives about 4.5 ft).", CONFIRM,
+    "Held as a question (OPEN-LINTEL-BEARING). lintel_bearing_mm stays 152.4 and no quantity reads it today, so nothing changes.",
+    "No place in the code builds a lintel's length from an opening, so a 1 ft bearing has nothing to act on yet. Say whether the lintel length should be the opening plus the bearing at each end.", on="2026-11-10"),
+  _a("K-B23", "F", "Steel without printed bars", "How much steel per cft of concrete when the bars are not printed?",
+    "Never: steel comes from the drawing only.", CONFIRM,
+    "Held as a question (OPEN-STEEL-NO-ESTIMATE). Nothing is switched off: the estimate from concrete volume and his 22 Oct rule of 1.5 kg per sq ft stay, and each line that uses them is flagged ASSUMED.",
+    "Two of his answers differ: 22 Oct (S16) gave a rule of thumb, 10 Nov says never. Which one stands?", on="2026-11-10"),
+  _a("K-B25", "F", "Binding wire", "How much binding wire goes with the steel?",
+    "3.5 kg for each tonne of steel, not a percentage.", APPLIED,
+    "Recorded as the QS convention PK_BINDING_WIRE_KG_PER_T (3.5 kg a tonne). Nothing reads it yet; the 1 percent seed stays until the material schedule (K-6) reads this figure.",
+    on="2026-11-10"),
+  _a("K-B29", "C", "Paint coats", "How many coats of primer, putty and paint?",
+    "Depends on the finish; typically 1 primer, 2 putty, 3 paint.", CONFIRM,
+    "Held as a question (OPEN-PAINT-COATS); nothing changes.",
+    "Three paint coats on top of a primer and two putty coats is more than most house bills carry. Is that what he bills?", on="2026-11-10"),
+  _a("K-C4", "E", "Termite treatment", "Is the termite treatment on the footprint only, or also in the trenches?",
+    "Footprint, and again under the floors; he also said trenches on two sides.", CONFIRM,
+    "Held as a question (OPEN-TERMITE-TRENCH-SIDES); the method FACE-TERMITE-FOOTPRINT (22 Oct) stays: the sides of the excavation are not treated.",
+    "His two statements disagree about the trench sides. Which is right?", on="2026-11-10"),
 ]
 
 def source_label() -> str:
@@ -477,6 +509,11 @@ LABELS = {
   "opening_rules_basis": ("Decided for each drawing", "Which openings come off each work item"),
   "termite.scope": ("How the QS counts", "Termite treatment covers"),
   "plaster.external_height_basis": ("How the QS counts", "Height of the external plaster and paint"),
+  "working_space_mm": ("Heights and depths", "Working space each side of an excavation"),
+  "plaster_inside_mm": ("Heights and depths", "Plaster on inside walls when none is printed"),
+  "plaster_outside_mm": ("Heights and depths", "Plaster on outside walls when none is printed"),
+  "plaster_ceiling_mm": ("Heights and depths", "Plaster on ceilings when none is printed"),
+  "fill_layer_mm": ("Earthwork", "Thickness of a compacted fill layer"),
 }
 
 LABELS.update({CVN.switch_key(c["id"]): ("Pakistan QS conventions", c["name"]) for c in CVN.conventions()})
@@ -499,7 +536,9 @@ def code_default(key: str):
     return proposed.SIZE_VALUES[key]["mm"]
   if key in DEPTHS:
     return getattr(proposed, DEPTHS[key])
-  return None
+  from app.engine.measure import derived as DERIVED
+  held = DERIVED.PARAMS.get(key)
+  return held[0] if held else None
 
 UNIT_OF = {"brick_opening_min_m2": "m2", "rcc_wall_opening_min_m2": "m2", "plaster_opening_min_m2": "m2", "plaster_opening_one_face_max_m2": "m2",
   "cft_per_m3": "cft per m3", "sft_per_m2": "sft per m2", "round_cft_dp": "decimals"}

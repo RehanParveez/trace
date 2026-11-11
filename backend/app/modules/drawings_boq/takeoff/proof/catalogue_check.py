@@ -13,6 +13,10 @@ from app.engine.catalogue import tolerances as TOL
 from app.engine.catalogue import self_checks as SCK
 from app.engine.catalogue import confidence as CFG
 from app.engine.catalogue import bar_grammar as BG
+from app.engine.catalogue import choices as CH
+from app.engine.catalogue import param_keys as PK
+from app.engine.catalogue import site_inputs as SI
+from app.modules.drawings_boq.takeoff.proof.bench import sanity as SAN
 
 def ledger_families() -> dict:
   fams: dict = {}
@@ -45,7 +49,7 @@ def problems() -> list:
   out = list(CL.problems())
   if out:
     return out
-  out += CV.problems() + LC.problems() + VOC.problems() + derived_problems()
+  out += CV.problems() + LC.problems() + VOC.problems() + PK.problems() + CH.problems() + SI.problems() + SAN.problems() + derived_problems()
   if out:
     return out
   fams = ledger_families()

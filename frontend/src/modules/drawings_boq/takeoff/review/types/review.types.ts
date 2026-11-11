@@ -19,6 +19,12 @@ export interface ReviewAction {
   choices: string[];
 }
 
+export interface ReviewOption {
+  value: string;
+  label: string;
+  text: string;
+}
+
 export interface ReviewDecision {
   action: string;
   value: string | null;
@@ -49,6 +55,7 @@ export interface ReviewRow {
   decision: ReviewDecision | null;
   default: Record<string, unknown> | null;
   unit: string | null;
+  options?: ReviewOption[];
   affects: string | null;
   read_id: string | null;
   task: string | null;

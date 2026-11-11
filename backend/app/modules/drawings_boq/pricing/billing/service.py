@@ -7,6 +7,7 @@ from uuid import UUID
 from app.modules.drawings_boq.takeoff.questions.service import QuestionsService
 from app.modules.drawings_boq.models import CalculationRun, BuildingLevel, QuantityLedger
 from app.core.exceptions import TraceException
+from app.engine.catalogue import choices as CH
 from app.engine.catalogue import conventions as CV
 from app.engine.catalogue import confidence as CFG
 from app.modules.drawings_boq.takeoff.completeness import confidence as CONF
@@ -147,5 +148,6 @@ class BillingService(QuestionsService):
         "counts": {"measured_entries": 0, "assumed_entries": 0, "not_measured": 0}, "reconciled": True, "lost": {}}
       
     parts = measured_from_entries(entries)
-    billed = G.group(parts["measured"], profile, decisions)
+    _drawings, _snapshot, answers = await self._project(org, project_id)
+    billed = G.group(parts["measured"], profile, CH.decisions(answers, base=decisions))
     return {**head, "has_ledger": True, **view(billed, parts, parts["measured"], profile)}

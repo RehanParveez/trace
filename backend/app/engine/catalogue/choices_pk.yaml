@@ -1,0 +1,534 @@
+use_defaults_question:
+  id: USE_QS_DEFAULTS
+  asks: Use the QS defaults for every choice the drawing does not print and nobody has answered?
+  options: {'no': Ask me each one, 'yes': Use my QS defaults and show every line that took one as ASSUMED}
+  default: 'no'
+cards:
+  - id: MORTAR_45
+    label: Mortar of 4½ in brick walls
+    asks: "What mortar ratio is used for 4½ in brick walls?"
+    applies_to: [MS-02]
+    read: {key: MORTAR_RATIO, scope: "4.5 in wall", name: brick_mortar}
+    spec: null
+    options:
+      "1:3":
+        text: "Cement 1 to sand 3"
+        spec_values: {}
+        record: {brick_mortar: "1:3"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+      "1:4":
+        text: "Cement 1 to sand 4"
+        spec_values: {}
+        record: {brick_mortar: "1:4"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+      "1:5":
+        text: "Cement 1 to sand 5"
+        spec_values: {}
+        record: {brick_mortar: "1:5"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+      "1:6":
+        text: "Cement 1 to sand 6"
+        spec_values: {}
+        record: {brick_mortar: "1:6"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+    default: {value: "1:4", source: "M. Junaid, sitting of 10 Nov 2026, his typical"}
+  - id: MORTAR_9
+    label: Mortar of 9 in brick walls and up
+    asks: "What mortar ratio is used for 9 in brick walls and thicker?"
+    applies_to: [MS-01, MS-04, MS-05, MS-06]
+    read: {key: MORTAR_RATIO, scope: "9 in wall", name: brick_mortar}
+    spec: null
+    options:
+      "1:4":
+        text: "Cement 1 to sand 4"
+        spec_values: {}
+        record: {brick_mortar: "1:4"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+      "1:5":
+        text: "Cement 1 to sand 5"
+        spec_values: {}
+        record: {brick_mortar: "1:5"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+      "1:6":
+        text: "Cement 1 to sand 6"
+        spec_values: {}
+        record: {brick_mortar: "1:6"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+    default: {value: "1:5", source: "M. Junaid, sitting of 10 Nov 2026, his typical"}
+  - id: MORTAR_BELOW_PLINTH
+    label: Mortar below the plinth
+    asks: "What mortar ratio is used for brickwork below the plinth (foundation and plinth walls)?"
+    applies_to: [MS-03, EW-16]
+    read: {key: MORTAR_RATIO, scope: "below plinth", name: brick_mortar}
+    spec: null
+    options:
+      "1:3":
+        text: "Cement 1 to sand 3"
+        spec_values: {}
+        record: {brick_mortar: "1:3"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+      "1:4":
+        text: "Cement 1 to sand 4"
+        spec_values: {}
+        record: {brick_mortar: "1:4"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+      "1:5":
+        text: "Cement 1 to sand 5"
+        spec_values: {}
+        record: {brick_mortar: "1:5"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+      "1:6":
+        text: "Cement 1 to sand 6"
+        spec_values: {}
+        record: {brick_mortar: "1:6"}
+        mrs_item: null
+        mrs_ref: "MRS 7-4 / 7-5, row of this ratio"
+    default: {value: "1:5", source: "M. Junaid, 10 Nov 2026: same as 9 in walls unless he says otherwise"}
+  - id: PLASTER_INSIDE
+    label: Plaster, inside walls
+    asks: "What mix and thickness is the plaster of inside walls?"
+    applies_to: [PL-01]
+    read: {key: PLASTER_MIX, scope: inside, name: plaster_ratio}
+    spec: null
+    options:
+      "1:3 at 3/8 in":
+        text: "Cement 1 to sand 3, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.375 in", plaster_inside_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:3 at 1/2 in":
+        text: "Cement 1 to sand 3, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.5 in", plaster_inside_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:3 at 3/4 in":
+        text: "Cement 1 to sand 3, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.75 in", plaster_inside_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 3/8 in":
+        text: "Cement 1 to sand 4, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.375 in", plaster_inside_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 1/2 in":
+        text: "Cement 1 to sand 4, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.5 in", plaster_inside_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 3/4 in":
+        text: "Cement 1 to sand 4, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.75 in", plaster_inside_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 3/8 in":
+        text: "Cement 1 to sand 5, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.375 in", plaster_inside_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 1/2 in":
+        text: "Cement 1 to sand 5, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.5 in", plaster_inside_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 3/4 in":
+        text: "Cement 1 to sand 5, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.75 in", plaster_inside_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 3/8 in":
+        text: "Cement 1 to sand 6, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.375 in", plaster_inside_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 1/2 in":
+        text: "Cement 1 to sand 6, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.5 in", plaster_inside_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 3/4 in":
+        text: "Cement 1 to sand 6, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.75 in", plaster_inside_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+    default: {value: "1:4 at 1/2 in", source: "M. Junaid, sitting of 10 Nov 2026, his typical"}
+  - id: PLASTER_OUTSIDE
+    label: Plaster, outside walls
+    asks: "What mix and thickness is the plaster of outside walls?"
+    applies_to: [PL-02]
+    read: {key: PLASTER_MIX, scope: outside, name: plaster_ratio}
+    spec: null
+    options:
+      "1:3 at 3/8 in":
+        text: "Cement 1 to sand 3, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.375 in", plaster_outside_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:3 at 1/2 in":
+        text: "Cement 1 to sand 3, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.5 in", plaster_outside_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:3 at 3/4 in":
+        text: "Cement 1 to sand 3, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.75 in", plaster_outside_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 3/8 in":
+        text: "Cement 1 to sand 4, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.375 in", plaster_outside_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 1/2 in":
+        text: "Cement 1 to sand 4, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.5 in", plaster_outside_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 3/4 in":
+        text: "Cement 1 to sand 4, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.75 in", plaster_outside_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 3/8 in":
+        text: "Cement 1 to sand 5, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.375 in", plaster_outside_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 1/2 in":
+        text: "Cement 1 to sand 5, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.5 in", plaster_outside_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 3/4 in":
+        text: "Cement 1 to sand 5, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.75 in", plaster_outside_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 3/8 in":
+        text: "Cement 1 to sand 6, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.375 in", plaster_outside_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 1/2 in":
+        text: "Cement 1 to sand 6, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.5 in", plaster_outside_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 3/4 in":
+        text: "Cement 1 to sand 6, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.75 in", plaster_outside_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+    default: {value: "1:3 at 1/2 in", source: "M. Junaid, sitting of 10 Nov 2026, his typical"}
+  - id: PLASTER_CEILING
+    label: Plaster, ceilings
+    asks: "What mix and thickness is the plaster of ceilings?"
+    applies_to: [PL-03]
+    read: {key: PLASTER_MIX, scope: ceiling, name: plaster_ratio}
+    spec: null
+    options:
+      "1:3 at 3/8 in":
+        text: "Cement 1 to sand 3, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.375 in", plaster_ceiling_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:3 at 1/2 in":
+        text: "Cement 1 to sand 3, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.5 in", plaster_ceiling_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:3 at 3/4 in":
+        text: "Cement 1 to sand 3, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:3", plaster_thickness: "0.75 in", plaster_ceiling_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 3/8 in":
+        text: "Cement 1 to sand 4, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.375 in", plaster_ceiling_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 1/2 in":
+        text: "Cement 1 to sand 4, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.5 in", plaster_ceiling_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:4 at 3/4 in":
+        text: "Cement 1 to sand 4, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:4", plaster_thickness: "0.75 in", plaster_ceiling_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 3/8 in":
+        text: "Cement 1 to sand 5, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.375 in", plaster_ceiling_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 1/2 in":
+        text: "Cement 1 to sand 5, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.5 in", plaster_ceiling_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:5 at 3/4 in":
+        text: "Cement 1 to sand 5, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:5", plaster_thickness: "0.75 in", plaster_ceiling_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 3/8 in":
+        text: "Cement 1 to sand 6, 3/8 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.375 in", plaster_ceiling_mm: 9.525}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 1/2 in":
+        text: "Cement 1 to sand 6, 1/2 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.5 in", plaster_ceiling_mm: 12.7}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+      "1:6 at 3/4 in":
+        text: "Cement 1 to sand 6, 3/4 in thick"
+        spec_values: {}
+        record: {plaster_ratio: "1:6", plaster_thickness: "0.75 in", plaster_ceiling_mm: 19.05}
+        mrs_item: null
+        mrs_ref: "MRS 11-8 to 11-10, row of this ratio and thickness"
+    default: null
+  - id: PAINT_SYSTEM
+    label: Paint system
+    asks: "What paint system is used (primer, putty and finish coats)?"
+    applies_to: [PL-07, PL-08, PL-09, PL-10]
+    read: null
+    spec: null
+    options:
+      "1 primer, 2 putty, 3 emulsion":
+        text: "One primer coat, two putty coats, three coats of emulsion"
+        spec_values: {}
+        record: {paint_primer_coats: 1, paint_putty_coats: 2, paint_finish_coats: 3, paint_finish: emulsion}
+        mrs_item: null
+        mrs_ref: "MRS ch. 13: first coat and each later coat; putty item 46"
+      "1 primer, 2 putty, 2 emulsion":
+        text: "One primer coat, two putty coats, two coats of emulsion"
+        spec_values: {}
+        record: {paint_primer_coats: 1, paint_putty_coats: 2, paint_finish_coats: 2, paint_finish: emulsion}
+        mrs_item: null
+        mrs_ref: "MRS ch. 13: first coat and each later coat; putty item 46"
+      "1 primer, 1 putty, 2 emulsion":
+        text: "One primer coat, one putty coat, two coats of emulsion"
+        spec_values: {}
+        record: {paint_primer_coats: 1, paint_putty_coats: 1, paint_finish_coats: 2, paint_finish: emulsion}
+        mrs_item: null
+        mrs_ref: "MRS ch. 13: first coat and each later coat; putty item 46"
+      "1 primer, 2 putty, 3 weather-shield":
+        text: "One primer coat, two putty coats, three coats of weather-shield (outside)"
+        spec_values: {}
+        record: {paint_primer_coats: 1, paint_putty_coats: 2, paint_finish_coats: 3, paint_finish: weather_shield}
+        mrs_item: null
+        mrs_ref: "MRS ch. 13: first coat and each later coat; putty item 46"
+      "1 primer, 2 distemper":
+        text: "One primer coat, two coats of distemper"
+        spec_values: {}
+        record: {paint_primer_coats: 1, paint_putty_coats: 0, paint_finish_coats: 2, paint_finish: distemper}
+        mrs_item: null
+        mrs_ref: "MRS ch. 13: first coat and each later coat; putty item 46"
+    default: {value: "1 primer, 2 putty, 3 emulsion", source: "M. Junaid, 10 Nov 2026: 1 primer, 2 putty, 3 finish; to be confirmed"}
+  - id: CONCRETE_NO_MIX
+    label: Concrete where the drawing prints no mix
+    asks: "What concrete is used where the drawing prints no mix or strength?"
+    applies_to: [RC-01, RC-02, RC-06, RC-07, RC-08, RC-09, RC-10, RC-13, RC-15, RC-17, RC-23]
+    read: {key: CONCRETE_MIX, scope: rcc, name: concrete_mix}
+    spec: concrete_mix
+    options:
+      "1:2:4":
+        text: "Nominal mix 1:2:4"
+        spec_values: {concrete_mix: "1:2:4"}
+        record: {}
+        mrs_item: null
+        mrs_ref: "MRS ch. 6, item 5 row; design mix at item 9"
+      "1:1.5:3":
+        text: "Nominal mix 1:1½:3"
+        spec_values: {concrete_mix: "1:1.5:3"}
+        record: {}
+        mrs_item: null
+        mrs_ref: "MRS ch. 6, item 5 row; design mix at item 9"
+      "3000 psi design mix":
+        text: "Design mix of 3000 psi"
+        spec_values: {concrete_mix: "3000 psi"}
+        record: {}
+        mrs_item: null
+        mrs_ref: "MRS ch. 6, item 5 row; design mix at item 9"
+      "4000 psi design mix":
+        text: "Design mix of 4000 psi"
+        spec_values: {concrete_mix: "4000 psi"}
+        record: {}
+        mrs_item: null
+        mrs_ref: "MRS ch. 6, item 5 row; design mix at item 9"
+      "5000 psi design mix":
+        text: "Design mix of 5000 psi"
+        spec_values: {concrete_mix: "5000 psi"}
+        record: {}
+        mrs_item: null
+        mrs_ref: "MRS ch. 6, item 5 row; design mix at item 9"
+    default: null
+  - id: BACKFILL_SOURCE
+    label: Back fill source
+    asks: "Where does the back fill come from?"
+    applies_to: [EW-06]
+    read: null
+    spec: null
+    options:
+      "excavated soil":
+        text: "The excavated soil is put back"
+        spec_values: {}
+        record: {fill_source: excavated}
+        mrs_item: null
+        mrs_ref: "MRS back fill item, no carriage"
+      "imported soil":
+        text: "Soil is brought to site"
+        spec_values: {}
+        record: {fill_source: imported}
+        mrs_item: null
+        mrs_ref: "MRS back fill item and carriage"
+      "sand":
+        text: "Sand is brought to site"
+        spec_values: {}
+        record: {fill_source: sand}
+        mrs_item: null
+        mrs_ref: "MRS sand filling item and carriage"
+    default: {value: "excavated soil", source: "M. Junaid, 10 Nov 2026: excavated soil unless the soil is poor or termites are a risk"}
+  - id: WIRE_CABLE
+    label: Wire and cable
+    asks: "What wire is used for the point wiring?"
+    applies_to: [EL-07]
+    read: null
+    spec: null
+    options:
+      "3/0.029 lights and fans, 7/0.029 sockets and kitchen":
+        text: "His split: 3/0.029 on lights and fans, 7/0.029 on sockets and kitchen"
+        spec_values: {}
+        record: {wire_lights_fans: 3/0.029, wire_sockets: 7/0.029}
+        mrs_item: null
+        mrs_ref: "MRS ch. 24, cable row per rft"
+      "3/0.029 throughout":
+        text: "3/0.029 on every circuit"
+        spec_values: {}
+        record: {wire_lights_fans: 3/0.029, wire_sockets: 3/0.029}
+        mrs_item: null
+        mrs_ref: "MRS ch. 24, cable row per rft"
+      "7/0.029 throughout":
+        text: "7/0.029 on every circuit"
+        spec_values: {}
+        record: {wire_lights_fans: 7/0.029, wire_sockets: 7/0.029}
+        mrs_item: null
+        mrs_ref: "MRS ch. 24, cable row per rft"
+    default: {value: "3/0.029 lights and fans, 7/0.029 sockets and kitchen", source: "M. Junaid, 10 Nov 2026: his split, 3/29 and 7/29"}
+  - id: CONDUIT
+    label: Conduit
+    asks: "What conduit is used?"
+    applies_to: [EL-08]
+    read: null
+    spec: null
+    options:
+      "PVC 1/2 in up to 3 wires, larger above":
+        text: "PVC conduit of 1/2 in while it carries up to 3 wires, larger above that"
+        spec_values: {}
+        record: {conduit_material: PVC, conduit_half_inch_max_wires: 3}
+        mrs_item: null
+        mrs_ref: "MRS ch. 24, items 2 and 3"
+      "PVC 3/4 in throughout":
+        text: "PVC conduit of 3/4 in throughout"
+        spec_values: {}
+        record: {conduit_material: PVC, conduit_size_in: 0.75}
+        mrs_item: null
+        mrs_ref: "MRS ch. 24, items 2 and 3"
+      "MS 1/2 in up to 3 wires, larger above":
+        text: "MS conduit of 1/2 in while it carries up to 3 wires, larger above that"
+        spec_values: {}
+        record: {conduit_material: MS, conduit_half_inch_max_wires: 3}
+        mrs_item: null
+        mrs_ref: "MRS ch. 24, items 2 and 3"
+    default: {value: "PVC 1/2 in up to 3 wires, larger above", source: "M. Junaid, 10 Nov 2026: 1/2 in while it carries up to 3 wires, larger above that"}
+  - id: WATER_PIPE
+    label: Water pipe
+    asks: "What water supply pipe is used?"
+    applies_to: [PB-01]
+    read: null
+    spec: null
+    options:
+      "PPR 25 mm":
+        text: "PPR pipe of 25 mm"
+        spec_values: {}
+        record: {pipe_material: PPR, pipe_mm: 25}
+        mrs_item: null
+        mrs_ref: "Plumbing item rows, by diameter"
+      "PPR 32 mm":
+        text: "PPR pipe of 32 mm"
+        spec_values: {}
+        record: {pipe_material: PPR, pipe_mm: 32}
+        mrs_item: null
+        mrs_ref: "Plumbing item rows, by diameter"
+      "PPR 40 mm":
+        text: "PPR pipe of 40 mm (he said 42; the nearest size sold is 40, confirm)"
+        spec_values: {}
+        record: {pipe_material: PPR, pipe_mm: 40}
+        mrs_item: null
+        mrs_ref: "Plumbing item rows, by diameter"
+      "PPR 50 mm":
+        text: "PPR pipe of 50 mm"
+        spec_values: {}
+        record: {pipe_material: PPR, pipe_mm: 50}
+        mrs_item: null
+        mrs_ref: "Plumbing item rows, by diameter"
+      "PPR 63 mm":
+        text: "PPR pipe of 63 mm"
+        spec_values: {}
+        record: {pipe_material: PPR, pipe_mm: 63}
+        mrs_item: null
+        mrs_ref: "Plumbing item rows, by diameter"
+      "GI":
+        text: "Galvanised iron pipe"
+        spec_values: {}
+        record: {pipe_material: GI}
+        mrs_item: null
+        mrs_ref: "Plumbing item rows, by diameter"
+    default: null

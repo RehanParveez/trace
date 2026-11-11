@@ -1,6 +1,8 @@
 from __future__ import annotations
+from app.engine.catalogue import choices as CH
 from app.engine.catalogue import conventions as CV
 from app.engine.catalogue import loader as CAT
+from app.engine.catalogue import site_inputs as SI
 from app.modules.drawings_boq.takeoff.questions import keys as QK
 
 OPEN, ANSWERED, RETIRED = "OPEN", "ANSWERED", "RETIRED"
@@ -79,7 +81,35 @@ def _method_questions(ledger: list, answers: dict, on: list) -> list:
       "options": [{"value": n, "label": n.replace("_", " ").capitalize(), "text": o["text"], "is_default": n == m["default"], "effect": o["effect"]} for n, o in m["options"].items()], "default": ({"value": m["default"], "rule": m["id"]} if m["default"] else None)})
   return out
 
-def build(ledger: list, answers: dict | None = None, conventions: list | None = None, rates: dict | None = None) -> list:
+LIVE_STATES = ("MEASURED", "ASSUMED", "ASKED")
+
+def _choice_questions(ledger: list, answers: dict, printed: dict | None = None) -> list:
+  """One question for each project choice card whose items are in the ledger and that nothing has settled: the drawing printed nothing for it (printed is
+  printed_params.from_items(...) of the project), nobody answered it, and the project does not use QS defaults. A card with an answer is kept so the answer stays."""
+  have = {e["element"]: e for e in ledger}
+  use = CH.use_qs_defaults(answers)
+  out, open_n = [], 0
+  for card in CH.cards():
+    key = QK.choice_key(card["id"])
+    waiting = [have[i] for i in card["applies_to"] if i in have and have[i]["state"] in LIVE_STATES]
+    got = CH.resolve(card, printed, answers, use)
+    if not (waiting or key in answers) or (got["state"] == CH.PRINTED and key not in answers):
+      continue
+    default = card.get("default")
+    out.append({"key": key, "kind": QK.CHOICE, "about": card["id"], "ask": card["asks"], "label": card["label"], "elements": [e["element"] for e in waiting], "entries": waiting, "members": [], "floors": [],
+      "options": [{"value": v, "label": v, "text": o["text"], "is_default": bool(default) and default["value"] == v, "effect": "BILLING" if o["mrs_item"] else "RECORDED"} for v, o in card["options"].items()],
+      "default": None if not default else {"value": default["value"], "unit": None, "range": None, "rule": None, "source": default["source"], "switched_on": use},
+      "why": f"{len(waiting)} item(s) wait on this; the drawing prints nothing for it"})
+    open_n += got["state"] == CH.OPEN
+  setting = CH._raw()["use_defaults_question"]
+  if open_n or QK.choice_key(setting["id"]) in answers:
+    out.append({"key": QK.choice_key(setting["id"]), "kind": QK.CHOICE, "about": setting["id"], "ask": setting["asks"], "label": "Use my QS defaults", "elements": [], "entries": [], "members": [], "floors": [],
+      "options": [{"value": v, "label": v, "text": t, "is_default": v == setting["default"], "effect": "RECORDED"} for v, t in setting["options"].items()],
+      "default": {"value": setting["default"], "unit": None, "range": None, "rule": None, "source": "Trace: a project does not use QS defaults until it says so", "switched_on": use},
+      "why": f"{open_n} choice(s) are open; with yes each takes its QS default and every line that used one shows ASSUMED"})
+  return out
+
+def build(ledger: list, answers: dict | None = None, conventions: list | None = None, rates: dict | None = None, printed: dict | None = None) -> list:
   answers = dict(answers or {})
   on = list(conventions or [])
   groups: dict = {}
@@ -103,6 +133,8 @@ def build(ledger: list, answers: dict | None = None, conventions: list | None = 
         g["cls"] = q["cls"]
   for g in _method_questions(ledger, answers, on):
     groups.setdefault(g["key"], g)
+  for g in _choice_questions(ledger, answers, printed):
+    groups.setdefault(g["key"], g)
   out = []
   
   for key, g in groups.items():
@@ -110,11 +142,16 @@ def build(ledger: list, answers: dict | None = None, conventions: list | None = 
     unit, rule = _input_facts(g["about"], g["elements"]) if kind == QK.INPUT else (None, None)
     row = {"key": key, "kind": kind, "prompt": _prompt(kind, key, g, unit), "unit": unit, "default": g["default"] or _default_of(rule, on),
       "options": g["options"] or [dict(o) for o in OPTIONS.get(kind, [])], "blocks": sorted(g["elements"]), "floors": g["floors"], "members": len(g["members"]), "entries": len(g["entries"]),
-      "why": f"{len(g['elements'])} item(s) wait on this", "money": blocked_money(g["entries"], rates)}
+      "why": f"{len(g['elements'])} item(s) wait on this", "money": blocked_money(g["entries"], rates), "label": g.get("label")}
     
     if kind == QK.METHOD:
       row["options"] = g["options"]
       row["why"] = f"{', '.join(g['elements'])} is counted differently by each option"
+    if kind == QK.CHOICE:
+      row["why"] = g["why"]
+    if kind == QK.SITE:
+      row.update(SI.question_fields(SI.id_of(key), CH.use_qs_defaults(answers)))
+      row["label"] = (SI.get(SI.id_of(key)) or {}).get("label")
     row["answer"] = answers.get(key)
     row["state"] = ANSWERED if row["answer"] else OPEN
     out.append(row)
@@ -126,6 +163,8 @@ def build(ledger: list, answers: dict | None = None, conventions: list | None = 
 
 def check(question: dict, value) -> str | None:
   kind = question["kind"]
+  if kind == QK.SITE:
+    return SI.check(SI.id_of(question["key"]), value)
   if kind == QK.INPUT:
     try:
       v = float(value)

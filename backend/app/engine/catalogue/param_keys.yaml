@@ -1,0 +1,22 @@
+precedence: [LABEL, SCHEDULE, SECTION, NOTE]
+agree_tolerance_mm: 0.5
+ratio_parts: {RATIO: 2, MIX: 3}
+keys:
+  - {key: FLOOR_TO_FLOOR, shape: MM, unit: mm, range: [2000.0, 6000.0], scopes: [storey], consumer: {kind: question, name: storeys.ALL.ftf_mm}, reader: null, status: NO_READER,
+     about: "Floor to floor height of a storey; asked as the height input today, reading it from the drawing is K-3 part 2"}
+  - {key: PLINTH_HEIGHT, shape: MM, unit: mm, range: [150.0, 1500.0], scopes: [plinth], consumer: null, reader: null, status: WAITING, about: "Height of the plinth above the road or ground"}
+  - {key: PARAPET_HEIGHT, shape: MM, unit: mm, range: [600.0, 1500.0], scopes: [parapet], consumer: null, reader: null, status: WAITING, about: "Height of the roof parapet wall"}
+  - {key: MUMTY_HEIGHT, shape: MM, unit: mm, range: [1800.0, 3600.0], scopes: [mumty], consumer: null, reader: null, status: WAITING, about: "Height of the stair mumty"}
+  - {key: LINTEL_LEVEL, shape: MM, unit: mm, range: [1800.0, 3000.0], scopes: [door, window], consumer: null, reader: null, status: WAITING, about: "Level of the lintel above the floor"}
+  - {key: SILL_HEIGHT, shape: MM, unit: mm, range: [450.0, 1500.0], scopes: [window, ventilator], consumer: null, reader: null, status: WAITING, about: "Sill height of a window above the floor"}
+  - {key: DOOR_HEIGHT, shape: MM, unit: mm, range: [1800.0, 3000.0], scopes: [door], consumer: null, reader: null, status: WAITING, about: "Printed height of a door"}
+  - {key: DADO_HEIGHT, shape: MM, unit: mm, range: [300.0, 3000.0], scopes: [bath, toilet, kitchen], consumer: null, reader: null, status: WAITING, about: "Height of a tile dado"}
+  - {key: SKIRTING_HEIGHT, shape: MM, unit: mm, range: [50.0, 300.0], scopes: [skirting], consumer: null, reader: null, status: WAITING, about: "Height of the skirting"}
+  - {key: EXCAVATION_DEPTH, shape: MM, unit: mm, range: [300.0, 6000.0], scopes: [foundation], consumer: {kind: param, name: footing_bottom_below_ngl_mm}, reader: PARAM_HEIGHTS, status: LIVE,
+     about: "Depth of excavation or of the foundation below natural ground"}
+  - {key: MORTAR_RATIO, shape: RATIO, unit: ratio, range: [2, 8], scopes: [4.5 in wall, 9 in wall, below plinth, wall], consumer: {kind: spec, name: brick_mortar}, reader: PARAM_MIXES, status: LIVE,
+     about: "Cement to sand ratio of brick masonry mortar; the word brick must be on the line"}
+  - {key: PLASTER_MIX, shape: RATIO, unit: ratio, range: [2, 8], scopes: [inside, outside, ceiling, plaster], consumer: {kind: spec, name: plaster_ratio}, reader: PARAM_MIXES, status: LIVE,
+     about: "Cement to sand ratio of cement plaster; the word plaster must be on the line"}
+  - {key: CONCRETE_MIX, shape: MIX, unit: ratio, range: [1, 8], scopes: [slab, beam, column, footing, lintel, pcc, rcc], consumer: {kind: spec, name: concrete_mix}, reader: PARAM_MIXES, status: LIVE,
+     about: "Nominal mix of concrete (cement : sand : aggregate), by member where the line names one"}

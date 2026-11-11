@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 from collections import Counter
+from app.modules.drawings_boq.takeoff.prep import param_values as PV
 from app.modules.drawings_boq.takeoff.prep import spec_blocks
 
 MM_INCH = 25.4
@@ -255,7 +256,7 @@ def read_line(text: str) -> list[dict]:
   m = _FLOOR_DROP.search(t)
   if m and inches_mm(m.group("in")):
     out.append(_item("FLOOR_DROP", t, value_mm=inches_mm(m.group("in")), scope=re.sub(r"^all\s+", "", m.group("where").lower()).strip()))
-  return out
+  return out + PV.read_line(t)
 
 def level_mark_mm(text: str) -> float | None:
   m = _LEVEL.match(_fix(text))

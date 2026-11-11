@@ -112,8 +112,8 @@ def _question_row(q: dict, by_el: dict, rates: dict | None) -> dict:
   kind = QUESTION if q["kind"] != QK.CONFLICT else CONFLICT
   entries = [e for el in q["blocks"] for e in by_el.get(el, [])]
   source = PRINTED if q["kind"] == QK.CONFLICT else ASSUMED
-  return _row(key=q["key"], kind=kind, item=q["key"], prompt=q["prompt"], source=source, entries=entries, rates=rates, actions=question_actions(q), decision=_answer_decision(q.get("answer")),
-    floors=q["floors"] or None, quote=q["why"], money=q.get("money"), extra={"default": q.get("default"), "unit": q.get("unit")})
+  return _row(key=q["key"], kind=kind, item=q.get("label") or q["key"], prompt=q["prompt"], source=source, entries=entries, rates=rates, actions=question_actions(q), decision=_answer_decision(q.get("answer")),
+    floors=q["floors"] or None, quote=q["why"], money=q.get("money"), extra={"default": q.get("default"), "unit": q.get("unit"), "options": [{"value": o["value"], "label": o.get("label") or o["value"], "text": o.get("text") or ""} for o in q["options"]]})
 
 def _note_rows(read: dict, review: dict, by_el: dict, rates: dict | None) -> list:
   out = []

@@ -24,6 +24,8 @@ from app.modules.drawings_boq.takeoff.proof.bench import failures as FL
 from app.modules.drawings_boq.takeoff.proof.bench import reads as RD
 from app.modules.drawings_boq.takeoff.proof.bench import ai_money as AM
 from app.modules.drawings_boq.takeoff.proof.bench import money as MN
+from app.modules.drawings_boq.takeoff.proof.bench import sanity as SAN
+from app.engine.measure import materials as MAT
 from app.modules.drawings_boq.takeoff.proof.bench import offices as OFF
 from app.modules.drawings_boq.takeoff.proof.bench import rows as RW
 from app.modules.drawings_boq.takeoff.proof.reading import sets as RS
@@ -171,6 +173,7 @@ def render(ctx: dict) -> str:
   if body:
     L += ["Within 10% of the answer file, rows that have both a Trace number and an answer:", ""] + table(["Set", "Product", "Product + method", "Proof on product lines", "Proof (score lines)"], body) + [""]
   L += MN.lines_for(ctx["cases"], ctx["rates"], fmt, table)
+  L += SAN.lines_for(ctx["cases"], fmt, table)
   L += AM.lines_for(ctx.get("ai_records") or [])
   L += ["## By section group and split", ""]
   
@@ -208,7 +211,7 @@ def render(ctx: dict) -> str:
   L += ["", ctx["notes"], ""]
   return "\n".join(L)
 
-SECOND_COLUMN = ("tol_pct", "tol_basis", "within_tol")
+SECOND_COLUMN = ("tol_pct", "tol_basis", "within_tol", "money_source")
 
 def write_rows(path: str, rows: list) -> str:
   rows = sorted(rows, key=lambda r: (r["set"], r["run"], r["element"], r["floor"]))
@@ -354,6 +357,9 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
     views = {label: MN.of_set(rows, answers_doc, rates) for label, rows in rows_by_run.items()} if answers_doc else {}
     headline = METHOD if METHOD in rows_by_run else PRODUCT
     money = {"run": headline, "headline": views.get(headline), "proof": views.get(PROOF), "by_run": views}
+    product_lines_of_run = runs[PRODUCT]["state"]["evidence"]["lines"]
+    sched = MAT.schedule(product_lines_of_run, MAT.choices_for(decisions, None, True))
+    sanity = SAN.of_case(product_lines_of_run, sched, answers_doc, rows_by_run[headline], rates)
     if ai_task and answers_doc:
       notes = AM.cached(folder, ai_task, ai_variant)
       if notes:
@@ -367,10 +373,11 @@ def run(out_dir: str, cases_dir: str | None = None, score_dir: str | None = None
           pages=sum(len(v) for v in notes.values())))
       else:
         ai_records.append(AM.record(name=name, office=office, task=ai_task, variant=ai_variant, off=views.get(headline), on=None, rows_off=RD.product_rows(case, found, reads_cache), rows_on=None, pages=0))
-    cases.append({"name": name, "pdfs": list(case["pdfs"]), "office": office, "splits": splits, "has_answers": bool(answers_doc), "stats": stats_by_run, "questions": questions, "silent": silent, "ai": ai_cost(folder), "method": method, "one_run": one, "money": money})
+    cases.append({"name": name, "pdfs": list(case["pdfs"]), "office": office, "splits": splits, "has_answers": bool(answers_doc), "stats": stats_by_run, "questions": questions, "silent": silent, "ai": ai_cost(folder), "method": method, "one_run": one, "money": money, "materials": sched, "sanity": sanity})
     print(f"{name}: product coverage {fmt(stats_by_run[PRODUCT]['all']['coverage'])}%, proof {fmt(stats_by_run[PROOF]['all']['coverage'])}%, silent {silent[PRODUCT]}/{silent[PROOF]}", flush=True)
   os.makedirs(out_dir, exist_ok=True)
   rows_sha = write_rows(os.path.join(out_dir, "rows.jsonl"), all_rows)
+  SAN.write_schedules(out_dir, cases)
   
   by_section = {}
   for sec in sorted({r["section"] for r in all_rows}):

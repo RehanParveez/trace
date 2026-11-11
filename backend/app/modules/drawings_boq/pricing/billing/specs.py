@@ -16,6 +16,6 @@ def resolve(name: str, floor: str | None, decisions: dict | None) -> Spec:
   else:
     value = given
   if value not in (None, ""):
-    return Spec(name, str(value), "ANSWER")
+    return Spec(name, str(value), ((decisions or {}).get("basis") or {}).get(name, "ANSWER"))
   default = profiles.spec_defaults().get(name)
   return Spec(name, default, "ASSUMED", profiles.spec_question(name))
